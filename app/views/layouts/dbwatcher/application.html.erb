@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dbwatcher</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <%= csrf_meta_tags %>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+  <div class="min-h-screen">
+    <nav class="bg-white shadow">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <div class="flex items-center">
+            <h1 class="text-xl font-semibold">🔍 Dbwatcher</h1>
+          </div>
+          <div class="flex items-center space-x-4">
+            <%= link_to "Sessions", sessions_index_path, class: "text-gray-700 hover:text-gray-900" %>
+            <%= button_to "Reset All Sessions", destroy_all_sessions_path,
+                method: :delete,
+                data: { confirm: "Are you sure? This will delete all tracking data." },
+                class: "bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600" %>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <%= yield %>
+    </main>
+  </div>
+</body>
+</html>

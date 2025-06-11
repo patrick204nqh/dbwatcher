@@ -1,0 +1,37 @@
+<div class="px-4 sm:px-0">
+  <h2 class="text-2xl font-bold mb-6">Tracking Sessions</h2>
+
+  <% if @sessions.empty? %>
+    <div class="bg-white overflow-hidden shadow rounded-lg p-6 text-center text-gray-500">
+      No tracking sessions yet. Start tracking with <code class="bg-gray-100 px-2 py-1 rounded">Dbwatcher.track { ... }</code>
+    </div>
+  <% else %>
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+      <ul class="divide-y divide-gray-200">
+        <% @sessions.each do |session| %>
+          <li>
+            <%= link_to session_path(session[:id]), class: "block hover:bg-gray-50 px-4 py-4 sm:px-6" do %>
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-indigo-600 truncate">
+                    <%= session[:name] %>
+                  </p>
+                  <p class="mt-1 text-sm text-gray-600">
+                    <%= Time.parse(session[:started_at]).strftime("%Y-%m-%d %H:%M:%S") %>
+                    <span class="text-gray-400">•</span>
+                    <%= session[:change_count] %> changes
+                  </p>
+                </div>
+                <div class="ml-2 flex-shrink-0">
+                  <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+</div>
