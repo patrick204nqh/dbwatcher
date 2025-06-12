@@ -27,6 +27,7 @@ jobs:
     - name: Set up test database
       run: |
         cd spec/dummy
+        bundle install
         bundle exec rails db:drop db:create db:migrate RAILS_ENV=test
     
     - name: Run RSpec unit tests

@@ -58,6 +58,7 @@ task default: %i[test rubocop security]
 desc "Set up test database and environment"
 task :test_setup do
   Dir.chdir("spec/dummy") do
+    system("bundle install")
     system("bundle exec rails db:drop db:create db:migrate RAILS_ENV=test")
   end
 end
