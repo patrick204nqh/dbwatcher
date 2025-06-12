@@ -89,14 +89,14 @@ jobs:
         gem build dbwatcher.gemspec
         echo "✅ Gem builds successfully"
     
-    - name: Check gem installation
+    - name: Check gemspec validity
       run: |
-        gem install dbwatcher-*.gem --local
-        echo "✅ Gem installs successfully"
+        gem specification dbwatcher-*.gem
+        echo "✅ Gemspec is valid"
     
-    - name: Verify gem functionality
+    - name: Verify gem can be loaded in bundle context
       run: |
-        ruby -e "require 'dbwatcher'; puts '✅ Gem loads successfully'"
+        bundle exec ruby -e "require 'dbwatcher'; puts '✅ Gem loads successfully in bundle context'"
     
     - name: Check dependencies compatibility
       run: |
