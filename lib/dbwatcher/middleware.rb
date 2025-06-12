@@ -25,7 +25,7 @@ module Dbwatcher
     private
 
     def should_track?(env)
-      env["QUERY_STRING"]&.include?("dbwatch=true")
+      env["QUERY_STRING"]&.include?("dbwatch=true") || false
     end
 
     def build_metadata(env)
