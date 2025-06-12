@@ -29,8 +29,30 @@ task test: %i[spec acceptance]
 require "rubocop/rake_task"
 RuboCop::RakeTask.new
 
+# Security tasks
+desc "Run bundle audit to check for security vulnerabilities"
+task :bundle_audit do
+  require "bundler/audit/task"
+  Bundler::Audit::Task.new
+end
+
+desc "Run Brakeman security scanner"
+task :brakeman do
+  require "brakeman"
+  result = Brakeman.run app_path: "spec/dummy", config_file: ".brakeman.yml"
+  if result.warnings.any? || result.errors.any?
+    puts "❌ Brakeman found security issues"
+    exit 1
+  else
+    puts "✅ Brakeman security check passed"
+  end
+end
+
+desc "Run all security checks"
+task security: %i[bundle_audit brakeman]
+
 # Default task
-task default: %i[test rubocop]
+task default: %i[test rubocop security]
 
 # Setup tasks
 desc "Set up test database and environment"

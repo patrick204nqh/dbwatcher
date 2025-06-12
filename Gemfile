@@ -15,4 +15,6 @@ gem "selenium-webdriver", "~> 4.0"
 gem "sprockets-rails", "~> 3.4"
 gem "sqlite3", "~> 1.4"
 
+gem "brakeman", "~> 6.0"
+gem "bundler-audit", "~> 0.9"
 gem "rubocop", "~> 1.21"

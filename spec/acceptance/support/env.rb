@@ -19,9 +19,9 @@ World(RSpec::Mocks::ExampleMethods)
 def expect_page_success
   expect(page).to have_css("body")
   # Only check status code for drivers that support it (rack_test)
-  if page.driver.class.to_s.include?("RackTest")
-    expect(page.status_code).to eq(200)
-  end
+  return unless page.driver.class.to_s.include?("RackTest")
+
+  expect(page.status_code).to eq(200)
 end
 
 # Configure RSpec mocks

@@ -1,0 +1,19 @@
+{
+  "application_path": ".",
+  "rails_root": "spec/dummy",
+  "quiet": false,
+  "confidence_level": 2,
+  "check_arguments": true,
+  "exit_on_warn": true,
+  "format": "text",
+  "output_files": [],
+  "parallel_checks": true,
+  "check_modules": true,
+  "relative_paths": true,
+  "summary_only": false,
+  "print_report": true,
+  "table_width": 120,
+  "pager": false,
+  "color": true,
+  "ignore_file": ".brakeman.ignore"
+}

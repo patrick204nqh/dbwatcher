@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  RUBY_VERSION: '3.3'
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Ruby ${{ env.RUBY_VERSION }}
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ env.RUBY_VERSION }}
+        bundler-cache: true
+    
+    - name: Set up test database
+      run: |
+        cd spec/dummy
+        bundle exec rails db:drop db:create db:migrate RAILS_ENV=test
+    
+    - name: Run RSpec unit tests
+      run: bundle exec rake unit
+    
+    - name: Run Cucumber acceptance tests
+      run: bundle exec rake acceptance
+
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Ruby ${{ env.RUBY_VERSION }}
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ env.RUBY_VERSION }}
+        bundler-cache: true
+    
+    - name: Run RuboCop
+      run: bundle exec rubocop
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Ruby ${{ env.RUBY_VERSION }}
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ env.RUBY_VERSION }}
+        bundler-cache: true
+    
+    - name: Run security checks
+      run: bundle exec rake security
+
+  compatibility:
+    name: Compatibility Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Ruby ${{ env.RUBY_VERSION }}
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ env.RUBY_VERSION }}
+        bundler-cache: true
+    
+    - name: Check gem build
+      run: |
+        gem build dbwatcher.gemspec
+        echo "✅ Gem builds successfully"
+    
+    - name: Check gem installation
+      run: |
+        gem install dbwatcher-*.gem --local
+        echo "✅ Gem installs successfully"
+    
+    - name: Verify gem functionality
+      run: |
+        ruby -e "require 'dbwatcher'; puts '✅ Gem loads successfully'"
+    
+    - name: Check dependencies compatibility
+      run: |
+        bundle outdated --strict || echo "📦 Some dependencies could be updated"
+        echo "✅ Dependencies check completed"
