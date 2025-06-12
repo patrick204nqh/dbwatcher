@@ -1,0 +1,133 @@
+version: 2
+updates:
+  # Ruby dependencies (Bundler)
+  - package-ecosystem: "bundler"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "patrick204nqh"
+    assignees:
+      - "patrick204nqh"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "lang: ruby"
+      - "automated"
+      - "bot: dependabot"
+      - "type: maintenance"
+      - "status: needs-review"
+      - "size: sm" # Most dependency updates are small
+
+    # Pull request configuration
+    pull-request-branch-name:
+      separator: "/"
+
+    # Rebase strategy for better conflict resolution
+    rebase-strategy: "auto"
+
+    # Group related dependencies together
+    groups:
+      # Development and testing tools
+      development-dependencies:
+        dependency-type: "development"
+        patterns:
+          - "rspec*"
+          - "rubocop*"
+          - "simplecov*"
+          - "brakeman*"
+          - "steep*"
+          - "debug*"
+          - "yard*"
+          - "rake*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # Production dependencies
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # Security updates (highest priority - separate group for visibility)
+      security-dependencies:
+        dependency-type: "production"
+        applies-to: "security-updates"
+
+    # Versioning strategy for more predictable updates
+    versioning-strategy: "increase"
+
+    # Security updates get priority
+    allow:
+      - dependency-type: "all"
+
+    ignore:
+      # Don't update Ruby version automatically
+      - dependency-name: "ruby"
+      # Ignore major version updates for stable dependencies
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "patrick204nqh"
+    assignees:
+      - "patrick204nqh" # Assign to yourself for better visibility
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "tech: github-actions"
+      - "tech: ci-cd"
+      - "automated"
+      - "bot: dependabot"
+      - "type: maintenance"
+      - "status: needs-review"
+      - "size: xs" # Action updates are usually very small
+
+    # Pull request configuration
+    pull-request-branch-name:
+      separator: "/"
+
+    # Rebase strategy for better conflict resolution
+    rebase-strategy: "auto"
+
+    groups:
+      # Group common action updates
+      ci-actions:
+        patterns:
+          - "actions/*"
+          - "github/codeql-action"
+          - "ruby/setup-ruby"
+          - "qltysh/qlty-action"
+        update-types:
+          - "minor"
+          - "patch"
+
+      # Major version updates (separate for careful review)
+      major-action-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+
+    # Allow all updates but be selective with major versions
+    allow:
+      - dependency-type: "all"
