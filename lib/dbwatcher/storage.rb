@@ -17,7 +17,7 @@ module Dbwatcher
 
         # Clean old sessions if needed
         cleanup_old_sessions
-      rescue => e
+      rescue StandardError => e
         warn "Failed to save session #{session&.id}: #{e.message}"
       end
 
@@ -32,7 +32,7 @@ module Dbwatcher
       rescue JSON::ParserError => e
         warn "Failed to parse session file #{id}: #{e.message}"
         nil
-      rescue => e
+      rescue StandardError => e
         warn "Failed to load session #{id}: #{e.message}"
         nil
       end
@@ -45,13 +45,13 @@ module Dbwatcher
       rescue JSON::ParserError => e
         warn "Failed to parse sessions index: #{e.message}"
         []
-      rescue => e
+      rescue StandardError => e
         warn "Failed to load sessions: #{e.message}"
         []
       end
 
       def reset!
-        FileUtils.rm_rf(storage_path) if Dir.exist?(storage_path)
+        FileUtils.rm_rf(storage_path)
         ensure_storage_directory
       end
 
@@ -90,7 +90,7 @@ module Dbwatcher
         index = index.first(Dbwatcher.configuration.max_sessions)
 
         File.write(index_file, JSON.pretty_generate(index))
-      rescue => e
+      rescue StandardError => e
         warn "Failed to update sessions index: #{e.message}"
       end
 
@@ -102,7 +102,7 @@ module Dbwatcher
         Dir.glob(File.join(sessions_path, "*.json")).each do |file|
           File.delete(file) if File.mtime(file) < cutoff_date
         end
-      rescue => e
+      rescue StandardError => e
         warn "Failed to cleanup old sessions: #{e.message}"
       end
     end

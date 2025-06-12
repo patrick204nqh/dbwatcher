@@ -41,13 +41,13 @@ module Dbwatcher
 
     def track_database_change(operation:, changes:)
       Dbwatcher::Tracker.record_change({
-        table_name: self.class.table_name,
-        record_id: id,
-        operation: operation,
-        timestamp: Time.now.strftime("%Y-%m-%dT%H:%M:%S%z"),
-        changes: changes,
-        record_snapshot: attributes
-      })
+                                         table_name: self.class.table_name,
+                                         record_id: id,
+                                         operation: operation,
+                                         timestamp: Time.now.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                                         changes: changes,
+                                         record_snapshot: attributes
+                                       })
     end
 
     def build_change(column, old_value, new_value)

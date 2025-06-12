@@ -17,7 +17,7 @@ module Dbwatcher
       else
         @app.call(env)
       end
-    rescue => e
+    rescue StandardError => e
       warn "Dbwatcher middleware error: #{e.message}"
       @app.call(env)
     end

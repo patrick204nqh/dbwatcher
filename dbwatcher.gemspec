@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.authors = ["Huy Nguyen"]
   spec.email = ["patrick204nqh@gmail.com"]
 
-  spec.summary = "A gem for tracking database changes in Ruby applications."
-  spec.description = "DB Watcher is a Ruby gem that provides an easy way to track changes in your database schema and data. It helps you monitor and manage database changes effectively."
+  spec.summary = "Track and visualize database changes in Rails applications"
+  spec.description = "DB Watcher helps developers debug Rails applications by tracking all database changes"
   spec.homepage = "https://github.com/patrick204nqh/dbwatcher"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.1.0"
@@ -19,15 +19,23 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = "https://github.com/patrick204nqh/dbwatcher"
   spec.metadata["changelog_uri"] = "https://github.com/patrick204nqh/dbwatcher/blob/main/CHANGELOG.md"
 
-  spec.summary = "Track and visualize database changes in Rails applications"
-  spec.description = "DB Watcher helps developers debug Rails applications by tracking all database changes"
-  spec.homepage = "https://github.com/patrick204nqh/db-watcher"
-  spec.license = "MIT"
-  spec.required_ruby_version = ">= 3.1.0"
+  spec.files = Dir["{app,config,lib,bin}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
 
-  spec.files = Dir["{app,config,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
+  spec.bindir = "bin"
+  spec.executables = spec.files.grep(%r{\Abin/}) { |f| File.basename(f) }
+  spec.require_paths = ["lib"]
 
   spec.add_dependency "rails", ">= 6.0"
+
+  # Testing dependencies
+  spec.add_development_dependency "capybara", "~> 3.0"
+  spec.add_development_dependency "cucumber-rails", "~> 3.1"
+  spec.add_development_dependency "database_cleaner-active_record", "~> 2.0"
+  spec.add_development_dependency "rspec-rails", "~> 6.0"
+  spec.add_development_dependency "selenium-webdriver", "~> 4.0"
+  spec.add_development_dependency "sprockets-rails", "~> 3.4"
+  spec.add_development_dependency "sqlite3", "~> 1.4"
+  spec.add_development_dependency "webrick", "~> 1.8"
 
   spec.metadata["rubygems_mfa_required"] = "true"
 end

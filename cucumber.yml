@@ -1,0 +1,5 @@
+default: --require spec/acceptance --format progress --color --publish-quiet spec/acceptance/features
+chrome: CAPYBARA_DRIVER=selenium_chrome --require spec/acceptance --format progress --color --publish-quiet spec/acceptance/features
+chrome_headless: CAPYBARA_DRIVER=selenium_chrome_headless --require spec/acceptance --format progress --color --publish-quiet spec/acceptance/features
+firefox: CAPYBARA_DRIVER=selenium_firefox --require spec/acceptance --format progress --color --publish-quiet spec/acceptance/features
+firefox_headless: CAPYBARA_DRIVER=selenium_firefox_headless --require spec/acceptance --format progress --color --publish-quiet spec/acceptance/features

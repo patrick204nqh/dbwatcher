@@ -1,3 +1,4 @@
+# Gem-specific files
 /.bundle/
 /.yardoc
 /_yardoc/
@@ -6,6 +7,81 @@
 /pkg/
 /spec/reports/
 /tmp/
+*.gem
 
-# rspec failure tracking
+# RSpec
 .rspec_status
+spec/examples.txt
+
+# Ruby compiled files
+*.rbc
+*.sassc
+.rbc
+.rvmrc
+
+# Gems and dependencies
+/.config
+/InstalledFiles
+/test/tmp/
+/test/version_tmp/
+
+# Environment variables and secrets
+.env*
+
+# Rails application files
+log/*.log
+.byebug_history
+/config/master.key
+/config/credentials.yml.enc
+/public/assets
+/public/packs
+/public/packs-test
+/node_modules
+/yarn-error.log
+yarn-debug.log*
+
+# Database files
+*.sqlite3
+*.sqlite3-*
+*.sqlite3-journal
+db/*.sqlite3
+db/*.sqlite3-*
+
+# IDEs and editors
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Test coverage
+coverage/
+.simplecov
+
+# DBWatcher specific
+tmp/dbwatcher/
+tmp/dbwatcher_demo/
+/spec/dummy/db/*.sqlite3
+/spec/dummy/db/*.sqlite3-*
+/spec/dummy/log/*.log
+/spec/dummy/tmp/
+/spec/dummy/storage/
+/spec/dummy/node_modules/
+
+# Backup and temporary files
+*.backup
+*.bak
+*.orig
+*.tmp
+*.temp

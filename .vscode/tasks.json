@@ -1,0 +1,100 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Unit Tests",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "rake", "unit"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Run Acceptance Tests",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "rake", "acceptance"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Run All Tests",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "rake", "test"],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Run Browser Tests (Chrome)",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "cucumber", "-p", "chrome"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Start Test Server",
+      "type": "shell",
+      "command": "bash",
+      "args": ["-c", "cd spec/dummy && BUNDLE_GEMFILE=Gemfile bundle exec rails server -e test -p 3001"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      },
+      "isBackground": true
+    },
+    {
+      "label": "RuboCop",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "rubocop"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Build Gem",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "rake", "build"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    }
+  ]
+}

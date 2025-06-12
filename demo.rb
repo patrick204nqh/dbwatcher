@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
+
 # Demo script for the Dbwatcher gem
 
 require "bundler/setup"

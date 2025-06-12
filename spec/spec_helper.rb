@@ -12,4 +12,10 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  # Shared configuration for all tests
+  config.order = :random
+
+  # Color output
+  config.color = true
 end

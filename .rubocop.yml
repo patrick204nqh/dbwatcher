@@ -1,8 +1,64 @@
 AllCops:
   TargetRubyVersion: 3.1
+  NewCops: enable
+  SuggestExtensions: false
 
+# Exclude generated/vendor files
+  Exclude:
+    - "vendor/**/*"
+    - "spec/dummy/bin/**/*"
+    - "spec/dummy/config/puma.rb"
+    - "spec/dummy/config/environments/**/*"
+    - "spec/dummy/config/initializers/**/*"
+    - "spec/dummy/db/schema.rb"
+    - "bin/**/*"
+
+# Gemspec rules
+Gemspec/DevelopmentDependencies:
+  Enabled: false
+
+# Style rules
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
+
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
+
+# Metrics - be more lenient for tests and demo files
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+    - "demo.rb"
+    - "*.gemspec"
+
+Metrics/MethodLength:
+  Max: 15
+
+Metrics/AbcSize:
+  Max: 25
+
+# Layout rules
+Layout/LineLength:
+  Max: 120
+  Exclude:
+    - "spec/**/*"
+
+# Lint rules
+Lint/ScriptPermission:
+  Exclude:
+    - "demo.rb"
+
+Lint/Debugger:
+  Exclude:
+    - "spec/**/*"
+
+# Rails-specific disabled for now since we don't have rubocop-rails gem
+# Rails/FilePath:
+#   Enabled: false
