@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DBWatcher Test Environment</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .dbwatch-panel {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde047 100%);
+      border: 2px solid #f59e0b;
+    }
+    .test-button {
+      transition: all 0.2s ease;
+    }
+    .test-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-4xl font-bold text-gray-900 mb-2">🔍 DBWatcher Test Environment</h1>
+      <p class="text-gray-600">Enhanced dummy Rails app for comprehensive database tracking testing</p>
+    </div>
+
+    <!-- Stats Panel -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+      <h2 class="text-xl font-semibold mb-4">📊 Database Statistics</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-blue-600"><%= @total_users || User.count %></div>
+          <div class="text-sm text-gray-500">Users</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-green-600"><%= @active_users || User.where(active: true).count %></div>
+          <div class="text-sm text-gray-500">Active</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-purple-600"><%= Post.count %></div>
+          <div class="text-sm text-gray-500">Posts</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-orange-600"><%= Comment.count %></div>
+          <div class="text-sm text-gray-500">Comments</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-pink-600"><%= Tag.count %></div>
+          <div class="text-sm text-gray-500">Tags</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-indigo-600"><%= Role.count %></div>
+          <div class="text-sm text-gray-500">Roles</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DBWatcher Testing Panel -->
+    <div class="dbwatch-panel rounded-lg p-6 mb-8">
+      <div class="flex items-center mb-4">
+        <h2 class="text-2xl font-bold text-amber-800">🔍 DBWatcher Testing Panel</h2>
+        <span class="ml-3 bg-amber-600 text-white px-2 py-1 rounded text-sm font-medium">TRACKING READY</span>
+      </div>
+      
+      <p class="text-amber-700 mb-6">
+        <strong>How to use:</strong> Click any button below to trigger database operations. 
+        All buttons include <code class="bg-amber-100 px-1 rounded">?dbwatch=true</code> to enable tracking.
+        Visit <a href="/dbwatcher" class="text-amber-800 font-semibold hover:underline">/dbwatcher</a> to view results.
+      </p>
+
+      <!-- Simple Operations -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-amber-800 mb-3">📝 Simple Operations</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <%= link_to "New User", new_user_path + "?dbwatch=true", 
+              class: "test-button bg-green-500 text-white px-4 py-3 rounded-lg text-center hover:bg-green-600 font-medium" %>
+          <%= link_to "View Posts", posts_path + "?dbwatch=true", 
+              class: "test-button bg-blue-500 text-white px-4 py-3 rounded-lg text-center hover:bg-blue-600 font-medium" %>
+          <%= link_to "Manage Tags", tags_path + "?dbwatch=true", 
+              class: "test-button bg-purple-500 text-white px-4 py-3 rounded-lg text-center hover:bg-purple-600 font-medium" %>
+          <%= link_to "View Stats", stats_path + "?dbwatch=true", 
+              class: "test-button bg-indigo-500 text-white px-4 py-3 rounded-lg text-center hover:bg-indigo-600 font-medium" %>
+        </div>
+      </div>
+
+      <!-- Complex Operations -->
+      <div class="mb-4">
+        <h3 class="text-lg font-semibold text-amber-800 mb-3">⚡ Complex Operations</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <%= link_to "Complex Transaction", testing_complex_transaction_path + "?dbwatch=true", 
+              method: :post, 
+              class: "test-button bg-emerald-500 text-white px-4 py-3 rounded-lg text-center hover:bg-emerald-600 font-medium",
+              confirm: "This will create a user with profile, posts, and comments in a transaction. Continue?" %>
+          
+          <%= link_to "Mass Updates", testing_mass_updates_path + "?dbwatch=true", 
+              method: :post, 
+              class: "test-button bg-cyan-500 text-white px-4 py-3 rounded-lg text-center hover:bg-cyan-600 font-medium",
+              confirm: "This will perform bulk updates across multiple tables. Continue?" %>
+          
+          <%= link_to "Cascade Deletes", testing_cascade_deletes_path + "?dbwatch=true", 
+              method: :post, 
+              class: "test-button bg-red-500 text-white px-4 py-3 rounded-lg text-center hover:bg-red-600 font-medium",
+              confirm: "This will delete a user and all associated records. Continue?" %>
+          
+          <%= link_to "Nested Creation", testing_nested_operations_path + "?dbwatch=true", 
+              method: :post, 
+              class: "test-button bg-violet-500 text-white px-4 py-3 rounded-lg text-center hover:bg-violet-600 font-medium" %>
+        </div>
+      </div>
+
+      <!-- Advanced Operations -->
+      <div>
+        <h3 class="text-lg font-semibold text-amber-800 mb-3">🚀 Advanced Operations</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <%= link_to "Bulk Operations", testing_bulk_operations_path + "?dbwatch=true", 
+              method: :post, 
+              class: "test-button bg-orange-500 text-white px-4 py-3 rounded-lg text-center hover:bg-orange-600 font-medium" %>
+          
+          <%= link_to "Concurrent Updates", testing_concurrent_updates_path + "?dbwatch=true", 
+              method: :post, 
+              class: "test-button bg-pink-500 text-white px-4 py-3 rounded-lg text-center hover:bg-pink-600 font-medium" %>
+          
+          <%= link_to "Nested Operations", testing_nested_operations_path + "?dbwatch=true", 
+              method: :post, 
+              class: "test-button bg-teal-500 text-white px-4 py-3 rounded-lg text-center hover:bg-teal-600 font-medium" %>
+          
+          <%= link_to "Trigger Errors", testing_trigger_errors_path + "?dbwatch=true", 
+              method: :post, 
+              class: "test-button bg-yellow-500 text-black px-4 py-3 rounded-lg text-center hover:bg-yellow-600 font-medium",
+              confirm: "This will intentionally trigger database errors for testing. Continue?" %>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Management Section -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">👥 User Management</h2>
+        <div class="space-x-3">
+          <%= link_to "➕ Add User", new_user_path + "?dbwatch=true", 
+              class: "bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 font-medium" %>
+          <%= link_to "🔄 Refresh", users_path + "?dbwatch=true", 
+              class: "bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 font-medium" %>
+          <%= link_to "🗑️ Reset Data", reset_data_users_path + "?dbwatch=true", 
+              method: :post,
+              confirm: "This will delete ALL data and restore default seed data. Are you sure?",
+              class: "bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 font-medium" %>
+        </div>
+      </div>
+
+      <!-- Users Grid -->
+      <div class="grid gap-4">
+        <% (@users || User.includes(:profile, :posts, :roles).limit(20)).each do |user| %>
+          <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <div class="flex items-center space-x-3 mb-2">
+                  <h3 class="text-lg font-semibold text-gray-900"><%= user.name %></h3>
+                  <span class="<%= user.active? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %> px-2 py-1 rounded-full text-xs font-medium">
+                    <%= user.active? ? 'Active' : 'Inactive' %>
+                  </span>
+                  <% if user.roles.any? %>
+                    <% user.roles.each do |role| %>
+                      <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                        <%= role.name %>
+                      </span>
+                    <% end %>
+                  <% end %>
+                </div>
+                
+                <p class="text-gray-600 mb-2">
+                  📧 <%= user.email %> 
+                  <% if user.age %>| 🎂 <%= user.age %> years<% end %>
+                  <% if user.salary %>| 💰 $<%= number_with_delimiter(user.salary) %><% end %>
+                </p>
+                
+                <div class="text-sm text-gray-500 space-x-4">
+                  <span>📝 <%= user.posts.count %> posts</span>
+                  <span>💬 <%= user.comments.count %> comments</span>
+                  <% if user.last_login_at %>
+                    <span>🕐 Last seen <%= time_ago_in_words(user.last_login_at) %> ago</span>
+                  <% end %>
+                </div>
+                
+                <% if user.profile&.bio %>
+                  <p class="text-sm text-gray-600 mt-2 italic"><%= truncate(user.profile.bio, length: 100) %></p>
+                <% end %>
+              </div>
+              
+              <div class="flex space-x-2 ml-4">
+                <%= link_to "👁️", user_path(user) + "?dbwatch=true", 
+                    class: "text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50",
+                    title: "View" %>
+                <%= link_to "✏️", edit_user_path(user) + "?dbwatch=true", 
+                    class: "text-green-600 hover:text-green-800 px-2 py-1 rounded hover:bg-green-50",
+                    title: "Edit" %>
+                <%= link_to "🔄", toggle_active_user_path(user) + "?dbwatch=true", 
+                    method: :patch,
+                    class: "text-orange-600 hover:text-orange-800 px-2 py-1 rounded hover:bg-orange-50",
+                    title: user.active? ? "Deactivate" : "Activate" %>
+                <%= link_to "🗑️", user_path(user) + "?dbwatch=true", 
+                    method: :delete, 
+                    confirm: "Delete #{user.name}? This will cascade delete all associated records.",
+                    class: "text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50",
+                    title: "Delete" %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+        
+        <% if (@users || User.all).empty? %>
+          <div class="text-center py-12 text-gray-500">
+            <div class="text-4xl mb-4">👤</div>
+            <h3 class="text-lg font-medium mb-2">No users found</h3>
+            <p class="mb-4">Get started by creating some test data.</p>
+            <%= link_to "🌱 Run Seeds", "#", 
+                onclick: "if(confirm('Run db:seed to create test data?')) { alert('Run: bundle exec rails db:seed in terminal'); }",
+                class: "bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 font-medium" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-8 text-center text-gray-500 text-sm">
+      <p>🔍 DBWatcher Test Environment • Built for comprehensive database tracking testing</p>
+      <p class="mt-1">
+        Quick links: 
+        <a href="/dbwatcher" class="text-blue-600 hover:underline">DBWatcher Dashboard</a> •
+        <a href="/stats?dbwatch=true" class="text-blue-600 hover:underline">Stats API</a> •
+        <a href="/posts?dbwatch=true" class="text-blue-600 hover:underline">Posts</a> •
+        <a href="/tags?dbwatch=true" class="text-blue-600 hover:underline">Tags</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>

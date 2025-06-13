@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tags - DBWatcher Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold">🏷️ Tags Management</h1>
+      <div class="space-x-3">
+        <%= link_to "➕ New Tag", new_tag_path + "?dbwatch=true", 
+            class: "bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600" %>
+        <%= link_to "← Back to Users", users_path + "?dbwatch=true", 
+            class: "bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600" %>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div>
+          <div class="text-2xl font-bold text-blue-600"><%= @tag_stats[:total] %></div>
+          <div class="text-sm text-gray-500">Total Tags</div>
+        </div>
+        <div>
+          <div class="text-2xl font-bold text-green-600"><%= @tag_stats[:with_posts] %></div>
+          <div class="text-sm text-gray-500">Tags with Posts</div>
+        </div>
+        <div>
+          <div class="text-2xl font-bold text-purple-600"><%= @tags.sum { |tag| tag.posts.count } %></div>
+          <div class="text-sm text-gray-500">Total Assignments</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tags Grid -->
+    <div class="grid gap-4">
+      <% @tags.each do |tag| %>
+        <div class="bg-white rounded-lg shadow p-4">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+              <div class="w-4 h-4 rounded-full" style="background-color: <%= tag.color %>"></div>
+              <div>
+                <h3 class="font-semibold"><%= tag.name %></h3>
+                <p class="text-sm text-gray-600"><%= tag.description if tag.description.present? %></p>
+                <p class="text-xs text-gray-500">
+                  <%= tag.posts.count %> posts • Created <%= tag.created_at.strftime('%B %d, %Y') %>
+                </p>
+              </div>
+            </div>
+            <div class="flex space-x-2">
+              <%= link_to "Edit", edit_tag_path(tag) + "?dbwatch=true", 
+                  class: "text-blue-600 hover:underline" %>
+              <%= link_to "Delete", tag_path(tag) + "?dbwatch=true", 
+                  method: :delete, 
+                  confirm: "Delete tag '#{tag.name}'? This will untag #{tag.posts.count} posts.",
+                  class: "text-red-600 hover:underline" %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</body>
+</html>

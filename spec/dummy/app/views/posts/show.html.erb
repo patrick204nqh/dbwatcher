@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title><%= @post.title %> - DBWatcher Test App</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800"><%= @post.title %></h1>
+          <div class="flex items-center space-x-4 text-gray-600 mt-2">
+            <span>By <%= @post.user.name %></span>
+            <span>•</span>
+            <span><%= @post.created_at.strftime('%B %d, %Y') %></span>
+            <span>•</span>
+            <span><%= pluralize(@post.views_count, 'view') %></span>
+          </div>
+        </div>
+        <div class="space-x-2">
+          <%= link_to "← Back to Posts", posts_path, 
+              class: "bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600" %>
+          <%= link_to "Edit Post", edit_post_path(@post), 
+              class: "bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Post Content -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+      <div class="px-6 py-8">
+        <!-- Post Meta -->
+        <div class="flex items-center justify-between mb-6 pb-4 border-b">
+          <div class="flex items-center space-x-4">
+            <span class="px-3 py-1 bg-<%= @post.status == 'published' ? 'green' : @post.status == 'draft' ? 'yellow' : 'gray' %>-100 text-<%= @post.status == 'published' ? 'green' : @post.status == 'draft' ? 'yellow' : 'gray' %>-800 rounded-full text-sm font-medium">
+              <%= @post.status.titleize %>
+            </span>
+            <% if @post.featured %>
+              <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                Featured
+              </span>
+            <% end %>
+          </div>
+          <div class="text-sm text-gray-500">
+            <% if @post.published_at %>
+              Published <%= @post.published_at.strftime('%B %d, %Y at %I:%M %p') %>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Excerpt -->
+        <% if @post.excerpt.present? %>
+          <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400">
+            <p class="text-blue-800 italic"><%= @post.excerpt %></p>
+          </div>
+        <% end %>
+
+        <!-- Content -->
+        <div class="prose max-w-none">
+          <%= simple_format(@post.content) %>
+        </div>
+
+        <!-- Tags -->
+        <% if @post.tags.any? %>
+          <div class="mt-8 pt-6 border-t">
+            <h3 class="text-sm font-medium text-gray-700 mb-3">Tags:</h3>
+            <div class="flex flex-wrap gap-2">
+              <% @post.tags.each do |tag| %>
+                <%= link_to tag_path(tag), 
+                    class: "px-3 py-1 bg-#{tag.color}-100 text-#{tag.color}-800 rounded-full text-sm hover:bg-#{tag.color}-200" do %>
+                  <%= tag.name %>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Comments Section -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+      <div class="px-6 py-4 border-b bg-gray-50">
+        <h2 class="text-xl font-semibold text-gray-800">
+          Comments (<%= @post.comments.count %>)
+        </h2>
+      </div>
+
+      <div class="px-6 py-6">
+        <!-- Add Comment Form -->
+        <%= form_with model: [@post, @new_comment], url: post_comments_path(@post) + "?dbwatch=true", local: true do |f| %>
+          <div class="mb-6">
+            <div class="mb-4">
+              <%= f.label :content, "Add a comment", class: "block text-sm font-medium text-gray-700 mb-2" %>
+              <%= f.text_area :content, rows: 3,
+                  class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                  placeholder: "Share your thoughts..." %>
+            </div>
+            <div class="flex justify-end">
+              <%= f.submit "Post Comment", 
+                  class: "bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" %>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Comments List -->
+        <div class="space-y-6">
+          <% @comments.each do |comment| %>
+            <div class="border-l-4 border-gray-200 pl-4">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2">
+                  <span class="font-medium text-gray-800"><%= comment.user.name %></span>
+                  <span class="text-sm text-gray-500">
+                    <%= time_ago_in_words(comment.created_at) %> ago
+                  </span>
+                  <% unless comment.approved %>
+                    <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">
+                      Pending Approval
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+              <p class="text-gray-700"><%= simple_format(comment.content) %></p>
+              
+              <!-- Nested Comments -->
+              <% if comment.replies.any? %>
+                <div class="mt-4 ml-6 space-y-4">
+                  <% comment.replies.each do |reply| %>
+                    <div class="border-l-4 border-blue-200 pl-4">
+                      <div class="flex items-center space-x-2 mb-1">
+                        <span class="font-medium text-gray-800"><%= reply.user.name %></span>
+                        <span class="text-sm text-gray-500">
+                          <%= time_ago_in_words(reply.created_at) %> ago
+                        </span>
+                      </div>
+                      <p class="text-gray-700"><%= simple_format(reply.content) %></p>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <% if @comments.empty? %>
+            <div class="text-center py-8 text-gray-500">
+              <p>No comments yet. Be the first to share your thoughts!</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

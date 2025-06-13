@@ -1,13 +1,26 @@
-# Dbwatcher
+# DBWatcher 🔍
 
-Track and visualize database changes in your Rails application for easier debugging.
+Track and visualize database changes in your Rails application for easier debugging and development.
 
-## Installation
+DBWatcher is a powerful Rails gem that captures, stores, and visualizes all database operations in your application. Perfect for debugging complex data flows, understanding application behavior, and optimizing database performance.
+
+## ✨ Features
+
+- **📊 Real-time Database Tracking**: Monitor all SQL operations (INSERT, UPDATE, DELETE, SELECT)
+- **🎯 Selective Tracking**: Track specific code blocks or entire requests
+- **📱 Web Dashboard**: Beautiful, responsive interface built with Alpine.js and Tailwind CSS
+- **💾 File-based Storage**: No additional database setup required
+- **🔗 URL-based Activation**: Simple `?dbwatch=true` parameter enables tracking
+- **🧹 Automatic Cleanup**: Configurable session cleanup and storage management
+- **⚡ Zero Dependencies**: Works with any Rails application without complex setup
+- **🔒 Development-focused**: Designed for development and testing environments
+
+## 🚀 Installation
 
 Add to your Gemfile:
 
 ```ruby
-gem 'dbwatcher'
+gem 'dbwatcher', group: :development
 ```
 
 Then run:
@@ -16,110 +29,254 @@ Then run:
 bundle install
 ```
 
-### Manual Route Mounting (if automatic mounting fails)
+The engine will automatically mount at `/dbwatcher` in your Rails application.
 
-If you encounter route helper errors, manually mount the engine in your main Rails app's `config/routes.rb`:
+### Manual Route Mounting (Optional)
+
+If you need custom mounting, add to your `config/routes.rb`:
 
 ```ruby
 Rails.application.routes.draw do
-  mount Dbwatcher::Engine => "/dbwatcher"
+  mount Dbwatcher::Engine => "/dbwatcher" if Rails.env.development?
   # ... your other routes
 end
 ```
 
-## Usage
+## 📖 Usage
 
-### Basic tracking:
+### 🎯 Targeted Tracking
+
+Track specific code blocks with detailed context:
 
 ```ruby
-Dbwatcher.track(name: "User Registration") do
-  user = User.create!(name: "John", email: "john@example.com")
-  user.create_profile!(bio: "Developer")
+Dbwatcher.track(name: "User Registration Flow") do
+  user = User.create!(
+    name: "John Doe", 
+    email: "john@example.com"
+  )
+  
+  user.create_profile!(
+    bio: "Software Developer",
+    location: "San Francisco"
+  )
+  
+  user.posts.create!(
+    title: "Welcome Post",
+    content: "Hello World!"
+  )
 end
 ```
 
-### Automatic tracking via URL:
+### 🌐 URL-based Tracking
+
+Enable tracking for any request by adding `?dbwatch=true`:
 
 ```
+# Track a user show page
 GET /users/123?dbwatch=true
+
+# Track a form submission
+POST /users?dbwatch=true
+
+# Track API endpoints
+GET /api/posts?dbwatch=true
 ```
 
-### View tracked changes:
+### 📊 View Tracking Results
 
-Visit `/dbwatcher` in your Rails app to see the UI.
+Visit `/dbwatcher` in your Rails application to access the dashboard where you can:
+- Browse all tracking sessions
+- View detailed SQL queries and timing
+- Analyze database operation patterns
+- Monitor application performance
 
-### Configuration:
+## ⚙️ Configuration
+
+Create an initializer for custom configuration:
 
 ```ruby
 # config/initializers/dbwatcher.rb
 Dbwatcher.configure do |config|
+  # Storage location for tracking data
   config.storage_path = Rails.root.join('tmp', 'dbwatcher')
+  
+  # Enable/disable tracking (default: development only)
   config.enabled = Rails.env.development?
+  
+  # Maximum number of sessions to keep
   config.max_sessions = 100
+  
+  # Automatic cleanup after N days
   config.auto_clean_after_days = 7
+  
+  # Include query parameters in tracking
+  config.include_params = true
+  
+  # Exclude certain SQL patterns
+  config.excluded_patterns = [
+    /SHOW TABLES/,
+    /DESCRIBE/
+  ]
 end
 ```
 
-## Troubleshooting
+## 🏗️ Development & Testing
+
+This project includes a comprehensive dummy Rails application for testing and development.
+
+### Running Tests
+
+```bash
+# Run all tests
+bundle exec rake test
+
+# Run specific test suites
+bundle exec rake unit          # Unit tests
+bundle exec rake acceptance    # Feature tests
+bundle exec cucumber -p chrome # Browser tests
+```
+
+### Development Server
+
+```bash
+# Start the dummy application
+cd spec/dummy
+bundle exec rails server -p 3001
+
+# Visit the test interface
+open http://localhost:3001
+
+# Visit DBWatcher dashboard
+open http://localhost:3001/dbwatcher
+```
+
+### Code Quality
+
+```bash
+# Run linter
+bundle exec rubocop
+
+# Auto-fix issues
+bundle exec rubocop --autocorrect
+
+# Security analysis
+bundle exec brakeman
+```
+
+## 🛠️ Troubleshooting
 
 ### Route Helper Errors
 
-If you see errors like `undefined local variable or method 'dbwatcher_sessions_path'`, it means the engine routes aren't properly mounted. Try:
+If you encounter `undefined method 'dbwatcher_sessions_path'`:
 
-1. **Manual mounting**: Add this to your main app's `config/routes.rb`:
+1. **Restart your Rails server** after installing the gem
+2. **Check Rails version** - requires Rails 6.0+
+3. **Manual mounting** - add the mount line to your routes file
 
-   ```ruby
-   Rails.application.routes.draw do
-     mount Dbwatcher::Engine => "/dbwatcher"
-     # ... your other routes
-   end
-   ```
+### Performance Considerations
 
-2. **Restart your Rails server** after adding the gem
+- DBWatcher is designed for development environments
+- Disable in production using `config.enabled = false`
+- Use targeted tracking for performance-sensitive operations
+- Regular cleanup prevents storage bloat
 
-3. **Check your Rails version** - this gem requires Rails 6.0+
+### Storage Location
 
-### Missing ActiveSupport Error
+- Default: `Rails.root/tmp/dbwatcher/`
+- Files are JSON formatted for easy inspection
+- Sessions auto-expire based on configuration
 
-If you see `NameError: uninitialized constant ActiveSupport`, make sure you're using this gem in a Rails application, not a plain Ruby script.
+## 🔧 Advanced Usage
 
-## Features
+### Custom Metadata
 
-- Track all database changes (INSERT, UPDATE, DELETE)
-- File-based storage (no database required)
-- Simple UI with Alpine.js (no complex JavaScript build)
-- Reset button to clear all sessions
-- Automatic cleanup of old sessions
-- Middleware for URL-based tracking
+Add context to your tracking sessions:
 
-## License
-
-MIT
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+```ruby
+Dbwatcher.track(
+  name: "Complex Business Logic",
+  metadata: {
+    user_id: current_user.id,
+    feature_flag: "new_checkout",
+    version: "2.1.0"
+  }
+) do
+  # Your database operations
+end
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+### Conditional Tracking
 
-```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+```ruby
+Dbwatcher.track(name: "Admin Operations") do
+  # This will only track if DBWatcher is enabled
+  User.where(admin: true).update_all(last_seen: Time.current)
+end if Dbwatcher.enabled?
 ```
 
-## Usage
+### Integration with Testing
 
-TODO: Write usage instructions here
+```ruby
+# In your test suite
+RSpec.describe "User Registration" do
+  it "creates user with proper associations" do
+    session_data = nil
+    
+    Dbwatcher.track(name: "Test User Creation") do
+      user = create(:user)
+      expect(user.profile).to be_present
+    end
+    
+    # Analyze the tracked operations
+    expect(Dbwatcher::Storage.last_session).to include_sql(/INSERT INTO users/)
+  end
+end
+```
 
-## Development
+## 📁 Project Structure
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+```
+dbwatcher/
+├── app/
+│   ├── controllers/dbwatcher/    # Web interface controllers
+│   └── views/dbwatcher/          # Dashboard templates
+├── config/
+│   └── routes.rb                 # Engine routes
+├── lib/dbwatcher/
+│   ├── configuration.rb         # Configuration management
+│   ├── engine.rb                # Rails engine
+│   ├── middleware.rb            # Rack middleware
+│   ├── storage.rb               # File-based storage
+│   └── tracker.rb               # Core tracking logic
+└── spec/
+    ├── dummy/                    # Test Rails application
+    ├── acceptance/               # Feature tests
+    └── unit/                     # Unit tests
+```
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+## 🤝 Contributing
 
-## Contributing
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/dbwatcher.
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and add tests
+4. Ensure all tests pass: `bundle exec rake test`
+5. Run the linter: `bundle exec rubocop`
+6. Commit your changes: `git commit -am 'Add amazing feature'`
+7. Push to the branch: `git push origin feature/amazing-feature`
+8. Open a Pull Request
 
-## License
+## 📝 License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+This gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## 🙏 Acknowledgments
+
+- Built with Rails Engine architecture
+- UI powered by Alpine.js and Tailwind CSS
+- Inspired by debugging needs in complex Rails applications
+
+---
+
+**Happy Debugging!** 🐛✨

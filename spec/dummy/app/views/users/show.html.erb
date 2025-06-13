@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title><%= @user.name %> - DBWatcher Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold">👤 <%= @user.name %></h1>
+      <div class="space-x-3">
+        <%= link_to "✏️ Edit", edit_user_path(@user) + "?dbwatch=true", 
+            class: "bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600" %>
+        <%= link_to "← Back to Users", users_path + "?dbwatch=true", 
+            class: "bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600" %>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- User Info -->
+      <div class="lg:col-span-1">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">User Information</h2>
+          
+          <div class="space-y-3">
+            <div>
+              <span class="text-sm text-gray-500">Email:</span>
+              <div class="font-medium"><%= @user.email %></div>
+            </div>
+            
+            <% if @user.age %>
+            <div>
+              <span class="text-sm text-gray-500">Age:</span>
+              <div class="font-medium"><%= @user.age %> years</div>
+            </div>
+            <% end %>
+            
+            <div>
+              <span class="text-sm text-gray-500">Status:</span>
+              <div>
+                <span class="<%= @user.active? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %> px-2 py-1 rounded-full text-xs font-medium">
+                  <%= @user.active? ? 'Active' : 'Inactive' %>
+                </span>
+              </div>
+            </div>
+
+            <% if @user.salary %>
+            <div>
+              <span class="text-sm text-gray-500">Salary:</span>
+              <div class="font-medium">$<%= number_with_delimiter(@user.salary) %></div>
+            </div>
+            <% end %>
+
+            <% if @user.last_login_at %>
+            <div>
+              <span class="text-sm text-gray-500">Last Login:</span>
+              <div class="font-medium"><%= time_ago_in_words(@user.last_login_at) %> ago</div>
+            </div>
+            <% end %>
+
+            <div>
+              <span class="text-sm text-gray-500">Member Since:</span>
+              <div class="font-medium"><%= @user.created_at.strftime('%B %d, %Y') %></div>
+            </div>
+          </div>
+
+          <!-- Profile -->
+          <% if @user.profile %>
+          <div class="mt-6 pt-6 border-t">
+            <h3 class="font-semibold mb-3">Profile</h3>
+            <div class="space-y-2">
+              <% if @user.profile.first_name || @user.profile.last_name %>
+              <div>
+                <span class="text-sm text-gray-500">Full Name:</span>
+                <div><%= [@user.profile.first_name, @user.profile.last_name].compact.join(' ') %></div>
+              </div>
+              <% end %>
+              
+              <% if @user.profile.location %>
+              <div>
+                <span class="text-sm text-gray-500">Location:</span>
+                <div><%= @user.profile.location %></div>
+              </div>
+              <% end %>
+              
+              <% if @user.profile.website %>
+              <div>
+                <span class="text-sm text-gray-500">Website:</span>
+                <div><a href="<%= @user.profile.website %>" target="_blank" class="text-blue-600 hover:underline"><%= @user.profile.website %></a></div>
+              </div>
+              <% end %>
+              
+              <% if @user.profile.bio %>
+              <div>
+                <span class="text-sm text-gray-500">Bio:</span>
+                <div class="text-sm"><%= @user.profile.bio %></div>
+              </div>
+              <% end %>
+            </div>
+          </div>
+          <% end %>
+
+          <!-- Roles -->
+          <% if @user.roles.any? %>
+          <div class="mt-6 pt-6 border-t">
+            <h3 class="font-semibold mb-3">Roles</h3>
+            <div class="flex flex-wrap gap-2">
+              <% @user.roles.each do |role| %>
+                <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                  <%= role.name %>
+                </span>
+              <% end %>
+            </div>
+          </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Posts & Comments -->
+      <div class="lg:col-span-2">
+        <!-- Posts -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 class="text-xl font-semibold mb-4">📝 Recent Posts (<%= @user.posts.count %>)</h2>
+          
+          <% if @posts.any? %>
+            <div class="space-y-4">
+              <% @posts.each do |post| %>
+                <div class="border-l-4 border-blue-500 pl-4">
+                  <h3 class="font-medium">
+                    <%= link_to post.title, post_path(post) + "?dbwatch=true", 
+                        class: "text-blue-600 hover:underline" %>
+                  </h3>
+                  <div class="text-sm text-gray-500 mt-1">
+                    <span class="<%= case post.status
+                                    when 'published' then 'text-green-600'
+                                    when 'draft' then 'text-yellow-600'
+                                    when 'archived' then 'text-gray-600'
+                                    end %>">
+                      <%= post.status.titleize %>
+                    </span>
+                    • <%= post.comments.count %> comments
+                    • <%= post.views_count %> views
+                    • <%= post.created_at.strftime('%b %d, %Y') %>
+                  </div>
+                  <% if post.excerpt %>
+                    <p class="text-sm text-gray-600 mt-1"><%= post.excerpt %></p>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <p class="text-gray-500 text-center py-4">No posts yet.</p>
+          <% end %>
+        </div>
+
+        <!-- Comments -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">💬 Recent Comments (<%= @user.comments.count %>)</h2>
+          
+          <% if @comments.any? %>
+            <div class="space-y-4">
+              <% @comments.each do |comment| %>
+                <div class="border-l-4 border-green-500 pl-4">
+                  <div class="text-sm">
+                    Comment on 
+                    <%= link_to comment.post.title, post_path(comment.post) + "?dbwatch=true", 
+                        class: "text-blue-600 hover:underline" %>
+                  </div>
+                  <p class="text-gray-700 mt-1"><%= truncate(comment.content, length: 150) %></p>
+                  <div class="text-xs text-gray-500 mt-1">
+                    <span class="<%= comment.approved? ? 'text-green-600' : 'text-yellow-600' %>">
+                      <%= comment.approved? ? 'Approved' : 'Pending' %>
+                    </span>
+                    • <%= comment.created_at.strftime('%b %d, %Y at %I:%M %p') %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <p class="text-gray-500 text-center py-4">No comments yet.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

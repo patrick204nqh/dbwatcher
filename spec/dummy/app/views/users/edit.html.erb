@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit User - DBWatcher Test App</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800">Edit User</h1>
+          <p class="text-gray-600 mt-2">Update user information and profile</p>
+        </div>
+        <div class="space-x-2">
+          <%= link_to "← Back to Users", users_path, 
+              class: "bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600" %>
+          <%= link_to "View User", @user, 
+              class: "bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+      <%= form_with model: @user, url: user_path(@user) + "?dbwatch=true", local: true, 
+          class: "space-y-6" do |f| %>
+        
+        <!-- Error Messages -->
+        <% if @user.errors.any? %>
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4 m-6">
+            <h3 class="text-red-800 font-medium mb-2">Please fix the following errors:</h3>
+            <ul class="list-disc list-inside text-red-700 space-y-1">
+              <% @user.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <div class="px-6 py-4">
+          <!-- Basic Information -->
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Basic Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <%= f.label :name, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= f.text_field :name, 
+                    class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    placeholder: "Enter full name" %>
+              </div>
+
+              <div>
+                <%= f.label :email, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= f.email_field :email, 
+                    class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    placeholder: "user@example.com" %>
+              </div>
+
+              <div>
+                <%= f.label :age, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= f.number_field :age, 
+                    class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    placeholder: "25", min: 13, max: 150 %>
+              </div>
+
+              <div>
+                <%= f.label :birth_date, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= f.date_field :birth_date, 
+                    class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" %>
+              </div>
+
+              <div>
+                <%= f.label :salary, "Salary ($)", class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= f.number_field :salary, step: 0.01, 
+                    class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    placeholder: "50000.00" %>
+              </div>
+
+              <div class="flex items-center space-x-3">
+                <%= f.check_box :active, 
+                    class: "w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" %>
+                <%= f.label :active, "Active User", class: "text-sm font-medium text-gray-700" %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Profile Information -->
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Profile Information</h2>
+            <%= f.fields_for :profile do |profile_form| %>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <%= profile_form.label :first_name, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                  <%= profile_form.text_field :first_name, 
+                      class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      placeholder: "John" %>
+                </div>
+
+                <div>
+                  <%= profile_form.label :last_name, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                  <%= profile_form.text_field :last_name, 
+                      class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      placeholder: "Doe" %>
+                </div>
+
+                <div>
+                  <%= profile_form.label :website, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                  <%= profile_form.url_field :website, 
+                      class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      placeholder: "https://example.com" %>
+                </div>
+
+                <div>
+                  <%= profile_form.label :location, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                  <%= profile_form.text_field :location, 
+                      class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      placeholder: "San Francisco, CA" %>
+                </div>
+
+                <div>
+                  <%= profile_form.label :avatar_url, "Avatar URL", class: "block text-sm font-medium text-gray-700 mb-2" %>
+                  <%= profile_form.url_field :avatar_url, 
+                      class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      placeholder: "https://example.com/avatar.jpg" %>
+                </div>
+
+                <div class="md:col-span-2">
+                  <%= profile_form.label :bio, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                  <%= profile_form.text_area :bio, rows: 3,
+                      class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      placeholder: "Tell us about yourself..." %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+          <!-- User Roles -->
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">User Roles</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <% @roles.each do |role| %>
+                <div class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
+                  <%= check_box_tag "user[role_ids][]", role.id, 
+                      @user.roles.include?(role),
+                      id: "role_#{role.id}",
+                      class: "w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" %>
+                  <%= label_tag "role_#{role.id}", role.name, 
+                      class: "text-sm font-medium text-gray-700" %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <!-- Additional Notes -->
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Additional Information</h2>
+            <div>
+              <%= f.label :notes, class: "block text-sm font-medium text-gray-700 mb-2" %>
+              <%= f.text_area :notes, rows: 4,
+                  class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                  placeholder: "Additional notes or comments..." %>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="border-t pt-6">
+            <div class="flex justify-end space-x-3">
+              <%= link_to "Cancel", @user, 
+                  class: "bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400" %>
+              <%= f.submit "Update User", 
+                  class: "bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Delete User -->
+    <div class="mt-8 bg-red-50 border border-red-200 rounded-lg p-6">
+      <h3 class="text-lg font-medium text-red-800 mb-2">Danger Zone</h3>
+      <p class="text-red-700 mb-4">Once you delete a user, there is no going back. Please be certain.</p>
+      <%= link_to "Delete User", @user, method: :delete, 
+          data: { 
+            confirm: "Are you sure you want to delete #{@user.name}? This action cannot be undone." 
+          },
+          class: "bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700" %>
+    </div>
+  </div>
+</body>
+</html>

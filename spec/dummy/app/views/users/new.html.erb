@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>New User - DBWatcher Test App</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800">Create New User</h1>
+          <p class="text-gray-600 mt-2">Add a new user with profile information</p>
+        </div>
+        <%= link_to "← Back to Users", users_path, 
+            class: "bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600" %>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+      <%= form_with model: @user, url: users_path + "?dbwatch=true", local: true, 
+          class: "space-y-6" do |f| %>
+        
+        <!-- Error Messages -->
+        <% if @user.errors.any? %>
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4 m-6">
+            <h3 class="text-red-800 font-medium mb-2">Please fix the following errors:</h3>
+            <ul class="list-disc list-inside text-red-700 space-y-1">
+              <% @user.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <div class="px-6 py-4">
+          <!-- Basic Information -->
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Basic Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <%= f.label :name, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= f.text_field :name, 
+                    class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    placeholder: "Enter full name" %>
+              </div>
+              
+              <div>
+                <%= f.label :email, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= f.email_field :email, 
+                    class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    placeholder: "user@example.com" %>
+              </div>
+
+              <div>
+                <%= f.label :age, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= f.number_field :age, 
+                    class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    placeholder: "25", min: 18, max: 120 %>
+              </div>
+
+              <div>
+                <%= f.label :birth_date, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= f.date_field :birth_date, 
+                    class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" %>
+              </div>
+
+              <div>
+                <%= f.label :salary, "Salary ($)", class: "block text-sm font-medium text-gray-700 mb-2" %>
+                <%= f.number_field :salary, 
+                    class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    placeholder: "75000", step: 1000 %>
+              </div>
+
+              <div class="flex items-center">
+                <div class="flex items-center mt-6">
+                  <%= f.check_box :active, 
+                      class: "rounded border-gray-300 text-blue-600 focus:ring-blue-500" %>
+                  <%= f.label :active, "Active User", class: "ml-2 text-sm text-gray-700" %>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Profile Information -->
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Profile Information</h2>
+            <%= f.fields_for :profile do |pf| %>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <%= pf.label :first_name, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                  <%= pf.text_field :first_name, 
+                      class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      placeholder: "First name" %>
+                </div>
+                
+                <div>
+                  <%= pf.label :last_name, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                  <%= pf.text_field :last_name, 
+                      class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      placeholder: "Last name" %>
+                </div>
+
+                <div>
+                  <%= pf.label :website, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                  <%= pf.url_field :website, 
+                      class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      placeholder: "https://example.com" %>
+                </div>
+
+                <div>
+                  <%= pf.label :location, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                  <%= pf.text_field :location, 
+                      class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      placeholder: "City, Country" %>
+                </div>
+
+                <div class="md:col-span-2">
+                  <%= pf.label :bio, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                  <%= pf.text_area :bio, rows: 3,
+                      class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                      placeholder: "Tell us about yourself..." %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+          <!-- Roles -->
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">User Roles</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <% @roles.each do |role| %>
+                <div class="flex items-center p-3 border border-gray-200 rounded-lg">
+                  <input type="checkbox" name="role_ids[]" value="<%= role.id %>" 
+                         class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                         id="role_<%= role.id %>">
+                  <label for="role_<%= role.id %>" class="ml-3 text-sm">
+                    <div class="font-medium text-gray-900"><%= role.name %></div>
+                    <div class="text-gray-500"><%= role.description %></div>
+                  </label>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Additional Information</h2>
+            <div>
+              <%= f.label :notes, class: "block text-sm font-medium text-gray-700 mb-2" %>
+              <%= f.text_area :notes, rows: 4,
+                  class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                  placeholder: "Any additional notes about this user..." %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+          <%= link_to "Cancel", users_path, 
+              class: "bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors" %>
+          <%= f.submit "Create User", 
+              class: "bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors" %>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Testing Note -->
+    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div class="flex items-start">
+        <span class="text-blue-500 mr-2 flex-shrink-0">ℹ️</span>
+        <div class="text-sm text-blue-800">
+          <p class="font-medium mb-1">DBWatcher Testing:</p>
+          <p class="text-blue-700">
+            This form includes <code class="bg-blue-100 px-1 rounded">?dbwatch=true</code> so the user creation 
+            will be tracked. You can view the database changes at 
+            <a href="/dbwatcher" class="font-medium underline hover:no-underline">/dbwatcher</a> 
+            after submitting the form.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

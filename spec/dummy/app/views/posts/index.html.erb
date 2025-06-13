@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Posts - DBWatcher Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold">📝 Posts</h1>
+      <%= link_to "← Back to Users", users_path + "?dbwatch=true", 
+          class: "bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600" %>
+    </div>
+
+    <!-- Featured Posts -->
+    <% if @featured_posts.any? %>
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+        <h2 class="text-xl font-semibold mb-4">⭐ Featured Posts</h2>
+        <div class="grid gap-3">
+          <% @featured_posts.each do |post| %>
+            <div class="bg-white rounded p-3">
+              <h3 class="font-semibold"><%= post.title %></h3>
+              <p class="text-sm text-gray-600">by <%= post.user.name %> • <%= post.views_count %> views</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Posts List -->
+    <div class="bg-white rounded-lg shadow">
+      <% @posts.each_with_index do |post, index| %>
+        <div class="p-4 <%= 'border-t border-gray-200' if index > 0 %>">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="flex items-center space-x-2 mb-2">
+                <h3 class="text-lg font-semibold">
+                  <%= link_to post.title, post_path(post) + "?dbwatch=true", 
+                      class: "text-blue-600 hover:underline" %>
+                </h3>
+                <span class="px-2 py-1 rounded text-xs font-medium
+                  <%= case post.status
+                      when 'published' then 'bg-green-100 text-green-800'
+                      when 'draft' then 'bg-yellow-100 text-yellow-800'
+                      when 'archived' then 'bg-gray-100 text-gray-800'
+                      end %>">
+                  <%= post.status.titleize %>
+                </span>
+                <% if post.featured? %>
+                  <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium">Featured</span>
+                <% end %>
+              </div>
+
+              <p class="text-gray-600 mb-2"><%= post.excerpt %></p>
+              
+              <div class="flex items-center space-x-4 text-sm text-gray-500">
+                <span>👤 <%= post.user.name %></span>
+                <span>💬 <%= post.comments.count %> comments</span>
+                <span>👁️ <%= post.views_count %> views</span>
+                <span>📅 <%= post.created_at.strftime('%B %d, %Y') %></span>
+              </div>
+
+              <% if post.tags.any? %>
+                <div class="mt-2 flex flex-wrap gap-1">
+                  <% post.tags.each do |tag| %>
+                    <span class="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                      <%= tag.name %>
+                    </span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="ml-4 flex space-x-2">
+              <%= link_to "👁️", post_path(post) + "?dbwatch=true", 
+                  class: "text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50",
+                  title: "View" %>
+              <% if post.published? %>
+                <%= link_to "📈", increment_views_post_path(post) + "?dbwatch=true", 
+                    method: :post,
+                    class: "text-green-600 hover:text-green-800 px-2 py-1 rounded hover:bg-green-50",
+                    title: "Increment Views" %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+      
+      <% if @posts.empty? %>
+        <div class="p-8 text-center text-gray-500">
+          <div class="text-4xl mb-4">📝</div>
+          <h3 class="text-lg font-medium mb-2">No posts found</h3>
+          <p>Posts will appear here as they are created.</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</body>
+</html>
