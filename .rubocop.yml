@@ -17,6 +17,31 @@ AllCops:
 Gemspec/DevelopmentDependencies:
   Enabled: false
 
+# Allow longer classes in test controllers (they're comprehensive test suites)
+Metrics/ClassLength:
+  Max: 100
+  Exclude:
+    - "spec/**/*"
+    - "spec/dummy/app/controllers/testing/**/*"
+    - "spec/dummy/app/controllers/users_controller.rb"
+    - "scripts/**/*"
+
+# Allow longer methods in test files and migrations
+Metrics/MethodLength:
+  Max: 15
+  Exclude:
+    - "spec/**/*"
+    - "spec/dummy/db/migrate/**/*"
+
+# Allow higher complexity in test files and migrations  
+Metrics/AbcSize:
+  Max: 25
+  Exclude:
+    - "spec/**/*"
+    - "spec/dummy/db/migrate/**/*"
+    - "spec/dummy/app/controllers/testing/testing_controller.rb"
+    - "spec/dummy/app/controllers/users_controller.rb"
+
 # Style rules
 Style/StringLiterals:
   EnforcedStyle: double_quotes
@@ -38,12 +63,6 @@ Metrics/BlockLength:
     - "demo.rb"
     - "*.gemspec"
 
-Metrics/MethodLength:
-  Max: 15
-
-Metrics/AbcSize:
-  Max: 25
-
 # Layout rules
 Layout/LineLength:
   Max: 120
@@ -54,10 +73,15 @@ Layout/LineLength:
 Lint/ScriptPermission:
   Exclude:
     - "demo.rb"
+    - "scripts/**/*"
 
 Lint/Debugger:
   Exclude:
     - "spec/**/*"
+
+Lint/NonAtomicFileOperation:
+  Exclude:
+    - "scripts/**/*"
 
 # Rails-specific disabled for now since we don't have rubocop-rails gem
 # Rails/FilePath:

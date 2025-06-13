@@ -1,0 +1,135 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Pre-commit hook for ClassMetrix
+# Easy configuration via CHECKS hash - just set enabled: true/false
+
+require "English"
+
+# Pre-commit quality checker for ClassMetrix
+class PreCommit
+  # File extensions that trigger Ruby checks
+  RUBY_EXTENSIONS = %w[.rb .rake].freeze
+
+  # Configuration hash - easy to enable/disable checks
+  CHECKS = {
+    rubocop: {
+      enabled: true,
+      command: "bundle exec rubocop --force-exclusion",
+      description: "Checking code style with RuboCop",
+      icon: "🔍",
+      fix_hint: "bundle exec rubocop -A"
+    },
+    rspec: {
+      enabled: true,
+      command: "bundle exec rspec --fail-fast",
+      description: "Running test suite",
+      icon: "🧪",
+      fix_hint: "bundle exec rspec"
+    },
+    brakeman: {
+      enabled: true,
+      command: "bundle exec brakeman --force --quiet --no-pager",
+      description: "Running security scan with Brakeman",
+      icon: "🔒",
+      fix_hint: "bundle exec brakeman --force"
+    },
+    rbs: {
+      enabled: false,  # Commented out for faster commits
+      command: "bundle exec rbs validate",
+      description: "Validating type definitions with RBS",
+      icon: "🔍",
+      fix_hint: "bundle exec rbs validate"
+    },
+    steep: {
+      enabled: false,  # Commented out for faster commits
+      command: "bundle exec steep check",
+      description: "Running type checking with Steep",
+      icon: "🔎",
+      fix_hint: "bundle exec steep check"
+    }
+  }.freeze
+
+  class << self
+    def run
+      new.run
+    end
+  end
+
+  def initialize
+    @failed_checks = []
+  end
+
+  def run
+    log_start
+    return skip_ruby_checks unless ruby_files_staged?
+
+    run_enabled_checks
+    exit_with_result
+  end
+
+  private
+
+  attr_reader :failed_checks
+
+  def log_start
+    puts "🚀 Running pre-commit checks for ClassMetrix..."
+  end
+
+  def ruby_files_staged?
+    staged_files.any? { |file| ruby_file?(file) }
+  end
+
+  def staged_files
+    @staged_files ||= `git diff --cached --name-only --diff-filter=ACM`.split("\n")
+  end
+
+  def ruby_file?(filename)
+    RUBY_EXTENSIONS.any? { |ext| filename.end_with?(ext) }
+  end
+
+  def skip_ruby_checks
+    puts "ℹ️  No Ruby files staged, skipping quality checks."
+    exit 0
+  end
+
+  def run_enabled_checks
+    enabled_checks.each do |name, config|
+      run_check(name, config)
+    end
+  end
+
+  def enabled_checks
+    CHECKS.select { |_name, config| config[:enabled] }
+  end
+
+  def run_check(name, config)
+    puts "\n#{config[:icon]} #{config[:description]}..."
+
+    if system(config[:command])
+      puts "✅ #{config[:description].split(" with ").first} passed!"
+    else
+      puts "❌ #{config[:description].split(" with ").first} failed!"
+      puts "💡 Fix with: #{config[:fix_hint]}"
+      @failed_checks << { name: name, config: config }
+    end
+  end
+
+  def exit_with_result
+    if failed_checks.empty?
+      puts "\n🎉 All quality checks passed! Proceeding with commit."
+      exit 0
+    else
+      puts "\n💥 #{failed_checks.size} check(s) failed:"
+      failed_checks.each do |check|
+        puts "   • #{check[:config][:description].split(" with ").first}"
+      end
+      puts "\n💡 Quality checks failed. Please fix the issues before committing."
+      puts "💡 You can bypass this with: git commit --no-verify"
+      exit 1
+    end
+  end
+end
+
+# Run the pre-commit checker
+PreCommit.run if $PROGRAM_NAME == __FILE__

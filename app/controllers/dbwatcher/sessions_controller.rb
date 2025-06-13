@@ -2,6 +2,7 @@
 
 module Dbwatcher
   class SessionsController < ActionController::Base
+    protect_from_forgery with: :exception
     layout "dbwatcher/application"
 
     def index

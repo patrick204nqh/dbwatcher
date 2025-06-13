@@ -2,7 +2,20 @@
 
 class CreateInitialModels < ActiveRecord::Migration[8.0]
   def change
-    # Users table with various data types for comprehensive testing
+    create_users_table
+    create_profiles_table
+    create_roles_table
+    create_user_roles_table
+    create_tags_table
+    create_posts_table
+    create_comments_table
+    create_post_tags_table
+    add_user_login_count
+  end
+
+  private
+
+  def create_users_table
     create_table :users do |t|
       t.string :name, null: false
       t.string :email, null: false
@@ -18,8 +31,9 @@ class CreateInitialModels < ActiveRecord::Migration[8.0]
       t.index :email, unique: true
       t.index %i[active age]
     end
+  end
 
-    # Profiles table (one-to-one with users)
+  def create_profiles_table
     create_table :profiles do |t|
       t.references :user, null: false, foreign_key: true
       t.string :first_name
@@ -30,37 +44,33 @@ class CreateInitialModels < ActiveRecord::Migration[8.0]
       t.string :avatar_url
 
       t.timestamps
+      t.index [:user_id], name: "index_profiles_on_user_id"
     end
+  end
 
-    # Posts table (one-to-many with users)
-    create_table :posts do |t|
-      t.references :user, null: false, foreign_key: true
-      t.string :title, null: false
-      t.text :content, null: false
-      t.text :excerpt
-      t.integer :status, default: 0 # enum: draft=0, published=1, archived=2
-      t.integer :views_count, default: 0
-      t.boolean :featured, default: false
-      t.datetime :published_at
+  def create_roles_table
+    create_table :roles do |t|
+      t.string :name, null: false
+      t.text :description
+      t.json :permissions
 
       t.timestamps
-      t.index %i[user_id status]
-      t.index :published_at
+      t.index [:name], name: "index_roles_on_name", unique: true
     end
+  end
 
-    # Comments table (many-to-many with users and posts, self-referential)
-    create_table :comments do |t|
+  def create_user_roles_table
+    create_table :user_roles do |t|
       t.references :user, null: false, foreign_key: true
-      t.references :post, null: false, foreign_key: true
-      t.references :parent, foreign_key: { to_table: :comments }, null: true
-      t.text :content, null: false
-      t.boolean :approved, default: false
+      t.references :role, null: false, foreign_key: true
+      t.datetime :assigned_at
 
       t.timestamps
-      t.index %i[post_id approved]
+      t.index %i[user_id role_id], unique: true
     end
+  end
 
-    # Tags table for many-to-many relationship
+  def create_tags_table
     create_table :tags do |t|
       t.string :name, null: false
       t.string :slug
@@ -68,11 +78,44 @@ class CreateInitialModels < ActiveRecord::Migration[8.0]
       t.text :description
 
       t.timestamps
-      t.index :name, unique: true
-      t.index :slug, unique: true
+      t.index [:name], name: "index_tags_on_name", unique: true
+      t.index [:slug], name: "index_tags_on_slug", unique: true
     end
+  end
 
-    # Join table for posts and tags
+  def create_posts_table
+    create_table :posts do |t|
+      t.references :user, null: false, foreign_key: true
+      t.string :title, null: false
+      t.text :content
+      t.text :excerpt
+      t.integer :status, default: 0 # enum: draft, published, archived
+      t.boolean :featured, default: false
+      t.datetime :published_at
+      t.integer :views_count, default: 0
+
+      t.timestamps
+      t.index [:user_id]
+      t.index %i[status published_at]
+      t.index [:featured]
+    end
+  end
+
+  def create_comments_table
+    create_table :comments do |t|
+      t.references :post, null: false, foreign_key: true
+      t.references :user, null: true, foreign_key: true
+      t.references :parent, null: true, foreign_key: { to_table: :comments }
+      t.text :content, null: false
+      t.boolean :approved, default: false
+
+      t.timestamps
+      t.index %i[post_id approved]
+      t.index [:parent_id]
+    end
+  end
+
+  def create_post_tags_table
     create_table :post_tags do |t|
       t.references :post, null: false, foreign_key: true
       t.references :tag, null: false, foreign_key: true
@@ -80,25 +123,9 @@ class CreateInitialModels < ActiveRecord::Migration[8.0]
       t.timestamps
       t.index %i[post_id tag_id], unique: true
     end
+  end
 
-    # Roles table for user permissions
-    create_table :roles do |t|
-      t.string :name, null: false
-      t.text :description
-      t.json :permissions
-
-      t.timestamps
-      t.index :name, unique: true
-    end
-
-    # Join table for users and roles
-    create_table :user_roles do |t|
-      t.references :user, null: false, foreign_key: true
-      t.references :role, null: false, foreign_key: true
-      t.datetime :assigned_at, default: -> { "CURRENT_TIMESTAMP" }
-
-      t.timestamps
-      t.index %i[user_id role_id], unique: true
-    end
+  def add_user_login_count
+    add_column :users, :last_login_count, :integer, default: 0
   end
 end

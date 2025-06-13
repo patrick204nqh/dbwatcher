@@ -230,23 +230,35 @@ module Testing
 
     def build_posts_attributes
       [
-        {
-          title: "Nested Post 1",
-          content: "Content created via nested attributes. " * 30,
-          excerpt: "First nested post",
-          status: :published,
-          published_at: Time.current,
-          comments_attributes: [
-            { content: "Nested comment 1", approved: true },
-            { content: "Nested comment 2", approved: false }
-          ]
-        },
-        {
-          title: "Nested Post 2",
-          content: "Second post via nested attributes. " * 25,
-          excerpt: "Second nested post",
-          status: :draft
-        }
+        build_first_post_attributes,
+        build_second_post_attributes
+      ]
+    end
+
+    def build_first_post_attributes
+      {
+        title: "Nested Post 1",
+        content: "Content created via nested attributes. " * 30,
+        excerpt: "First nested post",
+        status: :published,
+        published_at: Time.current,
+        comments_attributes: build_first_post_comments
+      }
+    end
+
+    def build_second_post_attributes
+      {
+        title: "Nested Post 2",
+        content: "Second post via nested attributes. " * 25,
+        excerpt: "Second nested post",
+        status: :draft
+      }
+    end
+
+    def build_first_post_comments
+      [
+        { content: "Nested comment 1", approved: true },
+        { content: "Nested comment 2", approved: false }
       ]
     end
 
