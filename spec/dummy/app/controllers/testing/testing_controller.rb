@@ -157,7 +157,8 @@ module Testing
     end
 
     def update_post_view_counts
-      Post.where(status: :published).update_all("views_count = views_count + #{rand(10..100)}")
+      increment_value = rand(10..100)
+      Post.where(status: :published).update_all(["views_count = views_count + ?", increment_value])
     end
 
     def perform_cascade_delete
