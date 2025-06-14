@@ -120,8 +120,10 @@
               <table class="compact-table w-full">
                 <thead>
                   <tr class="sticky top-0 bg-gray-100 z-10">
-                    <th class="text-center w-16 sticky left-0 bg-gray-100 z-20 border-r border-gray-300">Op</th>
-                    <th class="text-left w-20 sticky left-16 bg-gray-100 z-20 border-r border-gray-300">Time</th>
+                    <th class="text-center w-16 sticky left-0 bg-gray-100 z-20 border-r border-gray-300">
+                      <span class="text-xs">Op</span>
+                    </th>
+                    <th class="text-left w-24 sticky bg-gray-100 z-20 border-r border-gray-300" style="left: 4.25rem;">Time</th>
                     <% if summary[:sample_record] %>
                       <% summary[:sample_record].keys.each do |column| %>
                         <th class="text-left min-w-32 px-2" 
@@ -135,71 +137,82 @@
                 <tbody>
                   <% summary[:changes].each_with_index do |change, index| %>
                     <% row_id = "#{table_name}_row_#{index}" %>
-                    <tr class="hover:bg-blue-50 cursor-pointer" 
-                        x-data="{ expanded: false }"
-                        @click="expanded = !expanded">
-                      <% operation = change['operation'] || change[:operation] %>
-                      <% timestamp = change['timestamp'] || change[:timestamp] %>
-                      <% snapshot = change['record_snapshot'] || change[:record_snapshot] || {} %>
-                      <% column_changes = change['changes'] || change[:changes] %>
-                      
-                      <td class="text-center sticky left-0 bg-white z-10 border-r border-gray-200">
-                        <% if operation %>
-                          <span class="badge badge-<%= operation.downcase %>">
-                            <%= operation[0] %>
-                          </span>
-                        <% else %>
-                          <span class="badge">?</span>
-                        <% end %>
-                      </td>
-                      <td class="text-xs text-gray-600 sticky left-16 bg-white z-10 border-r border-gray-200">
-                        <% if timestamp %>
-                          <%= Time.parse(timestamp.to_s).strftime("%H:%M:%S") rescue timestamp %>
-                        <% else %>
-                          <span class="text-gray-400">--</span>
-                        <% end %>
-                      </td>
-                      
-                      <% if snapshot %>
-                        <% snapshot.each do |key, value| %>
-                          <td x-show="tableColumns['<%= table_name %>']['<%= key %>']" 
-                              class="relative px-2"
-                              @click.stop="">
-                            <% changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == key.to_s } %>
-                            <div class="min-w-32 max-w-48 truncate">
-                              <% if operation == 'UPDATE' && changed_column %>
-                                <div class="text-xs">
-                                  <div class="text-red-600 line-through">
-                                    <%= truncate_cell_value(changed_column['old_value'] || changed_column[:old_value]) %>
-                                  </div>
-                                  <div class="text-green-600 font-medium">
-                                    <%= truncate_cell_value(changed_column['new_value'] || changed_column[:new_value]) %>
-                                  </div>
-                                </div>
-                              <% elsif operation == 'INSERT' %>
-                                <span class="text-green-600 font-medium">
-                                  <%= truncate_cell_value(value) %>
-                                </span>
-                              <% elsif operation == 'DELETE' %>
-                                <span class="text-red-600 line-through">
-                                  <%= truncate_cell_value(value) %>
-                                </span>
-                              <% else %>
-                                <span class="text-gray-700">
-                                  <%= truncate_cell_value(value) %>
-                                </span>
-                              <% end %>
-                            </div>
-                          </td>
-                        <% end %>
-                      <% end %>
-                    </tr>
+                    <% operation = change['operation'] || change[:operation] %>
+                    <% timestamp = change['timestamp'] || change[:timestamp] %>
+                    <% snapshot = change['record_snapshot'] || change[:record_snapshot] || {} %>
+                    <% column_changes = change['changes'] || change[:changes] %>
                     
-                    <!-- Expanded Row Content -->
-                    <tr x-show="expanded" 
-                        x-collapse
-                        class="bg-gray-50 border-t border-gray-200">
-                      <td colspan="2" class="sticky left-0 bg-gray-50 z-10 border-r border-gray-200 p-3">
+                    <tbody x-data="{ expanded: false }">
+                      <tr class="hover:bg-blue-50">
+                        <td class="text-center sticky left-0 bg-white z-10 border-r border-gray-200 w-16">
+                          <div class="flex items-center justify-center gap-1">
+                            <!-- Expand/Collapse Button -->
+                            <button @click="expanded = !expanded" 
+                                    class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-gray-100">
+                              <svg class="w-3 h-3 transition-transform" 
+                                   :class="{ 'rotate-90': expanded }"
+                                   fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                              </svg>
+                            </button>
+                            <!-- Operation Badge -->
+                            <% if operation %>
+                              <span class="badge badge-<%= operation.downcase %>">
+                                <%= operation[0] %>
+                              </span>
+                            <% else %>
+                              <span class="badge">?</span>
+                            <% end %>
+                          </div>
+                        </td>
+                        <td class="text-xs text-gray-600 sticky bg-white z-10 border-r border-gray-200 w-24" style="left: 4.25rem;">
+                          <% if timestamp %>
+                            <%= Time.parse(timestamp.to_s).strftime("%H:%M:%S") rescue timestamp %>
+                          <% else %>
+                            <span class="text-gray-400">--</span>
+                          <% end %>
+                        </td>
+                        
+                        <% if snapshot %>
+                          <% snapshot.each do |key, value| %>
+                            <td x-show="tableColumns['<%= table_name %>']['<%= key %>']" 
+                                class="relative px-2"
+                                @click.stop="">
+                              <% changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == key.to_s } %>
+                              <div class="min-w-32 max-w-48 truncate">
+                                <% if operation == 'UPDATE' && changed_column %>
+                                  <div class="text-xs">
+                                    <div class="text-red-600 line-through">
+                                      <%= truncate_cell_value(changed_column['old_value'] || changed_column[:old_value]) %>
+                                    </div>
+                                    <div class="text-green-600 font-medium">
+                                      <%= truncate_cell_value(changed_column['new_value'] || changed_column[:new_value]) %>
+                                    </div>
+                                  </div>
+                                <% elsif operation == 'INSERT' %>
+                                  <span class="text-green-600 font-medium">
+                                    <%= truncate_cell_value(value) %>
+                                  </span>
+                                <% elsif operation == 'DELETE' %>
+                                  <span class="text-red-600 line-through">
+                                    <%= truncate_cell_value(value) %>
+                                  </span>
+                                <% else %>
+                                  <span class="text-gray-700">
+                                    <%= truncate_cell_value(value) %>
+                                  </span>
+                                <% end %>
+                              </div>
+                            </td>
+                          <% end %>
+                        <% end %>
+                      </tr>
+                      
+                      <!-- Expanded Row Content -->
+                      <tr x-show="expanded" 
+                          x-collapse
+                          class="bg-gray-50 border-t border-gray-200">
+                      <td colspan="2" class="sticky left-0 bg-gray-50 z-10 border-r border-gray-200 p-3 w-40">
                         <div class="text-xs font-medium text-gray-700 mb-2">Record Details</div>
                         <div class="text-xs text-gray-600">
                           Operation: <span class="badge badge-<%= operation&.downcase %>"><%= operation %></span>
@@ -244,6 +257,7 @@
                         <% end %>
                       <% end %>
                     </tr>
+                    </tbody>
                   <% end %>
                 </tbody>
               </table>
