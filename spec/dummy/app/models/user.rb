@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class User < ApplicationRecord
+  include Statisticsable
+
   has_many :posts, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_one :profile, dependent: :destroy
@@ -14,4 +16,20 @@ class User < ApplicationRecord
 
   scope :active, -> { where(active: true) }
   scope :inactive, -> { where(active: false) }
+  scope :with_posts, -> { joins(:posts).distinct }
+  scope :admins, -> { joins(:roles).where(roles: { name: "Admin" }) }
+
+  def full_name
+    return name unless profile&.first_name && profile.last_name
+
+    "#{profile.first_name} #{profile.last_name}"
+  end
+
+  def admin?
+    roles.exists?(name: "Admin")
+  end
+
+  def toggle_status!
+    update!(active: !active)
+  end
 end

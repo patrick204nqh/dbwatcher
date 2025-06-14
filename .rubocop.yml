@@ -31,16 +31,12 @@ Metrics/MethodLength:
   Max: 15
   Exclude:
     - "spec/**/*"
-    - "spec/dummy/db/migrate/**/*"
 
 # Allow higher complexity in test files and migrations  
 Metrics/AbcSize:
   Max: 25
   Exclude:
     - "spec/**/*"
-    - "spec/dummy/db/migrate/**/*"
-    - "spec/dummy/app/controllers/testing/testing_controller.rb"
-    - "spec/dummy/app/controllers/users_controller.rb"
 
 # Style rules
 Style/StringLiterals:

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Post < ApplicationRecord
+  include Statisticsable
+
   belongs_to :user
   has_many :comments, dependent: :destroy
   has_many :post_tags, dependent: :destroy
@@ -15,4 +17,26 @@ class Post < ApplicationRecord
 
   scope :recent, -> { order(created_at: :desc) }
   scope :featured, -> { where(featured: true) }
+  scope :by_author, ->(user) { where(user: user) }
+  scope :with_tags, -> { joins(:tags).distinct }
+
+  def published?
+    status == "published"
+  end
+
+  def can_be_published?
+    draft?
+  end
+
+  def reading_time
+    return 0 if content.blank?
+
+    # Assume 200 words per minute reading speed
+    word_count = content.split.size
+    (word_count / 200.0).ceil
+  end
+
+  def increment_views!
+    increment!(:views_count)
+  end
 end

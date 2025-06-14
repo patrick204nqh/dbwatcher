@@ -1,15 +1,17 @@
 # frozen_string_literal: true
 
 class PostsController < ApplicationController
+  include Statisticsable
+
+  before_action :initialize_repositories
   before_action :set_post, only: %i[show edit update destroy publish archive increment_views]
   before_action :set_user, only: %i[new create], if: -> { params[:user_id].present? }
 
   def index
-    @posts = Post.includes(:user, :tags, :comments)
-                 .order(created_at: :desc)
-                 .limit(50)
-    @featured_posts = Post.where(featured: true).limit(5)
-    @recent_posts = Post.where(created_at: 1.week.ago..).count
+    pagination = PaginationConfig.from_params(params)
+    @posts = post_repository.paginated(limit: pagination.limit, offset: pagination.offset)
+    @featured_posts = post_repository.featured.limit(5)
+    @recent_posts = post_repository.recent(1.week.ago).count
   end
 
   def show
@@ -66,12 +68,19 @@ class PostsController < ApplicationController
 
   private
 
+  def initialize_repositories
+    @post_repository = PostRepository.new
+    @user_repository = UserRepository.new
+  end
+
+  attr_reader :post_repository, :user_repository
+
   def set_post
-    @post = Post.find(params[:id])
+    @post = post_repository.find(params[:id])
   end
 
   def set_user
-    @user = User.find(params[:user_id])
+    @user = user_repository.find(params[:user_id])
   end
 
   def post_params

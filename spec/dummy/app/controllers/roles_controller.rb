@@ -40,7 +40,7 @@ class RolesController < ApplicationController
     role_name = @role.name
     users_count = @role.users.count
 
-    if users_count > 0
+    if users_count.positive?
       redirect_to roles_path,
                   alert: "Cannot delete role '#{role_name}' because it is assigned to #{users_count} users."
     else
