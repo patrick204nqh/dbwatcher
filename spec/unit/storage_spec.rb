@@ -9,6 +9,8 @@ RSpec.describe Dbwatcher::Storage do
 
   before do
     allow(Dbwatcher.configuration).to receive(:storage_path).and_return(temp_dir)
+    # Reset cached storage instances to pick up the new storage path
+    Dbwatcher::Storage.reset_storage_instances!
   end
 
   after do
