@@ -1,0 +1,212 @@
+<div class="h-full flex flex-col" x-data="tableView()">
+  <!-- Compact Header -->
+  <div class="h-10 bg-navy-dark text-white flex items-center px-4">
+    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/>
+    </svg>
+    <h1 class="text-sm font-medium">Table: <%= @table_name %></h1>
+    
+    <!-- Quick Stats -->
+    <div class="ml-auto flex items-center gap-4 text-xs">
+      <span x-text="`${filteredRecords.length} records`"></span>
+      <span class="text-gold-light" x-text="`${totalChanges} changes`"></span>
+    </div>
+  </div>
+  
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <div class="tab-item active">Changes</div>
+    <div class="tab-item">Schema</div>
+    <div class="tab-item">Statistics</div>
+  </div>
+  
+  <!-- Compact Toolbar -->
+  <div class="bg-gray-100 border-b border-gray-300 px-3 py-1 flex items-center gap-3">
+    <input type="text" 
+           x-model="searchTerm"
+           placeholder="Filter records..."
+           class="compact-input flex-1 max-w-xs">
+    
+    <select x-model="selectedSession" 
+            class="compact-select">
+      <option value="">All Sessions</option>
+      <% @sessions.each do |session_id| %>
+        <% session = Dbwatcher::Storage.load_session(session_id) %>
+        <% if session %>
+          <option value="<%= session_id %>"><%= session.name %></option>
+        <% end %>
+      <% end %>
+    </select>
+    
+    <select x-model="selectedOperation" 
+            class="compact-select">
+      <option value="">All Operations</option>
+      <option value="INSERT">INSERT</option>
+      <option value="UPDATE">UPDATE</option>
+      <option value="DELETE">DELETE</option>
+    </select>
+    
+    <div class="ml-auto flex items-center gap-2">
+      <button @click="exportData()" 
+              class="compact-button bg-white border border-gray-300 hover:bg-gray-50">
+        <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+        Export
+      </button>
+      
+      <button @click="refreshData()" 
+              class="compact-button bg-blue-medium text-white hover:bg-blue-700">
+        <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+  
+  
+  <!-- Content -->
+  <div class="flex-1 overflow-auto">
+    <table class="compact-table w-full">
+      <thead>
+        <tr>
+          <th class="text-center w-16">Op</th>
+          <th class="text-left w-24">Session</th>
+          <th class="text-left w-20">Time</th>
+          <% if @records.any? %>
+            <% sample_record = @records.values.first.first['record_snapshot'] %>
+            <% if sample_record %>
+              <% sample_record.keys.each do |column| %>
+                <th class="text-left"><%= column.humanize %></th>
+              <% end %>
+            <% end %>
+          <% end %>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="record in filteredRecords" :key="record.id">
+          <tr class="cursor-pointer hover:bg-blue-50" 
+              @click="selectRecord(record)"
+              :class="{ 'selected': selectedRecord?.id === record.id }">
+            <td class="text-center">
+              <span class="badge" 
+                    :class="`badge-${record.operation.toLowerCase()}`"
+                    x-text="record.operation.charAt(0)"></span>
+            </td>
+            <td class="truncate text-xs" 
+                :title="record.session_name"
+                x-text="record.session_name"></td>
+            <td class="text-xs text-gray-600" 
+                x-text="formatTime(record.timestamp)"></td>
+            <template x-for="[key, value] in Object.entries(record.record_snapshot || {})" :key="key">
+              <td class="truncate max-w-32" 
+                  :title="value"
+                  :class="{
+                    'highlight-change': record.operation === 'UPDATE' && record.previous_values && record.previous_values[key] !== value,
+                    'highlight-new': record.operation === 'INSERT',
+                    'highlight-deleted': record.operation === 'DELETE'
+                  }"
+                  x-text="value"></td>
+            </template>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+function tableView() {
+  return {
+    searchTerm: '',
+    selectedSession: '',
+    selectedOperation: '',
+    selectedRecord: null,
+    records: <%= @records.to_json.html_safe %>,
+    
+    get flatRecords() {
+      const flat = [];
+      Object.entries(this.records).forEach(([recordId, changes]) => {
+        changes.forEach(change => {
+          flat.push({
+            id: `${recordId}-${change.timestamp}`,
+            record_id: recordId,
+            operation: change.operation,
+            timestamp: change.timestamp,
+            session_name: change.session_name,
+            record_snapshot: change.record_snapshot,
+            previous_values: change.previous_values,
+            changes: change.changes
+          });
+        });
+      });
+      return flat.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    },
+    
+    get filteredRecords() {
+      return this.flatRecords.filter(record => {
+        if (this.searchTerm) {
+          const searchLower = this.searchTerm.toLowerCase();
+          const recordText = JSON.stringify(record.record_snapshot || {}).toLowerCase();
+          if (!recordText.includes(searchLower)) return false;
+        }
+        
+        if (this.selectedSession && !record.session_name.includes(this.selectedSession)) return false;
+        if (this.selectedOperation && record.operation !== this.selectedOperation) return false;
+        
+        return true;
+      });
+    },
+    
+    get totalChanges() {
+      return this.flatRecords.length;
+    },
+    
+    selectRecord(record) {
+      this.selectedRecord = this.selectedRecord?.id === record.id ? null : record;
+    },
+    
+    formatTime(timestamp) {
+      return new Date(timestamp).toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+      });
+    },
+    
+    exportData() {
+      const data = this.filteredRecords.map(record => ({
+        record_id: record.record_id,
+        operation: record.operation,
+        timestamp: record.timestamp,
+        session: record.session_name,
+        ...record.record_snapshot
+      }));
+      
+      if (data.length === 0) return;
+      
+      const headers = ['Record ID', 'Operation', 'Timestamp', 'Session', ...Object.keys(data[0]).filter(k => !['record_id', 'operation', 'timestamp', 'session'].includes(k))];
+      const csv = [
+        headers,
+        ...data.map(row => headers.map(h => {
+          const key = h.toLowerCase().replace(' ', '_');
+          return row[key] || row[h] || '';
+        }))
+      ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `table-<%= @table_name %>-changes.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+    
+    refreshData() {
+      window.location.reload();
+    }
+  }
+}
+</script>

@@ -55,18 +55,104 @@ module Dbwatcher
         ensure_storage_directory
       end
 
+      # Query storage methods
+      def save_query(query)
+        return unless query
+
+        ensure_storage_directory
+
+        # Save to daily query log
+        date = query[:timestamp].strftime("%Y-%m-%d")
+        query_file = File.join(queries_path, "#{date}.json")
+
+        queries = load_queries_for_date(date)
+        queries << query
+
+        # Limit queries per day
+        max_queries = Dbwatcher.configuration.max_query_logs_per_day
+        queries = queries.last(max_queries) if queries.count > max_queries
+
+        File.write(query_file, JSON.pretty_generate(queries))
+      rescue StandardError => e
+        warn "Failed to save query: #{e.message}"
+      end
+
+      def load_queries_for_date(date)
+        query_file = File.join(queries_path, "#{date}.json")
+        return [] unless File.exist?(query_file)
+
+        JSON.parse(File.read(query_file), symbolize_names: true)
+      rescue JSON::ParserError => e
+        warn "Failed to parse query file for #{date}: #{e.message}"
+        []
+      rescue StandardError => e
+        warn "Failed to load queries for #{date}: #{e.message}"
+        []
+      end
+
+      def load_table_changes(table_name)
+        collect_changes_for_table(table_name)
+      rescue StandardError => e
+        warn "Failed to load table changes for #{table_name}: #{e.message}"
+        []
+      end
+
+      def collect_changes_for_table(table_name)
+        changes = []
+
+        all_sessions.each do |session_info|
+          session_changes = collect_changes_from_session(session_info[:id], table_name)
+          changes.concat(session_changes) if session_changes.any?
+        end
+
+        sort_changes_by_timestamp(changes)
+      end
+
+      def collect_changes_from_session(session_id, table_name)
+        session = load_session(session_id)
+        return [] unless session
+
+        filter_and_enrich_changes(session, table_name)
+      end
+
+      def filter_and_enrich_changes(session, table_name)
+        session.changes
+               .select { |c| (c["table_name"] || c[:table_name]) == table_name }
+               .map { |change| enrich_change_with_session_data(change, session) }
+      end
+
+      def enrich_change_with_session_data(change, session)
+        change.merge(
+          "session_id" => session.id,
+          "session_name" => session.name
+        )
+      end
+
+      def sort_changes_by_timestamp(changes)
+        changes.sort_by { |c| c["timestamp"] || c[:timestamp] }.reverse
+      end
+
       private
 
       def storage_path
-        Dbwatcher.configuration.storage_path
+        path = Dbwatcher.configuration.storage_path
+        Rails.logger.info "Storage.storage_path: Using storage path #{path}" if defined?(Rails)
+        path
       end
 
       def sessions_path
-        File.join(storage_path, "sessions")
+        path = File.join(storage_path, "sessions")
+        Rails.logger.info "Storage.sessions_path: Using path #{path}" if defined?(Rails)
+        path
+      end
+
+      def queries_path
+        File.join(storage_path, "queries")
       end
 
       def ensure_storage_directory
         FileUtils.mkdir_p(sessions_path)
+        FileUtils.mkdir_p(queries_path) # Add queries directory
 
         # Create index if it doesn't exist
         index_file = File.join(storage_path, "index.json")

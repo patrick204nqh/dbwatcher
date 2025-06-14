@@ -5,13 +5,18 @@ module Dbwatcher
     isolate_namespace Dbwatcher
 
     initializer "dbwatcher.setup" do |app|
-      # Auto-include in all models
-      ActiveSupport.on_load(:active_record) do
-        include Dbwatcher::ModelExtension
-      end
+      if Dbwatcher.configuration.enabled && !Rails.env.production?
+        # Auto-include in all models
+        ActiveSupport.on_load(:active_record) do
+          include Dbwatcher::ModelExtension
+        end
 
-      # Add middleware
-      app.middleware.use Dbwatcher::Middleware
+        # Add middleware
+        app.middleware.use Dbwatcher::Middleware
+
+        # Setup SQL logging if enabled
+        Dbwatcher::SqlLogger.instance if Dbwatcher.configuration.track_queries
+      end
     end
 
     # Mount the engine routes automatically
