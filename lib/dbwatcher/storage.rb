@@ -1,109 +1,71 @@
 # frozen_string_literal: true
 
+require_relative 'storage/base'
+require_relative 'storage/session_storage'
+require_relative 'storage/query_storage'
+require_relative 'storage/table_storage'
+
 module Dbwatcher
-  class Storage
+  module Storage
     class << self
+      def session_storage
+        @session_storage ||= SessionStorage.new
+      end
+
+      def query_storage
+        @query_storage ||= QueryStorage.new
+      end
+
+      def table_storage
+        @table_storage ||= TableStorage.new(session_storage)
+      end
+
+      # Reset cached storage instances (for testing)
+      def reset_storage_instances!
+        @session_storage = nil
+        @query_storage = nil
+        @table_storage = nil
+      end
+
+      # Session methods - delegate to SessionStorage
       def save_session(session)
-        return unless session&.id
-
-        ensure_storage_directory
-
-        # Save individual session file
-        session_file = File.join(sessions_path, "#{session.id}.json")
-        File.write(session_file, JSON.pretty_generate(session.to_h))
-
-        # Update index
-        update_index(session)
-
-        # Clean old sessions if needed
-        cleanup_old_sessions
+        session_storage.save(session)
       rescue StandardError => e
         warn "Failed to save session #{session&.id}: #{e.message}"
       end
 
       def load_session(id)
-        return nil if id.nil? || id.empty?
-
-        session_file = File.join(sessions_path, "#{id}.json")
-        return nil unless File.exist?(session_file)
-
-        data = JSON.parse(File.read(session_file), symbolize_names: true)
-        Tracker::Session.new(data)
-      rescue JSON::ParserError => e
-        warn "Failed to parse session file #{id}: #{e.message}"
-        nil
-      rescue StandardError => e
-        warn "Failed to load session #{id}: #{e.message}"
-        nil
+        session_storage.load(id)
       end
 
       def all_sessions
-        index_file = File.join(storage_path, "index.json")
-        return [] unless File.exist?(index_file)
-
-        JSON.parse(File.read(index_file), symbolize_names: true)
-      rescue JSON::ParserError => e
-        warn "Failed to parse sessions index: #{e.message}"
-        []
-      rescue StandardError => e
-        warn "Failed to load sessions: #{e.message}"
-        []
+        session_storage.all
       end
 
       def reset!
-        FileUtils.rm_rf(storage_path)
-        ensure_storage_directory
+        session_storage.reset!
       end
 
-      private
-
-      def storage_path
-        Dbwatcher.configuration.storage_path
+      # Query methods - delegate to QueryStorage
+      def save_query(query)
+        query_storage.save(query)
       end
 
-      def sessions_path
-        File.join(storage_path, "sessions")
+      def load_queries_for_date(date)
+        query_storage.load_for_date(date)
       end
 
-      def ensure_storage_directory
-        FileUtils.mkdir_p(sessions_path)
-
-        # Create index if it doesn't exist
-        index_file = File.join(storage_path, "index.json")
-        File.write(index_file, "[]") unless File.exist?(index_file)
-      end
-
-      def update_index(session)
-        index_file = File.join(storage_path, "index.json")
-        index = JSON.parse(File.read(index_file), symbolize_names: true)
-
-        # Add new session summary to index
-        index.unshift({
-                        id: session.id,
-                        name: session.name,
-                        started_at: session.started_at,
-                        ended_at: session.ended_at,
-                        change_count: session.changes.count
-                      })
-
-        # Keep only max_sessions
-        index = index.first(Dbwatcher.configuration.max_sessions)
-
-        File.write(index_file, JSON.pretty_generate(index))
+      # Table methods - delegate to TableStorage
+      def load_table_changes(table_name)
+        table_storage.load_changes(table_name)
       rescue StandardError => e
-        warn "Failed to update sessions index: #{e.message}"
+        warn "Failed to load table changes for #{table_name}: #{e.message}"
+        []
       end
 
+      # Cleanup methods
       def cleanup_old_sessions
-        return unless Dbwatcher.configuration.auto_clean_after_days
-
-        cutoff_date = Time.now - (Dbwatcher.configuration.auto_clean_after_days * 24 * 60 * 60)
-
-        Dir.glob(File.join(sessions_path, "*.json")).each do |file|
-          File.delete(file) if File.mtime(file) < cutoff_date
-        end
-      rescue StandardError => e
-        warn "Failed to cleanup old sessions: #{e.message}"
+        session_storage.cleanup_old_sessions
       end
     end
   end
