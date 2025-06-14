@@ -88,9 +88,9 @@
             </thead>
             <tbody>
               <% @recent_sessions.each do |session| %>
-                <tr class="cursor-pointer hover:bg-blue-50" onclick="window.location='<%= session_path(session['id'] || session[:id]) %>'">
+                <tr class="hover:bg-blue-50">
                   <td class="truncate max-w-xs" title="<%= session['name'] || session[:name] %>">
-                    <%= (session['name'] || session[:name]).to_s.gsub(/^HTTP \w+ /, '') %>
+                    <%= link_to (session['name'] || session[:name]).to_s.gsub(/^HTTP \w+ /, ''), session_path(session['id'] || session[:id]), class: "text-navy-dark hover:text-blue-medium" %>
                   </td>
                   <td class="text-center">
                     <span class="badge bg-gray-600 text-white"><%= session['change_count'] || session[:change_count] || 0 %></span>
@@ -121,8 +121,10 @@
             </thead>
             <tbody>
               <% @active_tables.first(10).each do |table_name, count| %>
-                <tr class="cursor-pointer hover:bg-blue-50" onclick="window.location='<%= table_path(table_name) %>'">
-                  <td class="font-medium text-navy-dark"><%= table_name %></td>
+                <tr class="hover:bg-blue-50">
+                  <td class="font-medium text-navy-dark">
+                    <%= link_to table_name, table_path(table_name), class: "text-navy-dark hover:text-blue-medium" %>
+                  </td>
                   <td class="text-center">
                     <div class="flex gap-1 justify-center">
                       <span class="badge badge-insert" title="Inserts">I</span>

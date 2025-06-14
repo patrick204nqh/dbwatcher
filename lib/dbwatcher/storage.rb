@@ -122,7 +122,9 @@ module Dbwatcher
       end
 
       def enrich_change_with_session_data(change, session)
-        change.merge(
+        # Convert the change to string keys first, then merge session data
+        stringified_change = change.is_a?(Hash) ? change.transform_keys(&:to_s) : change
+        stringified_change.merge(
           "session_id" => session.id,
           "session_name" => session.name
         )

@@ -48,7 +48,7 @@ module Dbwatcher
 
     def destroy_all
       Dbwatcher.reset!
-      redirect_to root_path, notice: "All sessions cleared"
+      redirect_to main_app.root_path, notice: "All sessions cleared"
     end
 
     private
@@ -94,8 +94,22 @@ module Dbwatcher
       return unless table_data[:sample_record].nil? && (change["record_snapshot"] || change[:record_snapshot])
 
       snapshot = change["record_snapshot"] || change[:record_snapshot]
-      # Convert symbol keys to strings for humanize to work
-      table_data[:sample_record] = snapshot.is_a?(Hash) ? stringify_keys(snapshot) : snapshot
+      
+      # Handle different data types for snapshot
+      case snapshot
+      when Hash
+        table_data[:sample_record] = stringify_keys(snapshot)
+      when String
+        # Try to parse as JSON if it's a string
+        begin
+          parsed_snapshot = JSON.parse(snapshot)
+          table_data[:sample_record] = parsed_snapshot.is_a?(Hash) ? stringify_keys(parsed_snapshot) : snapshot
+        rescue JSON::ParserError
+          table_data[:sample_record] = snapshot
+        end
+      else
+        table_data[:sample_record] = snapshot
+      end
     end
 
     # Helper to convert symbol keys to string keys recursively

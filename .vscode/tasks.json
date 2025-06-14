@@ -57,6 +57,20 @@
       }
     },
     {
+      "label": "Start Dev Server",
+      "type": "shell",
+      "command": "bash",
+      "args": ["-c", "cd spec/dummy && BUNDLE_GEMFILE=Gemfile bundle exec rails server -e development -p 3000"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      },
+      "isBackground": true
+    },
+    {
       "label": "Start Test Server",
       "type": "shell",
       "command": "bash",

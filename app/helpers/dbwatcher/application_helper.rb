@@ -2,6 +2,11 @@
 
 module Dbwatcher
   module ApplicationHelper
+    # Check if the current page matches the given path
+    def current_page?(path)
+      request.path == path || request.path.start_with?(path.to_s)
+    end
+
     # Truncate cell values for display in compact view
     def truncate_cell_value(value, max_length = 50)
       return "" if value.nil?
@@ -103,6 +108,37 @@ module Dbwatcher
 
       formatted_value = format_cell_value_simple(value)
       formatted_value.length > max_length
+    end
+
+    # Path helpers for navigation within the engine
+    def dbwatcher_root_path
+      main_app.dbwatcher_path
+    rescue StandardError
+      "/dbwatcher"
+    end
+
+    def dbwatcher_sessions_path
+      main_app.dbwatcher.sessions_path
+    rescue StandardError
+      "/dbwatcher/sessions"
+    end
+
+    def dbwatcher_session_path(id)
+      main_app.dbwatcher.session_path(id)
+    rescue StandardError
+      "/dbwatcher/sessions/#{id}"
+    end
+
+    def dbwatcher_tables_path
+      main_app.dbwatcher.tables_path
+    rescue StandardError
+      "/dbwatcher/tables"
+    end
+
+    def dbwatcher_queries_path
+      main_app.dbwatcher.queries_path
+    rescue StandardError
+      "/dbwatcher/queries"
     end
 
     private

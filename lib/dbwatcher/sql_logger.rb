@@ -63,20 +63,20 @@ module Dbwatcher
         )
       end
     end
-    
+
     def skip_query?(payload)
       skip_schema_query?(payload) || skip_internal_query?(payload)
     end
-    
+
     def skip_schema_query?(payload)
       payload[:name]&.include?("SCHEMA")
     end
-    
+
     def skip_internal_query?(payload)
       return true if payload[:sql]&.include?("sqlite_master")
       return true if payload[:sql]&.include?("PRAGMA")
       return true if payload[:sql]&.include?("information_schema")
-      
+
       false
     end
 

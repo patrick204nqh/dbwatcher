@@ -21,7 +21,7 @@ module Dbwatcher
 
     # Mount the engine routes automatically
     initializer "dbwatcher.routes", after: :add_routing_paths do |app|
-      app.routes.append do
+      app.routes.prepend do
         mount Dbwatcher::Engine => "/dbwatcher", as: :dbwatcher
       end
     end

@@ -101,7 +101,7 @@
                     <input type="checkbox" 
                            x-model="tableColumns['<%= table_name %>']['<%= column %>']"
                            class="mr-2">
-                    <span class="flex-1"><%= column.humanize %></span>
+                    <span class="flex-1"><%= column.to_s.humanize %></span>
                   </label>
                 <% end %>
               <% end %>
@@ -126,7 +126,7 @@
                       <% summary[:sample_record].keys.each do |column| %>
                         <th class="text-left min-w-32 px-2" 
                             x-show="tableColumns['<%= table_name %>']['<%= column %>']">
-                          <%= column.humanize %>
+                          <%= column.to_s.humanize %>
                         </th>
                       <% end %>
                     <% end %>
@@ -134,7 +134,10 @@
                 </thead>
                 <tbody>
                   <% summary[:changes].each_with_index do |change, index| %>
-                    <tr class="hover:bg-blue-50">
+                    <% row_id = "#{table_name}_row_#{index}" %>
+                    <tr class="hover:bg-blue-50 cursor-pointer" 
+                        x-data="{ expanded: false }"
+                        @click="expanded = !expanded">
                       <% operation = change['operation'] || change[:operation] %>
                       <% timestamp = change['timestamp'] || change[:timestamp] %>
                       <% snapshot = change['record_snapshot'] || change[:record_snapshot] || {} %>
@@ -160,9 +163,8 @@
                       <% if snapshot %>
                         <% snapshot.each do |key, value| %>
                           <td x-show="tableColumns['<%= table_name %>']['<%= key %>']" 
-                              class="relative cursor-pointer hover:bg-gray-100 px-2"
-                              @click="showCellModal('<%= key %>', $el.dataset.value, '<%= operation %>')"
-                              data-value="<%= h(value) %>">
+                              class="relative px-2"
+                              @click.stop="">
                             <% changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == key.to_s } %>
                             <div class="min-w-32 max-w-48 truncate">
                               <% if operation == 'UPDATE' && changed_column %>
@@ -192,6 +194,56 @@
                         <% end %>
                       <% end %>
                     </tr>
+                    
+                    <!-- Expanded Row Content -->
+                    <tr x-show="expanded" 
+                        x-collapse
+                        class="bg-gray-50 border-t border-gray-200">
+                      <td colspan="2" class="sticky left-0 bg-gray-50 z-10 border-r border-gray-200 p-3">
+                        <div class="text-xs font-medium text-gray-700 mb-2">Record Details</div>
+                        <div class="text-xs text-gray-600">
+                          Operation: <span class="badge badge-<%= operation&.downcase %>"><%= operation %></span>
+                          <% if timestamp %>
+                            <br>Time: <%= Time.parse(timestamp.to_s).strftime("%H:%M:%S.%L") rescue timestamp %>
+                          <% end %>
+                        </div>
+                      </td>
+                      <% if snapshot %>
+                        <% snapshot.each do |key, value| %>
+                          <td x-show="tableColumns['<%= table_name %>']['<%= key %>']" 
+                              class="p-3 border-r border-gray-200 align-top">
+                            <% changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == key.to_s } %>
+                            <div class="text-xs font-medium text-gray-600 mb-1"><%= key.to_s.humanize %></div>
+                            <div class="max-w-md">
+                              <% if operation == 'UPDATE' && changed_column %>
+                                <div class="space-y-2">
+                                  <div class="text-red-600 bg-red-50 p-2 rounded">
+                                    <div class="text-xs font-medium mb-1">Old Value:</div>
+                                    <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(changed_column['old_value'] || changed_column[:old_value]) %></pre>
+                                  </div>
+                                  <div class="text-green-600 bg-green-50 p-2 rounded">
+                                    <div class="text-xs font-medium mb-1">New Value:</div>
+                                    <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(changed_column['new_value'] || changed_column[:new_value]) %></pre>
+                                  </div>
+                                </div>
+                              <% elsif operation == 'INSERT' %>
+                                <div class="text-green-600 bg-green-50 p-2 rounded">
+                                  <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(value) %></pre>
+                                </div>
+                              <% elsif operation == 'DELETE' %>
+                                <div class="text-red-600 bg-red-50 p-2 rounded">
+                                  <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(value) %></pre>
+                                </div>
+                              <% else %>
+                                <div class="text-gray-700 bg-gray-100 p-2 rounded">
+                                  <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(value) %></pre>
+                                </div>
+                              <% end %>
+                            </div>
+                          </td>
+                        <% end %>
+                      <% end %>
+                    </tr>
                   <% end %>
                 </tbody>
               </table>
@@ -199,42 +251,6 @@
           </div>
         </div>
       <% end %>
-    </div>
-  </div>
-
-  <!-- Cell Value Modal -->
-  <div x-show="cellModal.show" 
-       x-transition
-       @click.self="closeCellModal()"
-       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-lg max-w-4xl w-full max-h-[80vh] overflow-auto p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-medium text-gray-900">
-          Column: <span x-text="cellModal.column"></span>
-          <span x-show="cellModal.operation" class="ml-2">
-            (<span class="badge" :class="`badge-${cellModal.operation.toLowerCase()}`" x-text="cellModal.operation"></span>)
-          </span>
-        </h3>
-        <button @click="closeCellModal()" 
-                class="text-gray-400 hover:text-gray-600">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-      <div class="bg-gray-50 p-4 rounded-lg">
-        <pre class="whitespace-pre-wrap text-sm font-mono" x-text="cellModal.value"></pre>
-      </div>
-      <div class="mt-4 flex justify-end gap-2">
-        <button @click="copyCellValue()" 
-                class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-          Copy Value
-        </button>
-        <button @click="closeCellModal()" 
-                class="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400">
-          Close
-        </button>
-      </div>
     </div>
   </div>
 </div>
@@ -245,12 +261,6 @@ function sessionView() {
     activeTab: 'changes',
     showColumnSelector: null,
     tableColumns: {},
-    cellModal: {
-      show: false,
-      column: '',
-      value: '',
-      operation: ''
-    },
     
     init() {
       // Initialize column visibility for each table
@@ -287,26 +297,6 @@ function sessionView() {
     selectNoneColumns(tableName) {
       Object.keys(this.tableColumns[tableName]).forEach(column => {
         this.tableColumns[tableName][column] = false;
-      });
-    },
-    
-    showCellModal(column, value, operation) {
-      this.cellModal = {
-        show: true,
-        column: column,
-        value: value || 'NULL',
-        operation: operation
-      };
-    },
-    
-    closeCellModal() {
-      this.cellModal.show = false;
-    },
-    
-    copyCellValue() {
-      navigator.clipboard.writeText(this.cellModal.value).then(() => {
-        // You could add a toast notification here
-        console.log('Value copied to clipboard');
       });
     },
     

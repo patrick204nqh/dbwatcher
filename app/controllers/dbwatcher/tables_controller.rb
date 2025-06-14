@@ -67,6 +67,8 @@ module Dbwatcher
     def update_tables_from_session(tables, session)
       session.changes.each do |change|
         table_name = change["table_name"] || change[:table_name]
+        next if table_name.nil? || table_name.empty? # Skip invalid table names
+
         tables[table_name] ||= { name: table_name, change_count: 0, last_change: nil }
         update_table_statistics(tables[table_name], change)
       end

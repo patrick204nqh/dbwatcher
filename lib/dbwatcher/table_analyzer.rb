@@ -77,9 +77,9 @@ module Dbwatcher
         type: "belongs_to"
       }
 
-      unless tables[table_name][:relationships].include?(relationship)
-        tables[table_name][:relationships] << relationship
-      end
+      return if tables[table_name][:relationships].include?(relationship)
+
+      tables[table_name][:relationships] << relationship
     end
 
     def self.summarize_session(session_id)

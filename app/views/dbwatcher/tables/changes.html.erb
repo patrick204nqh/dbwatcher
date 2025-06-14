@@ -78,7 +78,7 @@
             <% sample_record = @records.values.first.first['record_snapshot'] %>
             <% if sample_record %>
               <% sample_record.keys.each do |column| %>
-                <th class="text-left"><%= column.humanize %></th>
+                <th class="text-left"><%= column.to_s.humanize %></th>
               <% end %>
             <% end %>
           <% end %>
