@@ -7,29 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2025-06-16
+
+### Added
+
+- Refactor sessions index page and remove outdated components for improved clarity and maintainability
+- Add new sessions index page and refactor shared components
+- Enhance session and query management with improved clear functionality and file counting
+- Implement clear functionality for sessions and queries, enhancing data management
+- Refactor controllers to utilize service objects for improved data handling and separation of concerns feat: Introduce logging capabilities across services for better traceability feat: Implement dashboard data aggregation service for enhanced performance metrics feat: Add query filtering service to streamline query management feat: Create table statistics collector service for organized table data feat: Enhance session API with refined filtering methods for session retrieval refactor: Modularize helper methods into dedicated files for better maintainability
+- Refactor storage system by introducing Base, SessionStorage, QueryStorage, and TableStorage classes
+- Improve table layout and expand/collapse functionality in session view
+- Enhance session and table views with improved navigation and data handling
+- Add detailed table view for DB changes and enhance UI
+
+### Changed
+
+- Refactor stats icon generation to use dedicated methods for better maintainability and readability
+- Refactor storage module: Enhance error handling, improve file management, and streamline session operations
+- Refactor Dbwatcher storage system to improve API and data handling
+
 ## [0.1.5] - 2025-06-15
+
 ### Testing
 
 - Enhance gem installation testing by validating gem structure and contents
 
-
 ## [0.1.4] - 2025-06-15
+
 ### Testing
 
 - Enhance gem installation testing by verifying gem loading and compatibility with Rails environment
 
-
 ## [0.1.3] - 2025-06-15
+
 ### Changed
 
 - Enhance gem release workflow with installation testing and improve gemspec metadata
 
-
 ## [0.1.2] - 2025-06-15
+
 ### Changed
 
 - Update release workflow to reflect gem name change from ClassMetrix to DB Watcher
-
 
 ## [0.1.1] - 2025-06-15
 
@@ -54,7 +74,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Remove TestingController and associated database operation methods
-
 
 ### Added
 
@@ -86,6 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced project structure and documentation
 
 ### Fixed
+
 - **RuboCop Compliance**: Achieved 100% compliance (121 files inspected, 0 offenses detected)
   - Fixed ApplicationHelper module length violation (115 lines → modular structure)
   - Resolved SessionAPI method complexity issues (ABC size 25.08 → compliant)
@@ -103,6 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - Initial Release
 
 ### Added
+
 - Core database tracking functionality
 - Rails engine with web dashboard
 - File-based storage system
@@ -114,6 +135,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Middleware for request-based tracking
 
 ### Features
+
 - Track INSERT, UPDATE, DELETE operations
 - Session-based organization of tracking data
 - Real-time web dashboard
