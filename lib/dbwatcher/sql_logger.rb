@@ -38,7 +38,7 @@ module Dbwatcher
 
     def store_query(query)
       @queries << query
-      Storage.save_query(query)
+      Storage.queries.create(query)
     end
 
     def clear_queries

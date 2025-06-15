@@ -31,7 +31,7 @@
             class="compact-select">
       <option value="">All Sessions</option>
       <% @sessions.each do |session_id| %>
-        <% session = Dbwatcher::Storage.load_session(session_id) %>
+        <% session = Dbwatcher::Storage.sessions.find(session_id) %>
         <% if session %>
           <option value="<%= session_id %>"><%= session.name %></option>
         <% end %>
@@ -68,37 +68,38 @@
   
   <!-- Content -->
   <div class="flex-1 overflow-auto">
-    <table class="compact-table w-full">
-      <thead>
-        <tr>
-          <th class="text-center w-16">Op</th>
-          <th class="text-left w-24">Session</th>
-          <th class="text-left w-20">Time</th>
-          <% if @records.any? %>
-            <% sample_record = @records.values.first.first['record_snapshot'] %>
-            <% if sample_record %>
-              <% sample_record.keys.each do |column| %>
-                <th class="text-left"><%= column.to_s.humanize %></th>
+    <% if @records&.any? %>
+      <table class="compact-table w-full">
+        <thead>
+          <tr>
+            <th class="text-center w-16">Op</th>
+            <th class="text-left w-24">Session</th>
+            <th class="text-left w-20">Time</th>
+            <% if @records&.any? %>
+              <% sample_record = @records.values.first.first[:record_snapshot] %>
+              <% if sample_record %>
+                <% sample_record.keys.each do |column| %>
+                  <th class="text-left"><%= column.to_s.humanize %></th>
+                <% end %>
               <% end %>
             <% end %>
-          <% end %>
-        </tr>
-      </thead>
-      <tbody>
-        <template x-for="record in filteredRecords" :key="record.id">
-          <tr class="cursor-pointer hover:bg-blue-50" 
-              @click="selectRecord(record)"
-              :class="{ 'selected': selectedRecord?.id === record.id }">
-            <td class="text-center">
-              <span class="badge" 
-                    :class="`badge-${record.operation.toLowerCase()}`"
-                    x-text="record.operation.charAt(0)"></span>
-            </td>
-            <td class="truncate text-xs" 
-                :title="record.session_name"
-                x-text="record.session_name"></td>
-            <td class="text-xs text-gray-600" 
-                x-text="formatTime(record.timestamp)"></td>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="record in filteredRecords" :key="record.id">
+            <tr class="cursor-pointer hover:bg-blue-50" 
+                @click="selectRecord(record)"
+                :class="{ 'selected': selectedRecord?.id === record.id }">
+              <td class="text-center">
+                <span class="badge" 
+                      :class="`badge-${record.operation.toLowerCase()}`"
+                      x-text="record.operation.charAt(0)"></span>
+              </td>
+              <td class="truncate text-xs" 
+                  :title="record.session_name"
+                  x-text="record.session_name"></td>
+              <td class="text-xs text-gray-600" 
+                  x-text="formatTime(record.timestamp)"></td>
             <template x-for="[key, value] in Object.entries(record.record_snapshot || {})" :key="key">
               <td class="truncate max-w-32" 
                   :title="value"
@@ -113,6 +114,18 @@
         </template>
       </tbody>
     </table>
+    <% else %>
+      <div class="flex items-center justify-center h-full text-gray-500">
+        <div class="text-center">
+          <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" 
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+          <p class="text-sm">No changes recorded for this table</p>
+          <p class="text-xs text-gray-400 mt-1">Changes will appear here when database operations are tracked</p>
+        </div>
+      </div>
+    <% end %>
   </div>
 </div>
 <script>
@@ -122,7 +135,7 @@ function tableView() {
     selectedSession: '',
     selectedOperation: '',
     selectedRecord: null,
-    records: <%= @records.to_json.html_safe %>,
+    records: <%= (@records || {}).to_json.html_safe %>,
     
     get flatRecords() {
       const flat = [];

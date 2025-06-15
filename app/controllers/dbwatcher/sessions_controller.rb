@@ -6,7 +6,7 @@ module Dbwatcher
     layout "dbwatcher/application"
 
     def index
-      @sessions = Storage.all_sessions
+      @sessions = Storage.sessions.all
     end
 
     def show
@@ -24,7 +24,7 @@ module Dbwatcher
     end
 
     def load_session
-      session = Storage.load_session(params[:id])
+      session = Storage.sessions.find(params[:id])
       Rails.logger.info "SessionsController#show: Loaded session: #{session.inspect}"
       session
     end
@@ -70,7 +70,7 @@ module Dbwatcher
     end
 
     def extract_table_name(change)
-      change["table_name"] || change[:table_name]
+      change[:table_name]
     end
 
     def initialize_table_data(tables, table_name)
@@ -82,41 +82,23 @@ module Dbwatcher
     end
 
     def update_table_data(table_data, change)
-      # Count operations
-      operation = change["operation"] || change[:operation]
+      # Count operations - storage module ensures consistent data
+      operation = change[:operation] || "UNKNOWN"
+      table_data[:operations][operation] ||= 0
       table_data[:operations][operation] += 1
 
-      # Add change to the list
+      # Add change to the list - already normalized by storage
       table_data[:changes] << change
     end
 
     def update_sample_record(table_data, change)
-      return unless table_data[:sample_record].nil? && (change["record_snapshot"] || change[:record_snapshot])
+      return unless table_data[:sample_record].nil?
 
-      snapshot = change["record_snapshot"] || change[:record_snapshot]
-      
-      # Handle different data types for snapshot
-      case snapshot
-      when Hash
-        table_data[:sample_record] = stringify_keys(snapshot)
-      when String
-        # Try to parse as JSON if it's a string
-        begin
-          parsed_snapshot = JSON.parse(snapshot)
-          table_data[:sample_record] = parsed_snapshot.is_a?(Hash) ? stringify_keys(parsed_snapshot) : snapshot
-        rescue JSON::ParserError
-          table_data[:sample_record] = snapshot
-        end
-      else
-        table_data[:sample_record] = snapshot
-      end
-    end
+      snapshot = change[:record_snapshot]
+      return unless snapshot
 
-    # Helper to convert symbol keys to string keys recursively
-    def stringify_keys(hash)
-      return hash unless hash.is_a?(Hash)
-
-      hash.transform_keys(&:to_s)
+      # Storage module already normalizes data, so we can use it directly
+      table_data[:sample_record] = snapshot
     end
 
     # Helper method to safely get the sessions path

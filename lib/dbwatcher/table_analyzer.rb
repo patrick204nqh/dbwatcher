@@ -3,7 +3,7 @@
 module Dbwatcher
   class TableAnalyzer
     def self.analyze_session(session_id)
-      session = Storage.load_session(session_id)
+      session = Storage.sessions.find(session_id)
       return {} unless session
 
       analyze_session_changes(session)
@@ -22,7 +22,7 @@ module Dbwatcher
     end
 
     def self.extract_table_name(change)
-      change["table_name"] || change[:table_name]
+      change[:table_name]
     end
 
     def self.initialize_table_data(tables, table_name)
@@ -41,7 +41,7 @@ module Dbwatcher
     end
 
     def self.update_operation_count(tables, table_name, change)
-      operation = change["operation"] || change[:operation]
+      operation = change[:operation]
       tables[table_name][:operations][operation] += 1
     end
 

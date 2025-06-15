@@ -89,14 +89,14 @@
             <tbody>
               <% @recent_sessions.each do |session| %>
                 <tr class="hover:bg-blue-50">
-                  <td class="truncate max-w-xs" title="<%= session['name'] || session[:name] %>">
-                    <%= link_to (session['name'] || session[:name]).to_s.gsub(/^HTTP \w+ /, ''), session_path(session['id'] || session[:id]), class: "text-navy-dark hover:text-blue-medium" %>
+                  <td class="truncate max-w-xs" title="<%= session[:name] %>">
+                    <%= link_to session[:name].to_s.gsub(/^HTTP \w+ /, ''), session_path(session[:id]), class: "text-navy-dark hover:text-blue-medium" %>
                   </td>
                   <td class="text-center">
-                    <span class="badge bg-gray-600 text-white"><%= session['change_count'] || session[:change_count] || 0 %></span>
+                    <span class="badge bg-gray-600 text-white"><%= session[:change_count] || 0 %></span>
                   </td>
                   <td class="text-right text-gray-500">
-                    <%= Time.parse(session['started_at'] || session[:started_at]).strftime("%H:%M:%S") rescue 'N/A' %>
+                    <%= Time.parse(session[:started_at]).strftime("%H:%M:%S") rescue 'N/A' %>
                   </td>
                 </tr>
               <% end %>

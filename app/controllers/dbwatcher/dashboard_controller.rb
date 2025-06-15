@@ -6,7 +6,7 @@ module Dbwatcher
     layout "dbwatcher/application"
 
     def index
-      @recent_sessions = Storage.all_sessions.first(5)
+      @recent_sessions = Storage.sessions.all.first(5)
       @active_tables = calculate_active_tables
       @query_stats = calculate_query_stats
     end
@@ -17,13 +17,13 @@ module Dbwatcher
       # Get tables with most recent changes
       tables = Hash.new(0)
 
-      Storage.all_sessions.first(10).each do |session_info|
-        session = Storage.load_session(session_info[:id])
+      Storage.sessions.all.first(10).each do |session_info|
+        session = Storage.sessions.find(session_info[:id])
         next unless session
 
         session.changes.each do |change|
-          table_name = change["table_name"] || change[:table_name]
-          tables[table_name] += 1
+          table_name = change[:table_name]
+          tables[table_name] += 1 if table_name
         end
       end
 
@@ -32,12 +32,12 @@ module Dbwatcher
 
     def calculate_query_stats
       date = Date.current.strftime("%Y-%m-%d")
-      queries = Storage.load_queries_for_date(date)
+      queries = Storage.queries.for_date(date).all
 
       {
         total: queries.count,
         slow_queries: queries.count { |q| q["duration"] && q["duration"] > 100 },
-        by_operation: queries.group_by { |q| q["operation"] || "UNKNOWN" }
+        by_operation: queries.group_by { |q| q[:operation] || "UNKNOWN" }
                              .transform_values(&:count)
       }
     rescue StandardError

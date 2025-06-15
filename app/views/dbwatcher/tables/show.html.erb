@@ -41,7 +41,7 @@
               <tr class="hover:bg-gray-50">
                 <td class="font-mono text-xs"><%= change["record_id"] || change[:record_id] %></td>
                 <td>
-                  <% operation = change["operation"] || change[:operation] %>
+                  <% operation = change[:operation] %>
                   <span class="badge <%= case operation
                     when 'INSERT' then 'badge-insert'
                     when 'UPDATE' then 'badge-update'
@@ -52,10 +52,10 @@
                   </span>
                 </td>
                 <td class="text-xs text-gray-600 truncate max-w-xs">
-                  <%= change["session_name"] || change[:session_name] || change["session_id"] || change[:session_id] %>
+                  <%= change[:session_name] || change[:session_id] %>
                 </td>
                 <td class="text-xs text-gray-500">
-                  <% timestamp = change["timestamp"] || change[:timestamp] %>
+                  <% timestamp = change[:timestamp] %>
                   <%= Time.parse(timestamp.to_s).strftime("%Y-%m-%d %H:%M:%S") rescue timestamp %>
                 </td>
                 <td class="text-right">

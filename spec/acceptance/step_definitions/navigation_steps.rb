@@ -15,7 +15,7 @@ end
 
 When(/^I click on a session$/) do
   # Get the first available session
-  sessions = Dbwatcher::Storage.all_sessions
+  sessions = Dbwatcher::Storage.sessions.all
   raise "No sessions available to click on" unless sessions.any?
 
   session_id = sessions.first[:id] || sessions.first["id"]

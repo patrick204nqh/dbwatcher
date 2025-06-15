@@ -1,49 +1,28 @@
 # frozen_string_literal: true
 
+require_relative "change_processor"
+
 module Dbwatcher
   module Storage
     class TableStorage < Base
       def initialize(session_storage)
         super()
-        @session_storage = session_storage
+        @change_processor = ChangeProcessor.new(session_storage)
       end
 
       def load_changes(table_name)
-        changes = []
+        return [] if invalid_table_name?(table_name)
 
-        @session_storage.all.each do |session_info|
-          session_changes = collect_session_changes(session_info[:id], table_name)
-          changes.concat(session_changes) if session_changes.any?
-        end
-
-        sort_by_timestamp(changes)
+        @change_processor.process_table_changes(table_name)
+      rescue StandardError => e
+        log_error("Failed to load changes for table #{table_name}", e)
+        []
       end
 
       private
 
-      def collect_session_changes(session_id, table_name)
-        session = @session_storage.load(session_id)
-        return [] unless session
-
-        session.changes
-               .select { |c| table_name_from_change(c) == table_name }
-               .map { |change| enrich_with_session_data(change, session) }
-      end
-
-      def table_name_from_change(change)
-        change["table_name"] || change[:table_name]
-      end
-
-      def enrich_with_session_data(change, session)
-        stringified_change = change.is_a?(Hash) ? change.transform_keys(&:to_s) : change
-        stringified_change.merge(
-          "session_id" => session.id,
-          "session_name" => session.name
-        )
-      end
-
-      def sort_by_timestamp(changes)
-        changes.sort_by { |c| c["timestamp"] || c[:timestamp] }.reverse
+      def invalid_table_name?(table_name)
+        table_name.nil? || table_name.to_s.strip.empty?
       end
     end
   end

@@ -1,43 +1,65 @@
 # frozen_string_literal: true
 
+require_relative "query_validator"
+require_relative "date_helper"
+
 module Dbwatcher
   module Storage
     class QueryStorage < Base
+      include DateHelper
+
       def initialize
         super
         @queries_path = File.join(storage_path, "queries")
-        FileUtils.mkdir_p(@queries_path)
+        file_manager.ensure_directory(@queries_path)
       end
 
       def save(query)
-        return unless query
+        return false unless QueryValidator.valid?(query)
 
-        date = query[:timestamp].strftime("%Y-%m-%d")
-        query_file = File.join(@queries_path, "#{date}.json")
+        date = format_date(query[:timestamp])
+        query_file = date_file_path(@queries_path, date)
 
-        queries = load_for_date(date)
-        queries << query
-
-        # Apply limits
-        max_queries = Dbwatcher.configuration.max_query_logs_per_day
-        queries = queries.last(max_queries) if queries.count > max_queries
+        queries = load_queries_from_file(query_file)
+        queries = add_query_with_limits(queries, query)
 
         safe_write_json(query_file, queries)
       end
 
       def load_for_date(date)
-        query_file = File.join(@queries_path, "#{date}.json")
+        query_file = date_file_path(@queries_path, date)
         safe_read_json(query_file)
       end
 
-      def cleanup_old_queries(days_to_keep = 30)
-        cutoff_date = Time.now - (days_to_keep * 24 * 60 * 60)
+      def cleanup_old_queries(days_to_keep = DEFAULT_CLEANUP_DAYS)
+        cutoff_date = cleanup_cutoff_date(days_to_keep)
+        cleanup_files_older_than(cutoff_date)
+      end
 
-        Dir.glob(File.join(@queries_path, "*.json")).each do |file|
-          File.delete(file) if File.mtime(file) < cutoff_date
+      private
+
+      def load_queries_from_file(query_file)
+        safe_read_json(query_file)
+      end
+
+      def add_query_with_limits(queries, new_query)
+        queries << new_query
+        apply_daily_limits(queries)
+      end
+
+      def apply_daily_limits(queries)
+        max_queries = Dbwatcher.configuration.max_query_logs_per_day
+        return queries unless max_queries&.positive?
+
+        queries.last(max_queries)
+      end
+
+      def cleanup_files_older_than(cutoff_date)
+        safe_operation("cleanup old queries") do
+          file_manager.glob_files(File.join(@queries_path, "*.json")).each do |file|
+            file_manager.delete_file(file) if File.mtime(file) < cutoff_date
+          end
         end
-      rescue StandardError => e
-        warn "Failed to cleanup old queries: #{e.message}"
       end
     end
   end

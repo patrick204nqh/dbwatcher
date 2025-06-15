@@ -11,8 +11,8 @@ module Dbwatcher
 
     def show
       @table_name = params[:id]
-      @changes = Storage.load_table_changes(@table_name)
-      @sessions = @changes.map { |c| c["session_id"] }.uniq
+      @changes = Storage.tables.changes_for(@table_name).all
+      @sessions = @changes.map { |c| c[:session_id] }.uniq
 
       respond_to do |format|
         format.html
@@ -22,10 +22,11 @@ module Dbwatcher
 
     def changes
       @table_name = params[:id]
-      @changes = Storage.load_table_changes(@table_name)
+      @changes = Storage.tables.changes_for(@table_name).all
+      @sessions = @changes.map { |c| c[:session_id] }.uniq
 
       # Group by record for table view
-      @records = @changes.group_by { |c| c["record_id"] }
+      @records = @changes.group_by { |c| c[:record_id] }
     end
 
     private
@@ -54,8 +55,8 @@ module Dbwatcher
     end
 
     def add_change_statistics_to_tables(tables)
-      Storage.all_sessions.each do |session_info|
-        session = Storage.load_session(session_info[:id])
+      Storage.sessions.all.each do |session_info|
+        session = Storage.sessions.find(session_info[:id])
         next unless session
 
         update_tables_from_session(tables, session)
@@ -66,7 +67,7 @@ module Dbwatcher
 
     def update_tables_from_session(tables, session)
       session.changes.each do |change|
-        table_name = change["table_name"] || change[:table_name]
+        table_name = change[:table_name]
         next if table_name.nil? || table_name.empty? # Skip invalid table names
 
         tables[table_name] ||= { name: table_name, change_count: 0, last_change: nil }
@@ -76,7 +77,7 @@ module Dbwatcher
 
     def update_table_statistics(table, change)
       table[:change_count] += 1
-      timestamp = change["timestamp"] || change[:timestamp]
+      timestamp = change[:timestamp]
       table[:last_change] = timestamp if table[:last_change].nil? || timestamp > table[:last_change]
     end
 

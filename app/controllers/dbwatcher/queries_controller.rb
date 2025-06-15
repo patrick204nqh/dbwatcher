@@ -20,36 +20,41 @@ module Dbwatcher
 
     def load_and_filter_queries
       @queries = load_queries_for_date
-      apply_operation_filter
-      apply_table_filter
-      apply_duration_filter
+                 .then { |queries| filter_by_operation(queries) }
+                 .then { |queries| filter_by_table(queries) }
+                 .then { |queries| filter_by_duration(queries) }
     end
 
     def load_queries_for_date
-      Storage.load_queries_for_date(@date)
+      Storage.queries.for_date(@date).all
     end
 
-    def apply_operation_filter
-      return unless params[:operation].present?
+    def filter_by_operation(queries)
+      return queries unless params[:operation].present?
 
-      @queries = @queries.select { |q| q["operation"] == params[:operation] }
+      queries.select { |q| q[:operation] == params[:operation] }
     end
 
-    def apply_table_filter
-      return unless params[:table].present?
+    def filter_by_table(queries)
+      return queries unless params[:table].present?
 
-      @queries = @queries.select { |q| q["tables"]&.include?(params[:table]) }
+      queries.select { |q| q[:tables]&.include?(params[:table]) }
     end
 
-    def apply_duration_filter
-      return unless params[:min_duration].present?
+    def filter_by_duration(queries)
+      return queries unless params[:min_duration].present?
 
       min_duration = params[:min_duration].to_f
-      @queries = @queries.select { |q| q["duration"] && q["duration"] >= min_duration }
+      queries.select { |q| query_meets_duration_threshold?(q, min_duration) }
+    end
+
+    def query_meets_duration_threshold?(query, min_duration)
+      duration = query[:duration]
+      duration && duration >= min_duration
     end
 
     def sort_queries
-      @queries = @queries.sort_by { |q| -(q["timestamp"] ? Time.parse(q["timestamp"]).to_i : 0) }
+      @queries = @queries.sort_by { |q| -(q[:timestamp] ? Time.parse(q[:timestamp]).to_i : 0) }
     end
   end
 end

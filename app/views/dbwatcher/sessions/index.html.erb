@@ -55,30 +55,30 @@
         </thead>
         <tbody>
           <% @sessions.each do |session| %>
-            <tr class="cursor-pointer" onclick="window.location='<%= session_path(session[:id] || session['id']) %>'">
+            <tr class="cursor-pointer" onclick="window.location='<%= session_path(session[:id]) %>'">
               <td class="font-medium text-navy-dark">
                 <div class="flex items-center gap-2">
                   <svg class="w-3 h-3 text-blue-medium" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                   </svg>
-                  <span class="truncate max-w-xs" title="<%= session[:name] || session['name'] %>">
-                    <%= (session[:name] || session['name']).to_s.gsub(/^HTTP \w+ /, '') %>
+                  <span class="truncate max-w-xs" title="<%= session[:name] %>">
+                    <%= session[:name].to_s.gsub(/^HTTP \w+ /, '') %>
                   </span>
                 </div>
               </td>
               <td class="text-center text-gray-600">
-                <%= Time.parse(session[:started_at] || session['started_at']).strftime("%m/%d %H:%M") rescue 'N/A' %>
+                <%= Time.parse(session[:started_at]).strftime("%m/%d %H:%M") rescue 'N/A' %>
               </td>
               <td class="text-center text-gray-600">
-                <% if (session[:ended_at] || session['ended_at']) && (session[:started_at] || session['started_at']) %>
-                  <% duration = Time.parse(session[:ended_at] || session['ended_at']) - Time.parse(session[:started_at] || session['started_at']) rescue 0 %>
+                <% if session[:ended_at] && session[:started_at] %>
+                  <% duration = Time.parse(session[:ended_at]) - Time.parse(session[:started_at]) rescue 0 %>
                   <%= '%.2f' % duration %>s
                 <% else %>
                   <span class="text-gray-400">-</span>
                 <% end %>
               </td>
               <td class="text-center">
-                <% change_count = session[:change_count] || session['change_count'] || 0 %>
+                <% change_count = session[:change_count] || 0 %>
                 <% if change_count > 0 %>
                   <span class="badge bg-blue-medium text-white"><%= change_count %></span>
                 <% else %>
@@ -86,7 +86,7 @@
                 <% end %>
               </td>
               <td class="text-center">
-                <% if session[:ended_at] || session['ended_at'] %>
+                <% if session[:ended_at] %>
                   <span class="badge bg-gray-500 text-white">Complete</span>
                 <% else %>
                   <span class="badge bg-gold-dark text-white">Active</span>
@@ -94,7 +94,7 @@
               </td>
               <td class="text-right">
                 <div class="flex gap-1 justify-end">
-                  <%= link_to session_path(session[:id] || session['id']), 
+                  <%= link_to session_path(session[:id]), 
                       class: "compact-button bg-navy-dark text-white hover:bg-blue-medium", 
                       title: "View Details" do %>
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
