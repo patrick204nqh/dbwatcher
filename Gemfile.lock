@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    dbwatcher (0.1.3)
+    dbwatcher (0.1.4)
       rails (>= 6.0)
 
 GEM

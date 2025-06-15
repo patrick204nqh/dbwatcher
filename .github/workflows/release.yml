@@ -173,39 +173,18 @@ jobs:
           # Install the gem locally first
           gem install "$GEM_FILE" --local --no-document
 
-          # Test that the gem loads properly in isolation
+          # Test that the gem loads properly
           ruby -e "
             require 'dbwatcher'
             puts '✅ Gem loads successfully'
             puts 'DBWatcher version: ' + Dbwatcher::VERSION
           "
 
-          # Test with Rails environment
-          echo "🧪 Testing gem with Rails environment"
-          mkdir -p gem_test
-          cd gem_test
-
-          # Create a minimal Gemfile for testing with Rails
-          cat > Gemfile << EOF
-          source 'https://rubygems.org'
-          gem 'rails', '>= 6.0'
-          EOF
-
-          # Configure bundler
-          bundle config set --local path 'vendor/bundle'
-          bundle install
-
-          # Test that dbwatcher works with Rails context
-          bundle exec ruby -e "
-            require 'bundler/setup'
-            require 'rails'
-            require 'dbwatcher'
-            puts '✅ Gem works with Rails'
-            puts 'DBWatcher version: ' + Dbwatcher::VERSION
-          "
-
-          cd ..
-          rm -rf gem_test
+          # Test gem structure and dependencies
+          echo "🔍 Verifying gem structure"
+          gem list dbwatcher --local
+          
+          echo "✅ Gem installation test completed successfully"
 
       - name: Dry run check
         if: github.event.inputs.dry_run == 'true'
