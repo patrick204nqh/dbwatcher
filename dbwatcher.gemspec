@@ -18,6 +18,8 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/patrick204nqh/dbwatcher"
   spec.metadata["changelog_uri"] = "https://github.com/patrick204nqh/dbwatcher/blob/main/CHANGELOG.md"
+  spec.metadata["documentation_uri"] = "https://github.com/patrick204nqh/dbwatcher/blob/main/README.md"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/patrick204nqh/dbwatcher/issues"
 
   spec.files = Dir["{app,config,lib,bin}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
 
@@ -25,7 +27,7 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Abin/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "rails", ">= 6.0"
+  spec.add_dependency "rails", "~> 6.0"
 
   # Testing dependencies
   spec.add_development_dependency "capybara", "~> 3.0"

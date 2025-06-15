@@ -160,14 +160,40 @@ jobs:
             exit 1
           fi
 
-          # Test gem installation locally
-          echo "🧪 Testing gem installation"
-          gem install "$GEM_FILE" --local
-
-          # Verify gem functionality
-          ruby -e "require 'dbwatcher'; puts '✅ Gem loads successfully'"
-
+          echo "✅ Gem built successfully: $GEM_FILE"
           echo "gem_file=$GEM_FILE" >> $GITHUB_OUTPUT
+
+      - name: Test gem installation
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          GEM_FILE="dbwatcher-${VERSION}.gem"
+          
+          echo "🧪 Testing gem installation in minimal environment"
+          
+          # Create a minimal test environment with Rails
+          mkdir -p gem_test
+          cd gem_test
+          
+          # Create a minimal Gemfile for testing
+          cat > Gemfile << EOF
+          source 'https://rubygems.org'
+          gem 'rails', '~> 7.0'
+          gem 'dbwatcher', path: '../$GEM_FILE'
+          EOF
+          
+          # Test installation and loading
+          bundle install --local --path vendor/bundle || bundle install --path vendor/bundle
+          
+          # Test that the gem loads properly
+          bundle exec ruby -e "
+            require 'bundler/setup'
+            require 'dbwatcher'
+            puts '✅ Gem loads successfully'
+            puts 'DBWatcher version: ' + Dbwatcher::VERSION
+          "
+          
+          cd ..
+          rm -rf gem_test
 
       - name: Dry run check
         if: github.event.inputs.dry_run == 'true'
