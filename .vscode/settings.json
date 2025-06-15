@@ -1,69 +1,158 @@
 {
-  // ERB file associations and formatting
-  "files.associations": {
-    "*.html.erb": "erb",
-    "*.erb": "erb"
+  // Auto-formatting settings
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnType": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.rubocop": "explicit"
   },
-  
-  // Auto-format on save for ERB files
-  "[erb]": {
+
+  // Language-specific formatting
+  "[ruby]": {
+    "editor.defaultFormatter": "Shopify.ruby-lsp",
     "editor.formatOnSave": true,
-    "editor.formatOnPaste": true,
-    "editor.formatOnType": false,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2,
     "editor.insertSpaces": true,
+    "editor.semanticHighlighting.enabled": true,
+    "editor.formatOnType": true,
+    "editor.rulers": [140],
     "editor.trimAutoWhitespace": true
   },
-  
-  // HTML formatting within ERB
-  "[html]": {
-    "editor.formatOnSave": true,
+  "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.tabSize": 2,
-    "editor.insertSpaces": true
-  },
-  
-  // Ruby formatting
-  "[ruby]": {
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "shopify.ruby-lsp",
     "editor.tabSize": 2,
-    "editor.insertSpaces": true
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      "comments": "off",
+      "strings": "off",
+      "other": "off"
+    }
   },
-  
-  // Prettier configuration for ERB files
-  "prettier.documentSelectors": [
-    "**/*.html.erb"
-  ],
-  
-  // ERB-specific settings
-  "emmet.includeLanguages": {
-    "erb": "html"
+  "[rbs]": {
+    "editor.defaultFormatter": "soutaro.rbs-syntax",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.semanticHighlighting.enabled": true,
+    "editor.rulers": [120],
+    "editor.trimAutoWhitespace": true
   },
-  
-  // Ruby LSP settings
-  "rubyLsp.formatter": "rubocop",
-  "rubyLsp.linters": ["rubocop"],
-  
-  // File watching and auto-save
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.quickSuggestions": {
+      "strings": true
+    },
+    "editor.suggest.insertMode": "replace"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.quickSuggestions": {
+      "strings": true
+    },
+    "editor.suggest.insertMode": "replace"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.autoIndent": "advanced",
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true
+    }
+  },
+  "[yml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.autoIndent": "advanced",
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true
+    }
+  },
+
+  // File associations
+  "files.associations": {
+    "*.gemspec": "ruby",
+    "Gemfile": "ruby",
+    "Rakefile": "ruby",
+    ".rubocop.yml": "yaml",
+    "*.rbs": "rbs",
+    "Steepfile": "ruby",
+    "*.yaml": "yaml",
+    "*.yml": "yaml",
+    ".yamllint": "yaml",
+    ".yamllint.yaml": "yaml",
+    ".yamllint.yml": "yaml",
+    "*.json": "json",
+    "*.jsonc": "jsonc",
+    ".vscode/*.json": "jsonc",
+    "tsconfig*.json": "jsonc",
+    ".eslintrc": "jsonc",
+    ".babelrc": "jsonc",
+    ".prettierrc": "jsonc"
+  },
+
+  // Auto-save settings
   "files.autoSave": "onFocusChange",
-  "editor.formatOnSaveMode": "file",
-  
-  // Indentation and whitespace
-  "editor.detectIndentation": false,
-  "editor.insertSpaces": true,
-  "editor.tabSize": 2,
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
-  
-  // Language-specific overrides
-  "languageserver-ruby.diagnostics": true,
-  "languageserver-ruby.completion": true,
-  "languageserver-ruby.hover": true,
-  "languageserver-ruby.signature": true,
-  
-  // Additional ERB/Rails support
-  "rails.experimental.enableGoToDefinition": true
+
+  // Ruby LSP specific settings
+  "rubyLsp.enabledFeatures": {
+    "codeActions": true,
+    "diagnostics": true,
+    "documentHighlights": true,
+    "documentLink": true,
+    "documentSymbols": true,
+    "foldingRanges": true,
+    "formatting": true,
+    "hover": true,
+    "inlayHint": true,
+    "onTypeFormatting": true,
+    "selectionRanges": true,
+    "semanticHighlighting": true,
+    "completion": true,
+    "codeLens": true,
+    "definition": true,
+    "workspaceSymbol": true,
+    "signatureHelp": true,
+    "typeHierarchy": true
+  },
+  "rubyLsp.formatter": "rubocop",
+
+  // Rubocop specific settings
+  "ruby.rubocop.configFilePath": ".rubocop.yml",
+  "ruby.rubocop.suppressRubocopWarnings": false,
+
+  // Steep type checker settings
+  "steep.enabled": true,
+  "steep.checkOnSave": true,
+  "steep.diagnosticsEnabled": true,
+  "steep.signatureHelp": true,
+  "steep.hover": true,
+
+  // RBS validation settings
+  "ruby.rbs": {
+    "enabled": true,
+    "diagnostics": true
+  },
+
+  // Additional helpful settings
+  "breadcrumbs.enabled": true,
+  "editor.minimap.enabled": true,
+  "workbench.editor.enablePreview": false
 }

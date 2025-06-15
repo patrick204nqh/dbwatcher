@@ -18,6 +18,8 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/patrick204nqh/dbwatcher"
   spec.metadata["changelog_uri"] = "https://github.com/patrick204nqh/dbwatcher/blob/main/CHANGELOG.md"
+  spec.metadata["documentation_uri"] = "https://github.com/patrick204nqh/dbwatcher/blob/main/README.md"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/patrick204nqh/dbwatcher/issues"
 
   spec.files = Dir["{app,config,lib,bin}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
 
