@@ -198,8 +198,22 @@ module Dbwatcher
       # @return [Integer] number of files removed
       def clear_all
         with_error_handling("clear all queries") do
+          # Count files before deleting
+          file_count = count_query_files
+
           safe_delete_directory(queries_path)
+
+          file_count
         end
+      end
+
+      # Counts the number of query files
+      #
+      # @return [Integer] number of query files
+      def count_query_files
+        return 0 unless Dir.exist?(@queries_path)
+
+        query_files.count
       end
 
       private
@@ -258,7 +272,7 @@ module Dbwatcher
         return queries if max_queries <= 0
 
         queries
-          .sort_by { |q| q[:timestamp] }
+          .sort_by { |q| normalize_timestamp_for_sorting(q[:timestamp]) }
           .last(max_queries)
       end
 
@@ -283,6 +297,23 @@ module Dbwatcher
       # @return [Array<String>] paths to all query files
       def query_files
         file_manager.glob_files(File.join(@queries_path, "*.json"))
+      end
+
+      # Normalizes timestamp for sorting to handle mixed string/Time types
+      #
+      # @param timestamp [String, Time, nil] timestamp to normalize
+      # @return [Time] normalized timestamp
+      def normalize_timestamp_for_sorting(timestamp)
+        case timestamp
+        when Time
+          timestamp
+        when String
+          Time.parse(timestamp)
+        else
+          Time.at(0) # Fallback for nil or invalid timestamps
+        end
+      rescue ArgumentError
+        Time.at(0) # Fallback for unparseable strings
       end
 
       # Returns dates in descending order based on existing files

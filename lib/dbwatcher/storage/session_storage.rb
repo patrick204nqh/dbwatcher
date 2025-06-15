@@ -171,13 +171,18 @@ module Dbwatcher
       # Removes all session files and reinitializes the storage structure.
       # This operation cannot be undone.
       #
-      # @return [void]
+      # @return [Integer] number of files removed
       def clear_all
         with_error_handling("clear all sessions") do
+          # Count files before deleting
+          file_count = count_session_files
+
           safe_delete_directory(sessions_path)
           safe_write_json(index_file, [])
           setup_directories
           touch_updated_at
+
+          file_count
         end
       end
 
@@ -262,6 +267,15 @@ module Dbwatcher
       rescue StandardError => e
         log_error("Failed to build session from data", e)
         raise CorruptedDataError, "Session data is corrupted: #{e.message}"
+      end
+
+      # Counts the number of session files
+      #
+      # @return [Integer] number of session files
+      def count_session_files
+        return 0 unless Dir.exist?(sessions_path)
+
+        Dir.glob(File.join(sessions_path, "*.json")).count
       end
 
       # Checks if cleanup is enabled

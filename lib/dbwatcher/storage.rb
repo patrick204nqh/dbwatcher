@@ -126,10 +126,11 @@ module Dbwatcher
 
       # Clears all storage data
       #
-      # @return [void]
+      # @return [Integer] total number of files removed
       def clear_all
-        session_storage.clear_all
-        query_storage.clear_all
+        session_count = session_storage.clear_all
+        query_count = query_storage.clear_all
+        session_count + query_count
       end
     end
   end

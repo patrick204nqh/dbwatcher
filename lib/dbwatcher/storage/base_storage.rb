@@ -100,15 +100,6 @@ module Dbwatcher
         end
       end
 
-      # Builds a file path with proper extension
-      #
-      # @param directory [String] directory path
-      # @param filename [String] filename without extension
-      # @return [String] complete file path with JSON extension
-      def build_file_path(directory, filename)
-        File.join(directory, "#{filename}#{JSON_FILE_EXTENSION}")
-      end
-
       private
 
       # Ensures the storage directory exists with proper permissions

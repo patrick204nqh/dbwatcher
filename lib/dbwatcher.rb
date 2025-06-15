@@ -40,6 +40,9 @@ module Dbwatcher
       Tracker.current_session
     end
 
+    # Clears all stored data (sessions and queries)
+    #
+    # @return [Integer] total number of files removed
     def clear_all
       Storage.clear_all
     end
