@@ -40,8 +40,8 @@ module Dbwatcher
       Tracker.current_session
     end
 
-    def reset!
-      Storage.reset!
+    def clear_all
+      Storage.clear_all
     end
   end
 end

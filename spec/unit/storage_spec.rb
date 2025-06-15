@@ -183,7 +183,7 @@ RSpec.describe Dbwatcher::Storage do
     end
 
     it "can reset storage" do
-      expect { Dbwatcher::Storage.reset! }.not_to raise_error
+      expect { Dbwatcher::Storage.clear_all }.not_to raise_error
     end
   end
 

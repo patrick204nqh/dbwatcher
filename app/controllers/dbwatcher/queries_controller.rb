@@ -15,5 +15,10 @@ module Dbwatcher
         format.json { render json: @queries }
       end
     end
+
+    def clear
+      cleared_count = Storage.query_storage.clear_all
+      redirect_to queries_path, notice: "SQL query logs cleared (#{cleared_count} files removed)"
+    end
   end
 end

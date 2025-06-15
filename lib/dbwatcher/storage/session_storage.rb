@@ -166,16 +166,16 @@ module Dbwatcher
         all.size
       end
 
-      # Resets all session storage
+      # Clears all session storage
       #
       # Removes all session files and reinitializes the storage structure.
       # This operation cannot be undone.
       #
       # @return [void]
-      def reset!
-        with_error_handling("reset sessions") do
-          FileUtils.rm_rf(sessions_path)
-          File.write(index_file, "[]")
+      def clear_all
+        with_error_handling("clear all sessions") do
+          safe_delete_directory(sessions_path)
+          safe_write_json(index_file, [])
           setup_directories
           touch_updated_at
         end
@@ -201,7 +201,7 @@ module Dbwatcher
       # @return [void]
       def setup_directories
         file_manager.ensure_directory(sessions_path)
-        File.write(index_file, "[]") unless File.exist?(index_file)
+        file_manager.write_json(index_file, []) unless File.exist?(index_file)
       end
 
       # Validates session data

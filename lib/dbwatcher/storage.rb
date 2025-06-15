@@ -31,8 +31,7 @@ module Dbwatcher
   #
   # @example Cleanup operations
   #   Dbwatcher::Storage.cleanup_old_sessions
-  #   Dbwatcher::Storage.reset!
-  #
+  #   Dbwatcher::Storage.clear_all
   # @see SessionAPI
   # @see QueryAPI
   # @see TableAPI
@@ -125,14 +124,12 @@ module Dbwatcher
         @table_storage ||= TableStorage.new(session_storage)
       end
 
-      # Resets all storage data
-      #
-      # **Warning**: This operation removes all stored data and cannot be undone.
-      # Use with extreme caution, primarily for testing or development.
+      # Clears all storage data
       #
       # @return [void]
-      def reset!
-        session_storage.reset!
+      def clear_all
+        session_storage.clear_all
+        query_storage.clear_all
       end
     end
   end

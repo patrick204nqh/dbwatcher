@@ -5,7 +5,7 @@ Dbwatcher::Engine.routes.draw do
 
   resources :sessions do
     collection do
-      delete :destroy_all
+      delete :clear
     end
   end
 
@@ -18,6 +18,7 @@ Dbwatcher::Engine.routes.draw do
   resources :queries, only: [:index] do
     collection do
       get :filter
+      delete :clear
     end
   end
 end

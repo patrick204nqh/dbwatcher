@@ -49,6 +49,27 @@
            value="<%= @date %>"
            @change="changeDate($event.target.value)"
            class="compact-input">
+           
+    <!-- Time Range Filters -->
+    <input type="time" 
+           x-model="filters.startTime"
+           @input="applyFilters()"
+           placeholder="Start time"
+           title="Start time"
+           class="compact-input w-24">
+           
+    <input type="time" 
+           x-model="filters.endTime"
+           @input="applyFilters()"
+           placeholder="End time"
+           title="End time"
+           class="compact-input w-24">
+    
+    <button @click="clearFilters()" 
+            title="Clear all filters"
+            class="compact-button bg-gray-500 text-white hover:bg-gray-600">
+      Clear
+    </button>
     
     <div class="ml-auto flex items-center gap-2">
       <button @click="exportQueries()" 
@@ -66,6 +87,16 @@
         </svg>
         Refresh
       </button>
+      
+      <%= link_to queries_path, method: :delete, 
+                  class: "compact-button bg-red-600 text-white hover:bg-red-700",
+                  confirm: "Are you sure you want to clear all SQL query logs? This action cannot be undone." do %>
+        <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 012 0v4a1 1 0 11-2 0V7zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V7a1 1 0 00-1-1z"/>
+        </svg>
+        Clear Logs
+      <% end %>
     </div>
   </div>
   
@@ -88,15 +119,15 @@
             <tr class="cursor-pointer hover:bg-blue-50" 
                 @click="selectQuery(query)"
                 :class="{ 'selected': selectedQuery?.id === query.id }">
-              <td class="text-xs text-gray-600" x-text="formatTime(query.executed_at)"></td>
+              <td class="text-xs text-gray-600" x-text="formatTime(query.timestamp)"></td>
               <td class="text-center">
                 <span class="badge" 
                       :class="`badge-${query.operation.toLowerCase()}`"
                       x-text="query.operation.charAt(0)"></span>
               </td>
               <td class="font-medium text-navy-dark truncate" 
-                  :title="query.table_names.join(', ')"
-                  x-text="query.table_names.join(', ')"></td>
+                  :title="query.tables.join(', ')"
+                  x-text="query.tables.join(', ')"></td>
               <td class="text-right text-xs" 
                   :class="query.duration > 100 ? 'text-red-600 font-medium' : 'text-gray-600'"
                   x-text="`${query.duration}ms`"></td>
@@ -116,7 +147,9 @@ function queryLogs() {
     filters: {
       operation: '',
       table: '',
-      minDuration: ''
+      minDuration: '',
+      startTime: '',
+      endTime: ''
     },
     selectedQuery: null,
     queries: <%= @queries.to_json.html_safe %>,
@@ -124,8 +157,18 @@ function queryLogs() {
     get filteredQueries() {
       return this.queries.filter(query => {
         if (this.filters.operation && query.operation !== this.filters.operation) return false;
-        if (this.filters.table && !query.table_names.some(t => t.toLowerCase().includes(this.filters.table.toLowerCase()))) return false;
+        if (this.filters.table && !query.tables.some(t => t.toLowerCase().includes(this.filters.table.toLowerCase()))) return false;
         if (this.filters.minDuration && query.duration < parseFloat(this.filters.minDuration)) return false;
+        
+        // Time filtering
+        if (this.filters.startTime || this.filters.endTime) {
+          const queryTime = new Date(query.timestamp);
+          const queryTimeStr = queryTime.toTimeString().substr(0, 5); // HH:MM format
+          
+          if (this.filters.startTime && queryTimeStr < this.filters.startTime) return false;
+          if (this.filters.endTime && queryTimeStr > this.filters.endTime) return false;
+        }
+        
         return true;
       });
     },
@@ -153,9 +196,9 @@ function queryLogs() {
     
     exportQueries() {
       const data = this.filteredQueries.map(q => ({
-        time: this.formatTime(q.executed_at),
+        time: this.formatTime(q.timestamp),
         operation: q.operation,
-        tables: q.table_names.join(', '),
+        tables: q.tables.join(', '),
         duration: q.duration,
         sql: q.sql
       }));
@@ -182,6 +225,14 @@ function queryLogs() {
       const params = new URLSearchParams(window.location.search);
       params.set('date', date);
       window.location.search = params.toString();
+    },
+    
+    clearFilters() {
+      this.filters.operation = '';
+      this.filters.table = '';
+      this.filters.minDuration = '';
+      this.filters.startTime = '';
+      this.filters.endTime = '';
     }
   }
 }

@@ -193,6 +193,15 @@ module Dbwatcher
         duplicate_count
       end
 
+      # Clears all query logs
+      #
+      # @return [Integer] number of files removed
+      def clear_all
+        with_error_handling("clear all queries") do
+          safe_delete_directory(queries_path)
+        end
+      end
+
       private
 
       # Normalizes query data to hash format

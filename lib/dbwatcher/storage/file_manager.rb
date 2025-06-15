@@ -71,6 +71,19 @@ module Dbwatcher
         File.delete(file_path)
       end
 
+      # Deletes a directory and its contents
+      #
+      # @param dir_path [String] path to directory to delete
+      # @return [Boolean] true if directory was deleted, false if it didn't exist
+      def delete_directory(dir_path)
+        return false unless Dir.exist?(dir_path)
+
+        FileUtils.rm_rf(dir_path)
+        true
+      rescue Errno::ENOENT
+        false
+      end
+
       # Returns files matching a glob pattern
       #
       # @param pattern [String] glob pattern to match

@@ -80,6 +80,26 @@ module Dbwatcher
         end
       end
 
+      # Removes a file safely
+      #
+      # @param file_path [String] the path to the file to remove
+      # @return [Boolean] true if file was removed, false if it didn't exist
+      def safe_delete_file(file_path)
+        safe_operation("delete file #{file_path}") do
+          file_manager.delete_file(file_path)
+        end
+      end
+
+      # Removes a directory safely
+      #
+      # @params directory_path [String] the path to the directory to remove
+      # @return [Boolean] true if directory was removed, false if it didn't exist
+      def safe_delete_directory(directory_path)
+        safe_operation("delete directory #{directory_path}") do
+          file_manager.delete_directory(directory_path)
+        end
+      end
+
       # Builds a file path with proper extension
       #
       # @param directory [String] directory path

@@ -25,9 +25,9 @@ module Dbwatcher
       end
     end
 
-    def destroy_all
-      Dbwatcher.reset!
-      redirect_to root_path, notice: "All sessions cleared"
+    def clear
+      cleared_count = Storage.session_storage.clear_all
+      redirect_to sessions_path, notice: "All sessions cleared (#{cleared_count} files removed)"
     end
 
     private
