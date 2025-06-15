@@ -172,13 +172,13 @@ jobs:
 
           # Extract and examine gem contents
           gem unpack "$GEM_FILE"
-          
+
           # Verify gem structure
           echo "🔍 Verifying gem structure"
           if [ -d "dbwatcher-${VERSION}" ]; then
             echo "✅ Gem extracted successfully"
             ls -la "dbwatcher-${VERSION}/"
-            
+
             # Test that the main files exist
             if [ -f "dbwatcher-${VERSION}/lib/dbwatcher.rb" ]; then
               echo "✅ Main library file exists"
@@ -186,14 +186,14 @@ jobs:
               echo "❌ Main library file missing"
               exit 1
             fi
-            
+
             if [ -f "dbwatcher-${VERSION}/lib/dbwatcher/version.rb" ]; then
               echo "✅ Version file exists"
             else
               echo "❌ Version file missing"
               exit 1
             fi
-            
+
             # Test that the version in the gem matches expected version
             cd "dbwatcher-${VERSION}"
             EXTRACTED_VERSION=$(ruby -e "require './lib/dbwatcher/version'; puts Dbwatcher::VERSION")
@@ -203,7 +203,7 @@ jobs:
               echo "❌ Version mismatch in extracted gem: expected $VERSION, got $EXTRACTED_VERSION"
               exit 1
             fi
-            
+
             cd ..
             rm -rf "dbwatcher-${VERSION}"
           else
