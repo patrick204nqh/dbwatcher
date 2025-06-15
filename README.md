@@ -1,8 +1,8 @@
-# DBWatcher 🔍
+# DB Watcher 🔍
 
 Track and visualize database changes in your Rails application for easier debugging and development.
 
-DBWatcher is a powerful Rails gem that captures, stores, and visualizes all database operations in your application. Perfect for debugging complex data flows, understanding application behavior, and optimizing database performance.
+DB Watcher is a powerful Rails gem that captures, stores, and visualizes all database operations in your application. Perfect for debugging complex data flows, understanding application behavior, and optimizing database performance.
 
 ## ✨ Features
 

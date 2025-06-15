@@ -12,16 +12,33 @@ Given(/^there are multiple database sessions$/) do
     { id: "session-2", name: "Session 2", started_at: Time.now.iso8601 },
     { id: "session-3", name: "Session 3", started_at: Time.now.iso8601 }
   ]
-  allow(Dbwatcher::Storage).to receive(:all_sessions).and_return(@sessions)
+  allow(Dbwatcher::Storage.sessions).to receive(:all).and_return(@sessions)
 end
 
 Given(/^there is a database session with queries$/) do
-  @session_with_queries = {
-    id: "detailed-session",
+  # Create a real session with real data
+  session_id = SecureRandom.uuid
+  @session_with_queries = Dbwatcher::Storage::Session.new({
+                                                            id: session_id,
+                                                            name: "Detailed Session",
+                                                            started_at: Time.now.iso8601,
+                                                            ended_at: Time.now.iso8601,
+                                                            changes: []
+                                                          })
+
+  # Initialize @sessions if it doesn't exist
+  @sessions ||= []
+
+  # Add the session to the sessions list so it can be found
+  sessions_with_detailed = @sessions + [{
+    id: session_id,
     name: "Detailed Session",
     started_at: Time.now.iso8601
-  }
-  allow(Dbwatcher::Storage).to receive(:load_session)
-    .with("detailed-session")
-    .and_return(@session_with_queries)
+  }]
+  allow(Dbwatcher::Storage.sessions).to receive(:all).and_return(sessions_with_detailed)
+
+  # Mock sessions.find to return our session for any ID that matches the pattern
+  allow(Dbwatcher::Storage.sessions).to receive(:find) do |id|
+    @session_with_queries if id == session_id
+  end
 end

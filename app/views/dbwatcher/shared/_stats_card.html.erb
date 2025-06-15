@@ -1,0 +1,11 @@
+<%# Enhanced stats card component %>
+<div class="border border-gray-300 rounded bg-white p-3">
+  <div class="flex items-center justify-between mb-2">
+    <span class="text-xs text-gray-600"><%= local_assigns[:label] %></span>
+    <%= local_assigns[:icon_html]&.html_safe if local_assigns[:icon_html] %>
+  </div>
+  <div class="text-2xl font-bold <%= local_assigns[:value_class] || 'text-navy-dark' %>">
+    <%= local_assigns[:value] || 0 %>
+  </div>
+  <div class="text-xs text-gray-500 mt-1"><%= local_assigns[:description] %></div>
+</div>

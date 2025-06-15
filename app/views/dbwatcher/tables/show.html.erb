@@ -1,0 +1,86 @@
+<!-- DBWatcher Table Detail View -->
+<div class="h-full flex flex-col">
+  <!-- Compact Header -->
+  <div class="h-10 bg-navy-dark text-white flex items-center px-4">
+    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/>
+    </svg>
+    <h1 class="text-sm font-medium">Table: <%= @table_name %></h1>
+    
+    <!-- Quick Stats -->
+    <div class="ml-auto flex items-center gap-4 text-xs">
+      <span class="text-blue-light"><%= @changes.count %> changes</span>
+      <span class="text-gold-light"><%= @sessions.count %> sessions</span>
+    </div>
+  </div>
+  
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <div class="tab-item active">Changes</div>
+    <div class="tab-item">Schema</div>
+    <div class="tab-item">Statistics</div>
+  </div>
+  
+  <!-- Content -->
+  <div class="flex-1 overflow-auto p-4">
+    <% if @changes.any? %>
+      <!-- Changes Table -->
+      <div class="bg-white rounded border border-gray-300">
+        <table class="compact-table w-full">
+          <thead>
+            <tr>
+              <th class="text-left">Record ID</th>
+              <th class="text-left">Operation</th>
+              <th class="text-left">Session</th>
+              <th class="text-left">Timestamp</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @changes.each do |change| %>
+              <tr class="hover:bg-gray-50">
+                <td class="font-mono text-xs"><%= change["record_id"] || change[:record_id] %></td>
+                <td>
+                  <% operation = change[:operation] %>
+                  <span class="badge <%= case operation
+                    when 'INSERT' then 'badge-insert'
+                    when 'UPDATE' then 'badge-update'
+                    when 'DELETE' then 'badge-delete'
+                    else 'bg-gray-500 text-white'
+                    end %>">
+                    <%= operation %>
+                  </span>
+                </td>
+                <td class="text-xs text-gray-600 truncate max-w-xs">
+                  <%= change[:session_name] || change[:session_id] %>
+                </td>
+                <td class="text-xs text-gray-500">
+                  <% timestamp = change[:timestamp] %>
+                  <%= Time.parse(timestamp.to_s).strftime("%Y-%m-%d %H:%M:%S") rescue timestamp %>
+                </td>
+                <td class="text-right">
+                  <%= link_to "View Details", changes_table_path(@table_name), 
+                      class: "text-xs text-indigo-600 hover:text-indigo-900" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      
+    <% else %>
+      <!-- Empty State -->
+      <div class="text-center py-12">
+        <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No Changes Found</h3>
+        <p class="text-gray-500">This table hasn't been modified in any tracked sessions.</p>
+        <div class="mt-4">
+          <%= link_to "Back to Tables", tables_path, 
+              class: "text-indigo-600 hover:text-indigo-900" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

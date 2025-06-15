@@ -14,5 +14,10 @@ When(/^I visit the sessions index page$/) do
 end
 
 When(/^I click on a session$/) do
-  visit "/dbwatcher/sessions/detailed-session"
+  # Get the first available session
+  sessions = Dbwatcher::Storage.sessions.all
+  raise "No sessions available to click on" unless sessions.any?
+
+  session_id = sessions.first[:id] || sessions.first["id"]
+  visit "/dbwatcher/sessions/#{session_id}"
 end

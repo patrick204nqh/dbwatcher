@@ -1,109 +1,136 @@
 # frozen_string_literal: true
 
+require_relative "storage/base_storage"
+require_relative "storage/concerns/error_handler"
+require_relative "storage/concerns/timestampable"
+require_relative "storage/concerns/validatable"
+require_relative "storage/concerns/data_normalizer"
+require_relative "storage/session_storage"
+require_relative "storage/query_storage"
+require_relative "storage/table_storage"
+require_relative "storage/session_query"
+require_relative "storage/api/base_api"
+require_relative "storage/api/query_api"
+require_relative "storage/api/table_api"
+require_relative "storage/api/session_api"
+require_relative "storage/session"
+require_relative "storage/errors"
+
 module Dbwatcher
-  class Storage
+  # Storage module provides the main interface for database monitoring data persistence
+  #
+  # This module acts as a facade for different storage backends and provides
+  # clean API entry points for sessions, queries, and tables. It manages
+  # storage instances and provides cleanup operations.
+  #
+  # @example Basic usage
+  #   Dbwatcher::Storage.sessions.create("My Session")
+  #   Dbwatcher::Storage.sessions.recent.with_changes
+  #   Dbwatcher::Storage.queries.save(query_data)
+  #   Dbwatcher::Storage.tables.changes_for("users")
+  #
+  # @example Cleanup operations
+  #   Dbwatcher::Storage.cleanup_old_sessions
+  #   Dbwatcher::Storage.clear_all
+  # @see SessionAPI
+  # @see QueryAPI
+  # @see TableAPI
+  module Storage
     class << self
-      def save_session(session)
-        return unless session&.id
-
-        ensure_storage_directory
-
-        # Save individual session file
-        session_file = File.join(sessions_path, "#{session.id}.json")
-        File.write(session_file, JSON.pretty_generate(session.to_h))
-
-        # Update index
-        update_index(session)
-
-        # Clean old sessions if needed
-        cleanup_old_sessions
-      rescue StandardError => e
-        warn "Failed to save session #{session&.id}: #{e.message}"
+      # Provides access to session operations
+      #
+      # @return [SessionAPI] session API interface
+      # @example
+      #   Dbwatcher::Storage.sessions.create("My Session")
+      #   Dbwatcher::Storage.sessions.all
+      #   Dbwatcher::Storage.sessions.recent.with_changes
+      def sessions
+        @sessions ||= Api::SessionAPI.new(session_storage)
       end
 
-      def load_session(id)
-        return nil if id.nil? || id.empty?
-
-        session_file = File.join(sessions_path, "#{id}.json")
-        return nil unless File.exist?(session_file)
-
-        data = JSON.parse(File.read(session_file), symbolize_names: true)
-        Tracker::Session.new(data)
-      rescue JSON::ParserError => e
-        warn "Failed to parse session file #{id}: #{e.message}"
-        nil
-      rescue StandardError => e
-        warn "Failed to load session #{id}: #{e.message}"
-        nil
+      # Provides access to query operations
+      #
+      # @return [QueryAPI] query API interface
+      # @example
+      #   Dbwatcher::Storage.queries.save(query_data)
+      #   Dbwatcher::Storage.queries.for_date(Date.today)
+      def queries
+        @queries ||= Api::QueryAPI.new(query_storage)
       end
 
-      def all_sessions
-        index_file = File.join(storage_path, "index.json")
-        return [] unless File.exist?(index_file)
-
-        JSON.parse(File.read(index_file), symbolize_names: true)
-      rescue JSON::ParserError => e
-        warn "Failed to parse sessions index: #{e.message}"
-        []
-      rescue StandardError => e
-        warn "Failed to load sessions: #{e.message}"
-        []
+      # Provides access to table operations
+      #
+      # @return [TableAPI] table API interface
+      # @example
+      #   Dbwatcher::Storage.tables.changes_for("users")
+      #   Dbwatcher::Storage.tables.recent_changes
+      def tables
+        @tables ||= Api::TableAPI.new(table_storage)
       end
 
-      def reset!
-        FileUtils.rm_rf(storage_path)
-        ensure_storage_directory
+      # Resets all cached storage instances (primarily for testing)
+      #
+      # This method clears all memoized storage instances, forcing them
+      # to be recreated on next access. Useful for testing scenarios.
+      #
+      # @return [void]
+      # @example
+      #   Dbwatcher::Storage.reset_storage_instances!
+      def reset_storage_instances!
+        @session_storage = nil
+        @query_storage = nil
+        @table_storage = nil
+        @sessions = nil
+        @queries = nil
+        @tables = nil
       end
 
-      private
+      # Cleanup operations
 
-      def storage_path
-        Dbwatcher.configuration.storage_path
-      end
-
-      def sessions_path
-        File.join(storage_path, "sessions")
-      end
-
-      def ensure_storage_directory
-        FileUtils.mkdir_p(sessions_path)
-
-        # Create index if it doesn't exist
-        index_file = File.join(storage_path, "index.json")
-        File.write(index_file, "[]") unless File.exist?(index_file)
-      end
-
-      def update_index(session)
-        index_file = File.join(storage_path, "index.json")
-        index = JSON.parse(File.read(index_file), symbolize_names: true)
-
-        # Add new session summary to index
-        index.unshift({
-                        id: session.id,
-                        name: session.name,
-                        started_at: session.started_at,
-                        ended_at: session.ended_at,
-                        change_count: session.changes.count
-                      })
-
-        # Keep only max_sessions
-        index = index.first(Dbwatcher.configuration.max_sessions)
-
-        File.write(index_file, JSON.pretty_generate(index))
-      rescue StandardError => e
-        warn "Failed to update sessions index: #{e.message}"
-      end
-
+      # Removes old session files based on configuration
+      #
+      # Automatically removes session files that exceed the configured
+      # retention period. This helps manage storage space usage.
+      #
+      # @return [void]
+      # @see Configuration#auto_clean_after_days
       def cleanup_old_sessions
-        return unless Dbwatcher.configuration.auto_clean_after_days
+        session_storage.cleanup_old_sessions
+      end
 
-        cutoff_date = Time.now - (Dbwatcher.configuration.auto_clean_after_days * 24 * 60 * 60)
+      # Direct access to storage instances (for internal use)
 
-        Dir.glob(File.join(sessions_path, "*.json")).each do |file|
-          File.delete(file) if File.mtime(file) < cutoff_date
-        end
-      rescue StandardError => e
-        warn "Failed to cleanup old sessions: #{e.message}"
+      # Returns the session storage instance
+      #
+      # @return [SessionStorage] the session storage instance
+      # @api private
+      def session_storage
+        @session_storage ||= SessionStorage.new
+      end
+
+      # Returns the query storage instance
+      #
+      # @return [QueryStorage] the query storage instance
+      # @api private
+      def query_storage
+        @query_storage ||= QueryStorage.new
+      end
+
+      # Returns the table storage instance
+      #
+      # @return [TableStorage] the table storage instance
+      # @api private
+      def table_storage
+        @table_storage ||= TableStorage.new(session_storage)
+      end
+
+      # Clears all storage data
+      #
+      # @return [Integer] total number of files removed
+      def clear_all
+        session_count = session_storage.clear_all
+        query_count = query_storage.clear_all
+        session_count + query_count
       end
     end
   end

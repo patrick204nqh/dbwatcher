@@ -2,13 +2,21 @@
 
 module Dbwatcher
   class Configuration
-    attr_accessor :storage_path, :enabled, :max_sessions, :auto_clean_after_days
+    attr_accessor :storage_path, :enabled, :max_sessions, :auto_clean_after_days,
+                  :track_queries, :slow_query_threshold, :max_query_logs_per_day,
+                  :mount_path
 
     def initialize
       @storage_path = default_storage_path
       @enabled = true
       @max_sessions = 100
       @auto_clean_after_days = 7
+      @mount_path = "/dbwatcher"
+
+      # SQL Query tracking
+      @track_queries = true
+      @slow_query_threshold = 100.0 # milliseconds
+      @max_query_logs_per_day = 10_000
     end
 
     private

@@ -1,0 +1,240 @@
+<div class="h-full flex flex-col" x-data="queryLogs()">
+  <!-- Header with embedded stats -->
+  <div class="h-10 bg-navy-dark text-white flex items-center px-4">
+    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+    </svg>
+    <h1 class="text-sm font-medium">SQL Query Logs</h1>
+    
+    <!-- Quick Stats -->
+    <div class="ml-auto flex items-center gap-4 text-xs">
+      <span x-text="`${filteredQueries.length} queries`"></span>
+      <span class="text-gold-light" x-text="`${slowQueries.length} slow`"></span>
+    </div>
+  </div>
+  
+  <%= render 'dbwatcher/shared/tab_bar', tabs: [
+    { name: 'All Queries', active: true },
+    { name: 'Slow Queries', active: false },
+    { name: 'Recent', active: false }
+  ] %>
+  
+  <!-- Compact Toolbar -->
+  <div class="bg-gray-100 border-b border-gray-300 px-3 py-1 flex items-center gap-3">
+    <!-- Filter Controls -->
+    <select x-model="filters.operation" 
+            @change="applyFilters()"
+            class="compact-select">
+      <option value="">All Operations</option>
+      <option value="SELECT">SELECT</option>
+      <option value="INSERT">INSERT</option>
+      <option value="UPDATE">UPDATE</option>
+      <option value="DELETE">DELETE</option>
+    </select>
+    
+    <input type="text" 
+           x-model="filters.table"
+           @input="applyFilters()"
+           placeholder="Filter by table..."
+           class="compact-input flex-1 max-w-xs">
+    
+    <input type="number" 
+           x-model="filters.minDuration"
+           @input="applyFilters()"
+           placeholder="Min ms"
+           class="compact-input w-20">
+    
+    <input type="date" 
+           value="<%= @date %>"
+           @change="changeDate($event.target.value)"
+           class="compact-input">
+           
+    <!-- Time Range Filters -->
+    <input type="time" 
+           x-model="filters.startTime"
+           @input="applyFilters()"
+           placeholder="Start time"
+           title="Start time"
+           class="compact-input w-24">
+           
+    <input type="time" 
+           x-model="filters.endTime"
+           @input="applyFilters()"
+           placeholder="End time"
+           title="End time"
+           class="compact-input w-24">
+    
+    <button @click="clearFilters()" 
+            title="Clear all filters"
+            class="compact-button bg-gray-500 text-white hover:bg-gray-600">
+      Clear
+    </button>
+    
+    <div class="ml-auto flex items-center gap-2">
+      <button @click="exportQueries()" 
+              class="compact-button bg-white border border-gray-300 hover:bg-gray-50">
+        <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+        Export
+      </button>
+      
+      <button @click="refreshData()" 
+              class="compact-button bg-blue-medium text-white hover:bg-blue-700">
+        <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+        </svg>
+        Refresh
+      </button>
+      
+      <%= button_to clear_queries_path, 
+                    method: :delete,
+                    class: "compact-button bg-red-600 text-white hover:bg-red-700",
+                    data: { 
+                      confirm: "Are you sure you want to clear all SQL query logs? This action cannot be undone." 
+                    } do %>
+        <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 012 0v4a1 1 0 11-2 0V7zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V7a1 1 0 00-1-1z"/>
+        </svg>
+        Clear Logs
+      <% end %>
+    </div>
+  </div>
+  
+  <!-- Content Area -->
+  <div class="flex-1 overflow-auto">
+    <div class="h-full">
+      <table class="compact-table w-full">
+        <thead>
+          <tr>
+            <th class="text-left w-20">Time</th>
+            <th class="text-center w-16">Op</th>
+            <th class="text-left w-32">Tables</th>
+            <th class="text-right w-16">Duration</th>
+            <th class="text-left">SQL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="query in filteredQueries" :key="query.id">
+            <tr class="cursor-pointer hover:bg-blue-50" 
+                @click="selectQuery(query)"
+                :class="{ 'selected': selectedQuery?.id === query.id }">
+              <td class="text-xs text-gray-600" x-text="formatTime(query.timestamp)"></td>
+              <td class="text-center">
+                <span class="badge" 
+                      :class="`badge-${query.operation.toLowerCase()}`"
+                      x-text="query.operation.charAt(0)"></span>
+              </td>
+              <td class="font-medium text-navy-dark truncate" 
+                  :title="query.tables.join(', ')"
+                  x-text="query.tables.join(', ')"></td>
+              <td class="text-right text-xs" 
+                  :class="query.duration > 100 ? 'text-red-600 font-medium' : 'text-gray-600'"
+                  x-text="`${query.duration}ms`"></td>
+              <td class="font-mono text-xs truncate max-w-md" 
+                  :title="query.sql"
+                  x-text="query.sql"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+function queryLogs() {
+  return {
+    filters: {
+      operation: '',
+      table: '',
+      minDuration: '',
+      startTime: '',
+      endTime: ''
+    },
+    selectedQuery: null,
+    queries: <%= @queries.to_json.html_safe %>,
+    
+    get filteredQueries() {
+      return this.queries.filter(query => {
+        if (this.filters.operation && query.operation !== this.filters.operation) return false;
+        if (this.filters.table && !query.tables.some(t => t.toLowerCase().includes(this.filters.table.toLowerCase()))) return false;
+        if (this.filters.minDuration && query.duration < parseFloat(this.filters.minDuration)) return false;
+        
+        // Time filtering
+        if (this.filters.startTime || this.filters.endTime) {
+          const queryTime = new Date(query.timestamp);
+          const queryTimeStr = queryTime.toTimeString().substr(0, 5); // HH:MM format
+          
+          if (this.filters.startTime && queryTimeStr < this.filters.startTime) return false;
+          if (this.filters.endTime && queryTimeStr > this.filters.endTime) return false;
+        }
+        
+        return true;
+      });
+    },
+    
+    get slowQueries() {
+      return this.queries.filter(q => q.duration > 100);
+    },
+    
+    selectQuery(query) {
+      this.selectedQuery = this.selectedQuery?.id === query.id ? null : query;
+    },
+    
+    formatTime(timestamp) {
+      return new Date(timestamp).toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+      });
+    },
+    
+    applyFilters() {
+      // Filters are applied via computed property
+    },
+    
+    exportQueries() {
+      const data = this.filteredQueries.map(q => ({
+        time: this.formatTime(q.timestamp),
+        operation: q.operation,
+        tables: q.tables.join(', '),
+        duration: q.duration,
+        sql: q.sql
+      }));
+      
+      const csv = [
+        ['Time', 'Operation', 'Tables', 'Duration (ms)', 'SQL'],
+        ...data.map(row => [row.time, row.operation, row.tables, row.duration, row.sql])
+      ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `queries-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+    
+    refreshData() {
+      window.location.reload();
+    },
+    
+    changeDate(date) {
+      const params = new URLSearchParams(window.location.search);
+      params.set('date', date);
+      window.location.search = params.toString();
+    },
+    
+    clearFilters() {
+      this.filters.operation = '';
+      this.filters.table = '';
+      this.filters.minDuration = '';
+      this.filters.startTime = '';
+      this.filters.endTime = '';
+    }
+  }
+}
+</script>

@@ -1,0 +1,177 @@
+<%# Dashboard Overview Page %>
+<div class="h-full flex flex-col">
+  <!-- Compact Header -->
+  <div class="h-10 bg-navy-dark text-white flex items-center px-4">
+    <h1 class="text-sm font-medium">Dashboard</h1>
+    <span class="ml-auto text-xs text-blue-light">
+      <%= Time.current.strftime("%Y-%m-%d %H:%M:%S") %>
+    </span>
+  </div>
+  
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <div class="tab-item active">Overview</div>
+    <div class="tab-item">Statistics</div>
+    <div class="tab-item">Recent Activity</div>
+  </div>
+  
+  <!-- Content Area -->
+  <div class="flex-1 overflow-auto p-4">
+    <!-- Compact Stats Grid -->
+    <div class="grid grid-cols-4 gap-3 mb-4">
+      <!-- Sessions Card -->
+      <%= render 'dbwatcher/shared/stats_card',
+          label: 'Active Sessions',
+          value: @recent_sessions&.count || 0,
+          description: 'Last 24 hours',
+          icon_html: stats_icon(:sessions) %>
+      
+      <!-- Tables Card -->
+      <%= render 'dbwatcher/shared/stats_card',
+          label: 'Modified Tables',
+          value: @active_tables&.count || 0,
+          description: 'With changes',
+          icon_html: stats_icon(:tables) %>
+      
+      <!-- Queries Card -->
+      <%= render 'dbwatcher/shared/stats_card',
+          label: 'SQL Queries',
+          value: @query_stats&.dig(:total) || 0,
+          description: 'Today',
+          icon_html: stats_icon(:queries) %>
+      
+      <!-- Performance Card -->
+      <% slow_queries = @query_stats&.dig(:slow_queries) || 0 %>
+      <%= render 'dbwatcher/shared/stats_card',
+          label: 'Slow Queries',
+          value: slow_queries,
+          value_class: (slow_queries > 0 ? 'text-red-600' : 'text-navy-dark'),
+          description: '> 100ms',
+          icon_html: stats_icon(:performance) %>
+    </div>
+    
+    <!-- Two Column Layout -->
+    <div class="grid grid-cols-2 gap-4">
+      <!-- Recent Sessions -->
+      <div class="border border-gray-300 rounded">
+        <div class="bg-gray-100 px-3 py-2 border-b border-gray-300">
+          <h3 class="text-xs font-medium text-gray-700">Recent Sessions</h3>
+        </div>
+        <div class="max-h-64 overflow-auto">
+          <% if @recent_sessions&.any? %>
+            <table class="compact-table w-full">
+              <thead>
+                <tr>
+                  <th class="text-left">Session</th>
+                  <th class="text-center">Changes</th>
+                  <th class="text-right">Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @recent_sessions.each do |session| %>
+                  <tr class="hover:bg-blue-50">
+                    <td class="truncate max-w-xs" title="<%= session[:name] || session['name'] %>">
+                      <% session_id = session[:id] || session['id'] %>
+                      <% session_name = (session[:name] || session['name']).to_s.gsub(/^HTTP \w+ /, '') %>
+                      <%= link_to session_name, session_path(session_id), class: "text-navy-dark hover:text-blue-medium" %>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge bg-gray-600 text-white">
+                        <%= session[:change_count] || session['change_count'] || 0 %>
+                      </span>
+                    </td>
+                    <td class="text-right text-gray-500">
+                      <% started_at = session[:started_at] || session['started_at'] %>
+                      <%= Time.parse(started_at).strftime("%H:%M:%S") rescue 'N/A' %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          <% else %>
+            <div class="p-4 text-center text-gray-500 text-xs">No recent sessions</div>
+          <% end %>
+        </div>
+      </div>
+      
+      <!-- Active Tables -->
+      <div class="border border-gray-300 rounded">
+        <div class="bg-gray-100 px-3 py-2 border-b border-gray-300">
+          <h3 class="text-xs font-medium text-gray-700">Most Active Tables</h3>
+        </div>
+        <div class="max-h-64 overflow-auto">
+          <% if @active_tables&.any? %>
+            <table class="compact-table w-full">
+              <thead>
+                <tr>
+                  <th class="text-left">Table</th>
+                  <th class="text-center">Operations</th>
+                  <th class="text-right">Changes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @active_tables.first(10).each do |table_name, count| %>
+                  <tr class="hover:bg-blue-50">
+                    <td class="font-medium text-navy-dark">
+                      <%= link_to table_name, table_path(table_name), class: "text-navy-dark hover:text-blue-medium" %>
+                    </td>
+                    <td class="text-center">
+                      <div class="flex gap-1 justify-center">
+                        <span class="badge badge-insert" title="Inserts">I</span>
+                        <span class="badge badge-update" title="Updates">U</span>
+                        <span class="badge badge-delete" title="Deletes">D</span>
+                      </div>
+                    </td>
+                    <td class="text-right">
+                      <span class="text-sm font-medium"><%= count %></span>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          <% else %>
+            <div class="p-4 text-center text-gray-500 text-xs">No active tables</div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Query Activity Section -->
+    <div class="mt-4 border border-gray-300 rounded">
+      <div class="bg-gray-100 px-3 py-2 border-b border-gray-300">
+        <h3 class="text-xs font-medium text-gray-700">Query Activity</h3>
+      </div>
+      <div class="p-4">
+        <% if @query_stats&.dig(:by_operation)&.any? %>
+          <div class="grid grid-cols-4 gap-4 text-center">
+            <% @query_stats[:by_operation].each do |operation, count| %>
+              <div class="border border-gray-200 rounded p-2">
+                <div class="text-lg font-bold text-navy-dark"><%= count %></div>
+                <div class="text-xs text-gray-500 uppercase"><%= operation %></div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center text-gray-500 text-xs">No query activity</div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-4 border border-gray-300 rounded">
+      <div class="bg-gray-100 px-3 py-2 border-b border-gray-300">
+        <h3 class="text-xs font-medium text-gray-700">Quick Actions</h3>
+      </div>
+      <div class="p-3">
+        <div class="flex gap-2">
+          <%= link_to "View All Sessions", sessions_path, 
+              class: "px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700" %>
+          <%= link_to "Browse Tables", tables_path, 
+              class: "px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700" %>
+          <%= link_to "SQL Logs", queries_path, 
+              class: "px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

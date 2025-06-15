@@ -1,150 +1,347 @@
-<div x-data="sessionViewer(<%= @session.to_h.to_json %>)" class="space-y-6">
-  <div class="flex justify-between items-center">
-    <h2 class="text-2xl font-bold" x-text="session.name"></h2>
-    <button @click="showFullRecords = !showFullRecords"
-            class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded flex items-center gap-2">
-      <span x-text="showFullRecords ? 'Show Changes Only' : 'Show Full Records'"></span>
-    </button>
+<div class="h-full flex flex-col" x-data="sessionView()">
+  <!-- Compact Header -->
+  <div class="h-10 bg-navy-dark text-white flex items-center px-4">
+    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+    </svg>
+    <h1 class="text-sm font-medium truncate"><%= @session.name %></h1>
+    <span class="ml-auto text-xs text-blue-light">
+      <%= Time.parse(@session.started_at.to_s).strftime("%H:%M:%S") rescue @session.started_at %> - 
+      <%= Time.parse(@session.ended_at.to_s).strftime("%H:%M:%S") rescue @session.ended_at %>
+    </span>
   </div>
-
-  <!-- Summary -->
-  <div class="bg-white shadow rounded-lg p-6">
-    <h3 class="text-lg font-semibold mb-4">Summary</h3>
-    <div class="grid grid-cols-3 gap-4">
-      <template x-for="[key, count] in Object.entries(session.summary)" :key="key">
-        <div class="text-sm">
-          <span x-text="key.split(',')[0]" class="font-medium"></span>
-          <span x-text="key.split(',')[1]" :class="getOperationColor(key.split(',')[1])"></span>:
-          <span x-text="count"></span>
-        </div>
-      </template>
+  
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <div class="tab-item" :class="{ active: activeTab === 'changes' }" @click="activeTab = 'changes'">Changes</div>
+    <div class="tab-item" :class="{ active: activeTab === 'summary' }" @click="activeTab = 'summary'">Summary</div>
+  </div>
+  
+  <!-- Compact Toolbar -->
+  <div class="bg-gray-100 border-b border-gray-300 px-3 py-1 flex items-center gap-3">
+    
+    <div class="ml-auto flex items-center gap-2">
+      <button @click="exportData()" 
+              class="compact-button bg-white border border-gray-300 hover:bg-gray-50">
+        <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+        Export
+      </button>
     </div>
   </div>
-
-  <!-- Changes by Table -->
-  <div class="bg-white shadow rounded-lg p-6">
-    <h3 class="text-lg font-semibold mb-4">Database Changes</h3>
-
-    <div class="space-y-2">
-      <template x-for="table in groupedChanges" :key="table.name">
-        <div class="border rounded">
-          <button @click="table.expanded = !table.expanded"
-                  class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50">
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 transition-transform" :class="{'rotate-90': table.expanded}" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-              </svg>
-              <span class="font-medium" x-text="table.name"></span>
-              <span class="text-sm text-gray-500" x-text="`(${table.changes.length} changes)`"></span>
-            </div>
-          </button>
-
-          <div x-show="table.expanded" x-collapse class="border-t">
-            <template x-for="record in table.records" :key="record.id">
-              <div class="border-b last:border-0">
-                <button @click="record.expanded = !record.expanded"
-                        class="w-full px-6 py-2 flex items-center gap-2 hover:bg-gray-50 text-left">
-                  <svg class="w-4 h-4 transition-transform" :class="{'rotate-90': record.expanded}" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                  </svg>
-                  <span x-text="`Record #${record.id}`"></span>
-                </button>
-
-                <div x-show="record.expanded" x-collapse class="px-8 pb-4">
-                  <template x-for="change in record.changes" :key="change.timestamp">
-                    <div class="mt-3">
-                      <div class="font-medium mb-2" :class="getOperationColor(change.operation)">
-                        <span x-text="change.operation"></span> at
-                        <span x-text="new Date(change.timestamp).toLocaleTimeString()"></span>
-                      </div>
-
-                      <div x-show="!showFullRecords" class="space-y-1">
-                        <template x-for="col in change.changes" :key="col.column">
-                          <div class="text-sm">
-                            <span class="font-medium" x-text="col.column + ':'"></span>
-                            <template x-if="col.old_value">
-                              <span>
-                                <span class="text-red-600 line-through" x-text="col.old_value"></span>
-                                <span class="mx-1">→</span>
-                              </span>
-                            </template>
-                            <span class="text-green-600" x-text="col.new_value || 'null'"></span>
-                          </div>
-                        </template>
-                      </div>
-
-                      <div x-show="showFullRecords" class="bg-gray-50 p-3 rounded text-sm font-mono">
-                        <pre x-text="JSON.stringify(change.record_snapshot, null, 2)"></pre>
-                      </div>
-                    </div>
-                  </template>
-                </div>
+  
+  
+  <!-- Content -->
+  <div class="flex-1 overflow-auto">
+    <!-- Summary Tab -->
+    <div x-show="activeTab === 'summary'" class="p-4">
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        <% @tables_summary.each do |table_name, summary| %>
+          <div class="border border-gray-300 rounded p-3 hover:shadow-md cursor-pointer bg-white"
+               @click="activeTab = 'changes'; scrollToTable('<%= table_name %>')">
+            <h4 class="text-sm font-medium text-navy-dark mb-2"><%= table_name %></h4>
+            <div class="space-y-1 text-xs">
+              <div class="flex justify-between">
+                <span class="badge badge-insert">INSERT</span>
+                <span><%= summary[:operations]['INSERT'] %></span>
               </div>
-            </template>
+              <div class="flex justify-between">
+                <span class="badge badge-update">UPDATE</span>
+                <span><%= summary[:operations]['UPDATE'] %></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="badge badge-delete">DELETE</span>
+                <span><%= summary[:operations]['DELETE'] %></span>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    
+    <!-- Changes Tab -->
+    <div x-show="activeTab === 'changes'" class="h-full">
+      <% @tables_summary.each do |table_name, summary| %>
+        <div class="border-b border-gray-300" x-data="{ expanded: true }">
+          <!-- Table Header with Column Controls -->
+          <div class="bg-gray-100 px-3 py-2 flex items-center cursor-pointer" 
+               @click="expanded = !expanded"
+               :id="`table-${table_name}`">
+            <svg class="w-3 h-3 mr-2 transition-transform" 
+                 :class="{ 'rotate-90': expanded }"
+                 fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <h3 class="text-sm font-medium text-gray-900 flex-1"><%= table_name %></h3>
+            <div class="flex gap-2 mr-4">
+              <% summary[:operations].each do |op, count| %>
+                <% next if count == 0 %>
+                <span class="badge badge-<%= op.downcase %>"><%= count %></span>
+              <% end %>
+            </div>
+            <!-- Column Visibility Button -->
+            <button @click.stop="toggleColumnSelector('<%= table_name %>')"
+                    class="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50 relative">
+              Columns
+            </button>
+          </div>
+          
+          <!-- Column Selector Dropdown -->
+          <div x-show="showColumnSelector === '<%= table_name %>'"
+               x-transition
+               @click.away="showColumnSelector = null"
+               class="absolute z-50 bg-white border border-gray-300 rounded shadow-lg p-3 max-h-64 overflow-auto"
+               style="right: 1rem; margin-top: -2px;">
+            <div class="text-xs font-medium mb-2">Select Visible Columns:</div>
+            <div class="space-y-1 min-w-48">
+              <% if summary[:sample_record] %>
+                <% summary[:sample_record].keys.each do |column| %>
+                  <label class="flex items-center text-xs hover:bg-gray-50 p-1 rounded">
+                    <input type="checkbox" 
+                           x-model="tableColumns['<%= table_name %>']['<%= column %>']"
+                           class="mr-2">
+                    <span class="flex-1"><%= column.to_s.humanize %></span>
+                  </label>
+                <% end %>
+              <% end %>
+            </div>
+            <div class="mt-2 pt-2 border-t border-gray-200 flex gap-1">
+              <button @click="selectAllColumns('<%= table_name %>')" 
+                      class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">All</button>
+              <button @click="selectNoneColumns('<%= table_name %>')" 
+                      class="text-xs bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-700">None</button>
+            </div>
+          </div>
+          
+          <!-- Table Content with Horizontal Scroll -->
+          <div x-show="expanded" x-collapse class="overflow-auto">
+            <div class="min-w-full">
+              <table class="compact-table w-full">
+                <thead>
+                  <tr class="sticky top-0 bg-gray-100 z-10">
+                    <th class="text-center w-16 sticky left-0 bg-gray-100 z-20 border-r border-gray-300">
+                      <span class="text-xs">Op</span>
+                    </th>
+                    <th class="text-left w-24 sticky bg-gray-100 z-20 border-r border-gray-300">Time</th>
+                    <% if summary[:sample_record] %>
+                      <% summary[:sample_record].keys.each do |column| %>
+                        <th class="text-left min-w-32 px-2" 
+                            x-show="tableColumns['<%= table_name %>']['<%= column %>']">
+                          <%= column.to_s.humanize %>
+                        </th>
+                      <% end %>
+                    <% end %>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% summary[:changes].each_with_index do |change, index| %>
+                    <% row_id = "#{table_name}_row_#{index}" %>
+                    <% operation = change['operation'] || change[:operation] %>
+                    <% timestamp = change['timestamp'] || change[:timestamp] %>
+                    <% snapshot = change['record_snapshot'] || change[:record_snapshot] || {} %>
+                    <% column_changes = change['changes'] || change[:changes] %>
+                    
+                    <tbody x-data="{ expanded: false }">
+                      <tr class="hover:bg-blue-50">
+                        <td class="text-center sticky left-0 bg-white z-10 border-r border-gray-200 w-16">
+                          <div class="flex items-center justify-center gap-1">
+                            <!-- Expand/Collapse Button -->
+                            <button @click="expanded = !expanded" 
+                                    class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-gray-100">
+                              <svg class="w-3 h-3 transition-transform" 
+                                   :class="{ 'rotate-90': expanded }"
+                                   fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                              </svg>
+                            </button>
+                            <!-- Operation Badge -->
+                            <% if operation %>
+                              <span class="badge badge-<%= operation.downcase %>">
+                                <%= operation[0] %>
+                              </span>
+                            <% else %>
+                              <span class="badge">?</span>
+                            <% end %>
+                          </div>
+                        </td>
+                        <td class="text-xs text-gray-600 sticky bg-white z-10 border-r border-gray-200 w-24">
+                          <% if timestamp %>
+                            <%= Time.parse(timestamp.to_s).strftime("%H:%M:%S") rescue timestamp %>
+                          <% else %>
+                            <span class="text-gray-400">--</span>
+                          <% end %>
+                        </td>
+                        
+                        <% if snapshot %>
+                          <% snapshot.each do |key, value| %>
+                            <td x-show="tableColumns['<%= table_name %>']['<%= key %>']" 
+                                class="relative px-2"
+                                @click.stop="">
+                              <% changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == key.to_s } %>
+                              <div class="min-w-32 max-w-48 truncate">
+                                <% if operation == 'UPDATE' && changed_column %>
+                                  <div class="text-xs">
+                                    <div class="text-red-600 line-through">
+                                      <%= truncate_cell_value(changed_column['old_value'] || changed_column[:old_value]) %>
+                                    </div>
+                                    <div class="text-green-600 font-medium">
+                                      <%= truncate_cell_value(changed_column['new_value'] || changed_column[:new_value]) %>
+                                    </div>
+                                  </div>
+                                <% elsif operation == 'INSERT' %>
+                                  <span class="text-green-600 font-medium">
+                                    <%= truncate_cell_value(value) %>
+                                  </span>
+                                <% elsif operation == 'DELETE' %>
+                                  <span class="text-red-600 line-through">
+                                    <%= truncate_cell_value(value) %>
+                                  </span>
+                                <% else %>
+                                  <span class="text-gray-700">
+                                    <%= truncate_cell_value(value) %>
+                                  </span>
+                                <% end %>
+                              </div>
+                            </td>
+                          <% end %>
+                        <% end %>
+                      </tr>
+                      
+                      <!-- Expanded Row Content -->
+                      <tr x-show="expanded" 
+                          x-collapse
+                          class="bg-gray-50 border-t border-gray-200">
+                      <td colspan="2" class="sticky left-0 bg-gray-50 z-10 border-r border-gray-200 p-3 w-40">
+                        <div class="text-xs font-medium text-gray-700 mb-2">Record Details</div>
+                        <div class="text-xs text-gray-600">
+                          Operation: <span class="badge badge-<%= operation&.downcase %>"><%= operation %></span>
+                          <% if timestamp %>
+                            <br>Time: <%= Time.parse(timestamp.to_s).strftime("%H:%M:%S.%L") rescue timestamp %>
+                          <% end %>
+                        </div>
+                      </td>
+                      <% if snapshot %>
+                        <% snapshot.each do |key, value| %>
+                          <td x-show="tableColumns['<%= table_name %>']['<%= key %>']" 
+                              class="p-3 border-r border-gray-200 align-top">
+                            <% changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == key.to_s } %>
+                            <div class="text-xs font-medium text-gray-600 mb-1"><%= key.to_s.humanize %></div>
+                            <div class="max-w-md">
+                              <% if operation == 'UPDATE' && changed_column %>
+                                <div class="space-y-2">
+                                  <div class="text-red-600 bg-red-50 p-2 rounded">
+                                    <div class="text-xs font-medium mb-1">Old Value:</div>
+                                    <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(changed_column['old_value'] || changed_column[:old_value]) %></pre>
+                                  </div>
+                                  <div class="text-green-600 bg-green-50 p-2 rounded">
+                                    <div class="text-xs font-medium mb-1">New Value:</div>
+                                    <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(changed_column['new_value'] || changed_column[:new_value]) %></pre>
+                                  </div>
+                                </div>
+                              <% elsif operation == 'INSERT' %>
+                                <div class="text-green-600 bg-green-50 p-2 rounded">
+                                  <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(value) %></pre>
+                                </div>
+                              <% elsif operation == 'DELETE' %>
+                                <div class="text-red-600 bg-red-50 p-2 rounded">
+                                  <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(value) %></pre>
+                                </div>
+                              <% else %>
+                                <div class="text-gray-700 bg-gray-100 p-2 rounded">
+                                  <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(value) %></pre>
+                                </div>
+                              <% end %>
+                            </div>
+                          </td>
+                        <% end %>
+                      <% end %>
+                    </tr>
+                    </tbody>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </template>
+      <% end %>
     </div>
   </div>
 </div>
 
 <script>
-function sessionViewer(sessionData) {
+function sessionView() {
   return {
-    session: sessionData,
-    showFullRecords: false,
-    groupedChanges: [],
-
+    activeTab: 'changes',
+    showColumnSelector: null,
+    tableColumns: {},
+    
     init() {
-      // Calculate summary from changes
-      const summary = {};
-      this.session.changes.forEach(change => {
-        const key = `${change.table_name},${change.operation}`;
-        summary[key] = (summary[key] || 0) + 1;
-      });
-      this.session.summary = summary;
-
-      // Group changes by table and record
-      const tables = {};
-
-      this.session.changes.forEach(change => {
-        if (!tables[change.table_name]) {
-          tables[change.table_name] = {
-            name: change.table_name,
-            expanded: false,
-            changes: [],
-            records: {}
-          };
-        }
-
-        tables[change.table_name].changes.push(change);
-
-        if (!tables[change.table_name].records[change.record_id]) {
-          tables[change.table_name].records[change.record_id] = {
-            id: change.record_id,
-            expanded: false,
-            changes: []
-          };
-        }
-
-        tables[change.table_name].records[change.record_id].changes.push(change);
-      });
-
-      // Convert to array format
-      this.groupedChanges = Object.values(tables).map(table => ({
-        ...table,
-        records: Object.values(table.records)
-      }));
+      // Initialize column visibility for each table
+      <% @tables_summary.each do |table_name, summary| %>
+        this.tableColumns['<%= table_name %>'] = {};
+        <% if summary[:sample_record] %>
+          <% summary[:sample_record].keys.each do |column| %>
+            this.tableColumns['<%= table_name %>']['<%= column %>'] = true;
+          <% end %>
+        <% end %>
+      <% end %>
     },
-
-    getOperationColor(operation) {
-      const colors = {
-        'INSERT': 'text-green-600',
-        'UPDATE': 'text-blue-600',
-        'DELETE': 'text-red-600'
-      };
-      return colors[operation] || 'text-gray-600';
+    
+    scrollToTable(tableName) {
+      this.activeTab = 'changes';
+      setTimeout(() => {
+        const element = document.getElementById(`table-${tableName}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    },
+    
+    toggleColumnSelector(tableName) {
+      this.showColumnSelector = this.showColumnSelector === tableName ? null : tableName;
+    },
+    
+    selectAllColumns(tableName) {
+      Object.keys(this.tableColumns[tableName]).forEach(column => {
+        this.tableColumns[tableName][column] = true;
+      });
+    },
+    
+    selectNoneColumns(tableName) {
+      Object.keys(this.tableColumns[tableName]).forEach(column => {
+        this.tableColumns[tableName][column] = false;
+      });
+    },
+    
+    exportData() {
+      const data = [];
+      <% @tables_summary.each do |table_name, summary| %>
+        <% summary[:changes].each do |change| %>
+          data.push({
+            table: '<%= table_name %>',
+            operation: '<%= change['operation'] || change[:operation] || 'UNKNOWN' %>',
+            timestamp: '<%= change['timestamp'] || change[:timestamp] %>',
+            record_id: '<%= change['record_id'] || change[:record_id] %>',
+            changes: '<%= change['changes'].to_json if change['changes'] %>'
+          });
+        <% end %>
+      <% end %>
+      
+      const csv = [
+        ['Table', 'Operation', 'Timestamp', 'Record ID', 'Changes'],
+        ...data.map(row => [row.table, row.operation, row.timestamp, row.record_id, row.changes])
+      ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `session-<%= @session.id %>-changes.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
-  };
+  }
 }
 </script>
+
