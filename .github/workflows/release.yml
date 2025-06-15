@@ -69,7 +69,7 @@ jobs:
           fi
 
           # Verify version consistency with gemspec
-          GEMSPEC_VERSION=$(ruby -e "require './lib/class_metrix/version'; puts ClassMetrix::VERSION")
+          GEMSPEC_VERSION=$(ruby -e "require './lib/dbwatcher/version'; puts Dbwatcher::VERSION")
           echo "Gemspec version: $GEMSPEC_VERSION"
           echo "Release version: $VERSION"
 
@@ -77,7 +77,7 @@ jobs:
             echo "❌ Version mismatch!"
             echo "Gemspec version: $GEMSPEC_VERSION"
             echo "Release version: $VERSION"
-            echo "Please update lib/class_metrix/version.rb to match the release version"
+            echo "Please update lib/dbwatcher/version.rb to match the release version"
             exit 1
           fi
 
@@ -165,7 +165,7 @@ jobs:
           gem install "$GEM_FILE" --local
 
           # Verify gem functionality
-          ruby -e "require 'class_metrix'; puts '✅ Gem loads successfully'"
+          ruby -e "require 'dbwatcher'; puts '✅ Gem loads successfully'"
 
           echo "gem_file=$GEM_FILE" >> $GITHUB_OUTPUT
 
@@ -206,7 +206,7 @@ jobs:
           tag_name: v${{ needs.validate-release.outputs.version }}
           name: Release ${{ needs.validate-release.outputs.version }}
           body: |
-            ## 🚀 ClassMetrix v${{ needs.validate-release.outputs.version }}
+            ## 🚀 DB Watcher v${{ needs.validate-release.outputs.version }}
 
             ### Installation
 
@@ -276,14 +276,14 @@ jobs:
           custom_payload: |
             {
               "channel": "#cicd-notifications",
-              "username": "ClassMetrix Release",
+              "username": "DB Watcher Release",
               "icon_emoji": ":rocket:",
               "attachments": [{
                 "color": "good",
-                "fallback": "ClassMetrix v${{ needs.validate-release.outputs.version }} released successfully!",
-                "title": "🚀 ClassMetrix v${{ needs.validate-release.outputs.version }} Released Successfully!",
+                "fallback": "DB Watcher v${{ needs.validate-release.outputs.version }} released successfully!",
+                "title": "🚀 DB Watcher v${{ needs.validate-release.outputs.version }} Released Successfully!",
                 "title_link": "https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate-release.outputs.version }}",
-                "text": "A new version of ClassMetrix has been published to RubyGems and is ready for use! 🎉",
+                "text": "A new version of DB Watcher has been published to RubyGems and is ready for use! 🎉",
                 "fields": [
                   {
                     "title": "📦 Version",
@@ -316,7 +316,7 @@ jobs:
                     "short": true
                   }
                 ],
-                "footer": "Released via GitHub Actions • Thanks for using ClassMetrix! 💎",
+                "footer": "Released via GitHub Actions • Thanks for using DB Watcher! 💎",
                 "footer_icon": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
                 "ts": ${{ github.event.head_commit.timestamp }}
               }]
@@ -354,12 +354,12 @@ jobs:
           custom_payload: |
             {
               "channel": "#cicd-notifications",
-              "username": "ClassMetrix Release",
+              "username": "DB Watcher Release",
               "icon_emoji": ":x:",
               "attachments": [{
                 "color": "danger",
-                "fallback": "ClassMetrix release failed!",
-                "title": "❌ ClassMetrix Release Failed",
+                "fallback": "DB Watcher release failed!",
+                "title": "❌ DB Watcher Release Failed",
                 "title_link": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
                 "text": "The release process encountered an error and needs attention. Please check the logs for details.",
                 "fields": [
