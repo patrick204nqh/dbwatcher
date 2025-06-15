@@ -10,36 +10,15 @@ module Dbwatcher
     end
 
     def show
-      log_session_loading
-      @session = load_session
+      Rails.logger.info "SessionsController#show: Loading session with ID: #{params[:id]}"
+      @session = Storage.sessions.find(params[:id])
+      Rails.logger.info "SessionsController#show: Loaded session: #{@session.inspect}"
 
       return handle_session_not_found unless @session
 
-      prepare_session_data
-      render_response
-    end
-
-    def log_session_loading
-      Rails.logger.info "SessionsController#show: Loading session with ID: #{params[:id]}"
-    end
-
-    def load_session
-      session = Storage.sessions.find(params[:id])
-      Rails.logger.info "SessionsController#show: Loaded session: #{session.inspect}"
-      session
-    end
-
-    def handle_session_not_found
-      Rails.logger.warn "SessionsController#show: Session not found for ID: #{params[:id]}"
-      redirect_to sessions_path, alert: "Session not found"
-    end
-
-    def prepare_session_data
       @tables_summary = Storage.sessions.build_tables_summary(@session)
       Rails.logger.info "SessionsController#show: Tables summary: #{@tables_summary.inspect}"
-    end
 
-    def render_response
       respond_to do |format|
         format.html
         format.json { render json: @session.to_h }
@@ -48,19 +27,14 @@ module Dbwatcher
 
     def destroy_all
       Dbwatcher.reset!
-      redirect_to main_app.root_path, notice: "All sessions cleared"
+      redirect_to root_path, notice: "All sessions cleared"
     end
 
     private
 
-    # Helper method to safely get the sessions path
-    def sessions_index_path
-      if respond_to?(:sessions_path)
-        sessions_path
-      else
-        "/dbwatcher"
-      end
+    def handle_session_not_found
+      Rails.logger.warn "SessionsController#show: Session not found for ID: #{params[:id]}"
+      redirect_to sessions_path, alert: "Session not found"
     end
-    helper_method :sessions_index_path
   end
 end

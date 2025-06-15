@@ -94,27 +94,39 @@ module Dbwatcher
         private
 
         def apply_filters(sessions)
-          result = sessions
+          sessions
+            .then { |s| filter_by_start_time(s) }
+            .then { |s| filter_by_status(s) }
+            .then { |s| filter_by_name_pattern(s) }
+            .then { |s| filter_by_changes(s) }
+            .then { |s| apply_common_filters(s) }
+        end
 
-          # Apply time-based filters using symbols only
-          result = apply_time_filter(result, :started_at) if filters[:started_after]
+        def filter_by_start_time(sessions)
+          return sessions unless filters[:started_after]
 
-          # Apply status filter using symbols only
-          result = result.select { |s| safe_extract(s, :status) == filters[:status] } if filters[:status]
+          apply_time_filter(sessions, :started_at)
+        end
 
-          # Apply name pattern filter using symbols only
-          result = apply_pattern_filter(result, %i[name id], filters[:name_pattern]) if filters[:name_pattern]
+        def filter_by_status(sessions)
+          return sessions unless filters[:status]
 
-          # Apply has_changes filter
-          if filters[:has_changes]
-            result = result.select do |s|
-              session = find(safe_extract(s, :id))
-              session&.changes&.any?
-            end
+          sessions.select { |s| safe_extract(s, :status) == filters[:status] }
+        end
+
+        def filter_by_name_pattern(sessions)
+          return sessions unless filters[:name_pattern]
+
+          apply_pattern_filter(sessions, %i[name id], filters[:name_pattern])
+        end
+
+        def filter_by_changes(sessions)
+          return sessions unless filters[:has_changes]
+
+          sessions.select do |s|
+            session = find(safe_extract(s, :id))
+            session&.changes&.any?
           end
-
-          # Apply common filters (limit, etc.)
-          apply_common_filters(result)
         end
       end
     end

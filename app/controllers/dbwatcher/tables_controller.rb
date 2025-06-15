@@ -6,7 +6,7 @@ module Dbwatcher
     layout "dbwatcher/application"
 
     def index
-      @tables = all_tables_with_stats
+      @tables = Dbwatcher::Services::TableStatisticsCollector.call
     end
 
     def show
@@ -23,66 +23,19 @@ module Dbwatcher
     def changes
       @table_name = params[:id]
       @changes = Storage.tables.changes_for(@table_name).all
-      @sessions = @changes.map { |c| c[:session_id] }.uniq
-
-      # Group by record for table view
-      @records = @changes.group_by { |c| c[:record_id] }
+      @sessions = extract_session_ids(@changes)
+      @records = group_changes_by_record(@changes)
     end
 
     private
 
-    def all_tables_with_stats
-      tables = initialize_tables_from_schema
-      add_change_statistics_to_tables(tables)
-      sort_tables_by_change_count(tables)
+    # These remain as they are simple data extraction helpers
+    def extract_session_ids(changes)
+      changes.map { |c| c[:session_id] }.uniq
     end
 
-    def initialize_tables_from_schema
-      tables = {}
-
-      # Get all table names from schema if possible
-      if defined?(ActiveRecord::Base)
-        begin
-          ActiveRecord::Base.connection.tables.each do |table|
-            tables[table] = { name: table, change_count: 0, last_change: nil }
-          end
-        rescue StandardError
-          # Fallback if connection isn't available
-        end
-      end
-
-      tables
-    end
-
-    def add_change_statistics_to_tables(tables)
-      Storage.sessions.all.each do |session_info|
-        session = Storage.sessions.find(session_info[:id])
-        next unless session
-
-        update_tables_from_session(tables, session)
-      end
-
-      tables
-    end
-
-    def update_tables_from_session(tables, session)
-      session.changes.each do |change|
-        table_name = change[:table_name]
-        next if table_name.nil? || table_name.empty? # Skip invalid table names
-
-        tables[table_name] ||= { name: table_name, change_count: 0, last_change: nil }
-        update_table_statistics(tables[table_name], change)
-      end
-    end
-
-    def update_table_statistics(table, change)
-      table[:change_count] += 1
-      timestamp = change[:timestamp]
-      table[:last_change] = timestamp if table[:last_change].nil? || timestamp > table[:last_change]
-    end
-
-    def sort_tables_by_change_count(tables)
-      tables.values.sort_by { |t| -t[:change_count] }
+    def group_changes_by_record(changes)
+      changes.group_by { |c| c[:record_id] }
     end
   end
 end
