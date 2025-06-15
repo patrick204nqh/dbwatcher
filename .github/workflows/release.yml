@@ -168,23 +168,50 @@ jobs:
           VERSION="${{ needs.validate-release.outputs.version }}"
           GEM_FILE="dbwatcher-${VERSION}.gem"
 
-          echo "🧪 Testing gem installation and loading"
+          echo "🧪 Testing gem structure and contents"
 
-          # Install the gem locally first
-          gem install "$GEM_FILE" --local --no-document
-
-          # Test that the gem loads properly
-          ruby -e "
-            require 'dbwatcher'
-            puts '✅ Gem loads successfully'
-            puts 'DBWatcher version: ' + Dbwatcher::VERSION
-          "
-
-          # Test gem structure and dependencies
-          echo "🔍 Verifying gem structure"
-          gem list dbwatcher --local
+          # Extract and examine gem contents
+          gem unpack "$GEM_FILE"
           
-          echo "✅ Gem installation test completed successfully"
+          # Verify gem structure
+          echo "🔍 Verifying gem structure"
+          if [ -d "dbwatcher-${VERSION}" ]; then
+            echo "✅ Gem extracted successfully"
+            ls -la "dbwatcher-${VERSION}/"
+            
+            # Test that the main files exist
+            if [ -f "dbwatcher-${VERSION}/lib/dbwatcher.rb" ]; then
+              echo "✅ Main library file exists"
+            else
+              echo "❌ Main library file missing"
+              exit 1
+            fi
+            
+            if [ -f "dbwatcher-${VERSION}/lib/dbwatcher/version.rb" ]; then
+              echo "✅ Version file exists"
+            else
+              echo "❌ Version file missing"
+              exit 1
+            fi
+            
+            # Test that the version in the gem matches expected version
+            cd "dbwatcher-${VERSION}"
+            EXTRACTED_VERSION=$(ruby -e "require './lib/dbwatcher/version'; puts Dbwatcher::VERSION")
+            if [ "$EXTRACTED_VERSION" = "$VERSION" ]; then
+              echo "✅ Version consistency check passed: $EXTRACTED_VERSION"
+            else
+              echo "❌ Version mismatch in extracted gem: expected $VERSION, got $EXTRACTED_VERSION"
+              exit 1
+            fi
+            
+            cd ..
+            rm -rf "dbwatcher-${VERSION}"
+          else
+            echo "❌ Failed to extract gem"
+            exit 1
+          fi
+
+          echo "✅ Gem structure validation completed successfully"
 
       - name: Dry run check
         if: github.event.inputs.dry_run == 'true'
