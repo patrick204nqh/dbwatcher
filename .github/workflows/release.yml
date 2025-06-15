@@ -167,31 +167,43 @@ jobs:
         run: |
           VERSION="${{ needs.validate-release.outputs.version }}"
           GEM_FILE="dbwatcher-${VERSION}.gem"
-          
-          echo "🧪 Testing gem installation in minimal environment"
-          
-          # Create a minimal test environment with Rails
-          mkdir -p gem_test
-          cd gem_test
-          
-          # Create a minimal Gemfile for testing
-          cat > Gemfile << EOF
-          source 'https://rubygems.org'
-          gem 'rails', '>= 6.0'
-          gem 'dbwatcher', path: '../$GEM_FILE'
-          EOF
-          
-          # Test installation and loading
-          bundle install --local --path vendor/bundle || bundle install --path vendor/bundle
-          
-          # Test that the gem loads properly
-          bundle exec ruby -e "
-            require 'bundler/setup'
+
+          echo "🧪 Testing gem installation and loading"
+
+          # Install the gem locally first
+          gem install "$GEM_FILE" --local --no-document
+
+          # Test that the gem loads properly in isolation
+          ruby -e "
             require 'dbwatcher'
             puts '✅ Gem loads successfully'
             puts 'DBWatcher version: ' + Dbwatcher::VERSION
           "
-          
+
+          # Test with Rails environment
+          echo "🧪 Testing gem with Rails environment"
+          mkdir -p gem_test
+          cd gem_test
+
+          # Create a minimal Gemfile for testing with Rails
+          cat > Gemfile << EOF
+          source 'https://rubygems.org'
+          gem 'rails', '>= 6.0'
+          EOF
+
+          # Configure bundler
+          bundle config set --local path 'vendor/bundle'
+          bundle install
+
+          # Test that dbwatcher works with Rails context
+          bundle exec ruby -e "
+            require 'bundler/setup'
+            require 'rails'
+            require 'dbwatcher'
+            puts '✅ Gem works with Rails'
+            puts 'DBWatcher version: ' + Dbwatcher::VERSION
+          "
+
           cd ..
           rm -rf gem_test
 
