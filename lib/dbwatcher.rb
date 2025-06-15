@@ -9,7 +9,6 @@ require_relative "dbwatcher/configuration"
 require_relative "dbwatcher/tracker"
 require_relative "dbwatcher/storage"
 require_relative "dbwatcher/sql_logger"
-require_relative "dbwatcher/table_analyzer"
 require_relative "dbwatcher/model_extension"
 require_relative "dbwatcher/middleware"
 require_relative "dbwatcher/engine" if defined?(Rails)

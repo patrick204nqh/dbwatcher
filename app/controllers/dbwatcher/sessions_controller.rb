@@ -35,7 +35,7 @@ module Dbwatcher
     end
 
     def prepare_session_data
-      @tables_summary = build_tables_summary(@session)
+      @tables_summary = Storage.sessions.build_tables_summary(@session)
       Rails.logger.info "SessionsController#show: Tables summary: #{@tables_summary.inspect}"
     end
 
@@ -52,54 +52,6 @@ module Dbwatcher
     end
 
     private
-
-    # Build tables summary in the format expected by the view
-    def build_tables_summary(session)
-      tables = {}
-      process_session_changes(session, tables)
-      tables
-    end
-
-    def process_session_changes(session, tables)
-      session.changes.each do |change|
-        table_name = extract_table_name(change)
-        initialize_table_data(tables, table_name)
-        update_table_data(tables[table_name], change)
-        update_sample_record(tables[table_name], change)
-      end
-    end
-
-    def extract_table_name(change)
-      change[:table_name]
-    end
-
-    def initialize_table_data(tables, table_name)
-      tables[table_name] ||= {
-        operations: { "INSERT" => 0, "UPDATE" => 0, "DELETE" => 0 },
-        changes: [],
-        sample_record: nil
-      }
-    end
-
-    def update_table_data(table_data, change)
-      # Count operations - storage module ensures consistent data
-      operation = change[:operation] || "UNKNOWN"
-      table_data[:operations][operation] ||= 0
-      table_data[:operations][operation] += 1
-
-      # Add change to the list - already normalized by storage
-      table_data[:changes] << change
-    end
-
-    def update_sample_record(table_data, change)
-      return unless table_data[:sample_record].nil?
-
-      snapshot = change[:record_snapshot]
-      return unless snapshot
-
-      # Storage module already normalizes data, so we can use it directly
-      table_data[:sample_record] = snapshot
-    end
 
     # Helper method to safely get the sessions path
     def sessions_index_path

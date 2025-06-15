@@ -123,7 +123,7 @@
                     <th class="text-center w-16 sticky left-0 bg-gray-100 z-20 border-r border-gray-300">
                       <span class="text-xs">Op</span>
                     </th>
-                    <th class="text-left w-24 sticky bg-gray-100 z-20 border-r border-gray-300" style="left: 4.25rem;">Time</th>
+                    <th class="text-left w-24 sticky bg-gray-100 z-20 border-r border-gray-300">Time</th>
                     <% if summary[:sample_record] %>
                       <% summary[:sample_record].keys.each do |column| %>
                         <th class="text-left min-w-32 px-2" 
@@ -165,7 +165,7 @@
                             <% end %>
                           </div>
                         </td>
-                        <td class="text-xs text-gray-600 sticky bg-white z-10 border-r border-gray-200 w-24" style="left: 4.25rem;">
+                        <td class="text-xs text-gray-600 sticky bg-white z-10 border-r border-gray-200 w-24">
                           <% if timestamp %>
                             <%= Time.parse(timestamp.to_s).strftime("%H:%M:%S") rescue timestamp %>
                           <% else %>

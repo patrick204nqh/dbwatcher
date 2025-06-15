@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
-require_relative "data_normalizer"
-
 module Dbwatcher
   module Storage
     class ChangeProcessor
-      include DataNormalizer
+      include Concerns::DataNormalizer
 
       def initialize(session_storage)
         @session_storage = session_storage

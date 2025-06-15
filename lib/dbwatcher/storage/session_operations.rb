@@ -3,6 +3,8 @@
 module Dbwatcher
   module Storage
     class SessionOperations
+      # Include data normalization capabilities
+      include Concerns::DataNormalizer
       def initialize(sessions_path, index_file)
         @sessions_path = sessions_path
         @index_file = index_file
@@ -13,12 +15,14 @@ module Dbwatcher
       end
 
       def build_session_summary(session)
+        session_data = normalize_session_data(session)
+
         {
-          id: session.id,
-          name: session.name,
-          started_at: session.started_at,
-          ended_at: session.ended_at,
-          change_count: session.changes.count
+          id: session_data[:id],
+          name: session_data[:name],
+          started_at: session_data[:started_at],
+          ended_at: session_data[:ended_at],
+          change_count: (session_data[:changes] || []).count
         }
       end
 
