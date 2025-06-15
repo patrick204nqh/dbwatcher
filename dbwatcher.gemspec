@@ -27,7 +27,7 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Abin/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "rails", "~> 6.0"
+  spec.add_dependency "rails", ">= 6.0"
 
   # Testing dependencies
   spec.add_development_dependency "capybara", "~> 3.0"

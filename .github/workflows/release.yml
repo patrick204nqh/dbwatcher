@@ -177,7 +177,7 @@ jobs:
           # Create a minimal Gemfile for testing
           cat > Gemfile << EOF
           source 'https://rubygems.org'
-          gem 'rails', '~> 7.0'
+          gem 'rails', '>= 6.0'
           gem 'dbwatcher', path: '../$GEM_FILE'
           EOF
           
