@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-06-15
+### Changed
+
+- Update release workflow to reflect gem name change from ClassMetrix to DB Watcher
+
+
 ## [0.1.1] - 2025-06-15
 
 ### Added
