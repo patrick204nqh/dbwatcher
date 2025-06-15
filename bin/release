@@ -1,0 +1,385 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "optparse"
+require "time"
+require_relative "../lib/dbwatcher/version"
+
+# Module for handling changelog generation from git commits
+# rubocop:disable Metrics/ModuleLength
+module ChangelogGenerator
+  # Git commit format for parsing
+  COMMIT_FORMAT = "%H|%s|%an|%ad"
+
+  # Commit type categorization for changelog generation
+  COMMIT_CATEGORIES = {
+    "feat" => "Added",
+    "feature" => "Added",
+    "add" => "Added",
+    "fix" => "Fixed",
+    "bugfix" => "Fixed",
+    "bug" => "Fixed",
+    "change" => "Changed",
+    "update" => "Changed",
+    "improve" => "Changed",
+    "refactor" => "Changed",
+    "perf" => "Changed",
+    "remove" => "Removed",
+    "delete" => "Removed",
+    "deprecate" => "Deprecated",
+    "security" => "Security",
+    "docs" => "Documentation",
+    "doc" => "Documentation",
+    "test" => "Testing",
+    "tests" => "Testing",
+    "ci" => "CI/CD",
+    "build" => "Build",
+    "chore" => "Maintenance"
+  }.freeze
+
+  # Order of sections in generated changelog
+  CHANGELOG_SECTION_ORDER = [
+    "Added", "Changed", "Fixed", "Deprecated", "Removed",
+    "Security", "Documentation", "Testing", "CI/CD", "Build", "Maintenance"
+  ].freeze
+
+  def generate_auto_changelog_entries
+    commits = fetch_commits_for_changelog
+
+    return "\n### Changes\n\n- No significant changes\n" if commits.empty?
+
+    categorized_commits = categorize_commits(commits)
+    generate_changelog_sections(categorized_commits)
+  end
+
+  private
+
+  def fetch_commits_for_changelog
+    last_tag = get_last_release_tag
+
+    if last_tag
+      puts "📊 Analyzing commits since #{last_tag}..."
+      get_commits_since_tag(last_tag)
+    else
+      puts "📊 No previous release found, analyzing all commits..."
+      get_all_commits
+    end
+  end
+
+  def get_last_release_tag
+    tags = `git tag -l "v*" --sort=-version:refname`.strip.split("\n")
+    tags.first
+  end
+
+  def get_commits_since_tag(tag)
+    commits_output = `git log #{tag}..HEAD --pretty=format:"#{COMMIT_FORMAT}" --no-merges --date=short`.strip
+    parse_commit_output(commits_output)
+  end
+
+  def get_all_commits
+    commits_output = `git log --pretty=format:"#{COMMIT_FORMAT}" --no-merges --date=short`.strip
+    parse_commit_output(commits_output)
+  end
+
+  def parse_commit_output(commits_output)
+    return [] if commits_output.empty?
+
+    commits_output.split("\n").map do |line|
+      hash, subject, author, date = line.split("|", 4)
+      {
+        hash: hash,
+        subject: subject,
+        author: author,
+        date: date
+      }
+    end
+  end
+
+  def categorize_commits(commits)
+    categories = Hash.new { |hash, key| hash[key] = [] }
+
+    commits.each do |commit|
+      category = determine_commit_category(commit[:subject])
+      clean_message = clean_commit_message(commit[:subject])
+
+      categories[category] << {
+        message: clean_message,
+        hash: commit[:hash][0..7], # Short hash
+        author: commit[:author]
+      }
+    end
+
+    categories
+  end
+
+  def determine_commit_category(subject)
+    subject_lower = subject.downcase
+
+    # Check for conventional commit format (type: description)
+    if subject_lower.match(/^(\w+)(\(.+\))?\s*:\s*/)
+      commit_type = ::Regexp.last_match(1).downcase
+      return COMMIT_CATEGORIES[commit_type] || "Changed"
+    end
+
+    # Check for keywords in the commit message
+    COMMIT_CATEGORIES.each do |keyword, category|
+      return category if subject_lower.include?(keyword)
+    end
+
+    "Changed" # Default category
+  end
+
+  def clean_commit_message(message)
+    # Remove conventional commit prefixes
+    cleaned = message.gsub(/^(\w+)(\(.+\))?\s*:\s*/, "")
+
+    return message if cleaned.empty? # Fallback to original if cleaning removes everything
+
+    # Capitalize first letter and remove trailing periods
+    cleaned = capitalize_first_letter(cleaned)
+    cleaned.chomp(".")
+  end
+
+  def capitalize_first_letter(text)
+    return text if text.empty?
+
+    text[0].upcase + text[1..]
+  end
+
+  def generate_changelog_sections(categorized_commits)
+    sections = build_changelog_sections(categorized_commits)
+
+    if sections.empty?
+      default_changelog_section
+    else
+      sections.join("\n")
+    end
+  end
+
+  def build_changelog_sections(categorized_commits)
+    sections = []
+
+    CHANGELOG_SECTION_ORDER.each do |category|
+      commits = categorized_commits[category]
+      next unless commits&.any?
+
+      sections << "\n### #{category}\n"
+      commits.each { |commit| sections << "- #{commit[:message]}" }
+      sections << ""
+    end
+
+    sections
+  end
+
+  def default_changelog_section
+    "\n### Changes\n- Minor improvements and updates\n"
+  end
+end
+# rubocop:enable Metrics/ModuleLength
+
+# Manages the release process for DB Watcher including version bumping,
+# changelog generation, and git tagging.
+class ReleaseManager
+  include ChangelogGenerator
+
+  VALID_TYPES = %w[major minor patch].freeze
+  VERSION_FILE = "lib/dbwatcher/version.rb"
+  CHANGELOG_FILE = "CHANGELOG.md"
+
+  def initialize
+    @options = default_options
+  end
+
+  def run(args)
+    parse_options(args)
+    display_dry_run_warning if @options[:dry_run]
+
+    current_version = Dbwatcher::VERSION
+    new_version = calculate_new_version(current_version, @options[:type])
+
+    display_version_info(current_version, new_version)
+
+    unless @options[:dry_run]
+      update_version_file(new_version)
+      update_changelog(new_version)
+      handle_git_operations(new_version) if @options[:push]
+    end
+
+    display_completion_message(new_version)
+  end
+
+  private
+
+  def default_options
+    {
+      type: "patch",
+      push: false,
+      dry_run: false,
+      auto_changelog: true
+    }
+  end
+
+  def display_dry_run_warning
+    puts "🧪 DRY RUN MODE - No changes will be made"
+  end
+
+  def display_version_info(current_version, new_version)
+    puts "📦 Current version: #{current_version}"
+    puts "🚀 New version:     #{new_version}"
+  end
+
+  def display_completion_message(new_version)
+    puts "\n✅ Release preparation complete!"
+
+    if @options[:auto_changelog]
+      display_auto_changelog_next_steps(new_version)
+    else
+      display_manual_changelog_next_steps(new_version)
+    end
+  end
+
+  def display_auto_changelog_next_steps(new_version)
+    puts "\nNext steps:"
+    puts "1. Review and edit #{CHANGELOG_FILE} (auto-generated entries added)"
+    puts "2. Commit and push changes"
+    puts "3. Create and push tag (v#{new_version})"
+    puts "4. GitHub Actions will automatically publish to RubyGems"
+  end
+
+  def display_manual_changelog_next_steps(new_version)
+    puts "\nNext steps:"
+    puts "1. Add changelog entries to #{CHANGELOG_FILE}"
+    puts "2. Commit and push changes"
+    puts "3. Create and push tag (v#{new_version})"
+    puts "4. GitHub Actions will automatically publish to RubyGems"
+  end
+
+  def handle_git_operations(new_version)
+    create_and_push_tag(new_version)
+  rescue StandardError => e
+    puts "❌ Error during git operations: #{e.message}"
+    exit 1
+  end
+
+  def parse_options(args)
+    OptionParser.new do |opts|
+      opts.banner = "Usage: #{$PROGRAM_NAME} [options]"
+
+      opts.on("-t", "--type TYPE", VALID_TYPES,
+              "Release type: #{VALID_TYPES.join(", ")} (default: patch)") do |type|
+        @options[:type] = type
+      end
+
+      opts.on("-p", "--push", "Automatically commit, tag, and push") do
+        @options[:push] = true
+      end
+
+      opts.on("-n", "--dry-run", "Show what would be done without making changes") do
+        @options[:dry_run] = true
+      end
+
+      opts.on("--[no-]auto-changelog", "Auto-generate changelog from git commits (default: true)") do |auto|
+        @options[:auto_changelog] = auto
+      end
+
+      opts.on("-h", "--help", "Show this help") do
+        puts opts
+        exit
+      end
+    end.parse!(args)
+  end
+
+  def calculate_new_version(version, type)
+    major, minor, patch = version.split(".").map(&:to_i)
+
+    case type
+    when "major"
+      "#{major + 1}.0.0"
+    when "minor"
+      "#{major}.#{minor + 1}.0"
+    when "patch"
+      "#{major}.#{minor}.#{patch + 1}"
+    end
+  end
+
+  def update_version_file(new_version)
+    content = File.read(VERSION_FILE)
+    updated_content = content.gsub(/VERSION = "[^"]*"/, "VERSION = \"#{new_version}\"")
+
+    File.write(VERSION_FILE, updated_content)
+    puts "📝 Updated #{VERSION_FILE}"
+  rescue StandardError => e
+    puts "❌ Error updating version file: #{e.message}"
+    exit 1
+  end
+
+  def update_changelog(new_version)
+    return unless File.exist?(CHANGELOG_FILE)
+
+    puts "\n📋 Generating changelog from git commits..." if @options[:auto_changelog]
+
+    content = File.read(CHANGELOG_FILE)
+    changelog_entries = generate_changelog_content
+    updated_content = insert_changelog_entries(content, new_version, changelog_entries)
+
+    File.write(CHANGELOG_FILE, updated_content)
+    puts "📝 Updated #{CHANGELOG_FILE}"
+
+    display_changelog_success_message if @options[:auto_changelog] && !@options[:dry_run]
+  rescue StandardError => e
+    puts "❌ Error updating changelog: #{e.message}"
+    exit 1
+  end
+
+  def generate_changelog_content
+    if @options[:auto_changelog]
+      generate_auto_changelog_entries
+    else
+      "\n### Changes\n\n- TODO: Add changelog entries\n"
+    end
+  end
+
+  def insert_changelog_entries(content, new_version, changelog_entries)
+    today = Time.now.strftime("%Y-%m-%d")
+
+    content.gsub(
+      "## [Unreleased]",
+      "## [Unreleased]\n\n## [#{new_version}] - #{today}#{changelog_entries}"
+    )
+  end
+
+  def display_changelog_success_message
+    puts "📋 Generated changelog entries from git commits"
+    puts "   Please review and edit the changelog before committing"
+  end
+
+  def create_and_push_tag(new_version)
+    return display_manual_git_instructions(new_version) unless @options[:push]
+
+    puts "\n🏷️  Creating and pushing tag..."
+    execute_git_commands(new_version)
+    puts "✅ Tag v#{new_version} created and pushed"
+  end
+
+  def display_manual_git_instructions(new_version)
+    puts "\n🏷️  To create and push the release tag, run:"
+    puts "   git add -A && git commit -m 'Release v#{new_version}' && git tag v#{new_version} && " \
+         "git push origin master && git push origin v#{new_version}"
+  end
+
+  def execute_git_commands(new_version)
+    commands = [
+      "git add -A",
+      "git commit -m 'Release v#{new_version}'",
+      "git tag v#{new_version}",
+      "git push origin master",
+      "git push origin v#{new_version}"
+    ]
+
+    commands.each do |command|
+      raise "Failed to execute: #{command}" unless system(command)
+    end
+  end
+end
+
+ReleaseManager.new.run(ARGV) if __FILE__ == $PROGRAM_NAME
