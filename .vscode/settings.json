@@ -1,0 +1,69 @@
+{
+  // ERB file associations and formatting
+  "files.associations": {
+    "*.html.erb": "erb",
+    "*.erb": "erb"
+  },
+  
+  // Auto-format on save for ERB files
+  "[erb]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": false,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.trimAutoWhitespace": true
+  },
+  
+  // HTML formatting within ERB
+  "[html]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+  
+  // Ruby formatting
+  "[ruby]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "shopify.ruby-lsp",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+  
+  // Prettier configuration for ERB files
+  "prettier.documentSelectors": [
+    "**/*.html.erb"
+  ],
+  
+  // ERB-specific settings
+  "emmet.includeLanguages": {
+    "erb": "html"
+  },
+  
+  // Ruby LSP settings
+  "rubyLsp.formatter": "rubocop",
+  "rubyLsp.linters": ["rubocop"],
+  
+  // File watching and auto-save
+  "files.autoSave": "onFocusChange",
+  "editor.formatOnSaveMode": "file",
+  
+  // Indentation and whitespace
+  "editor.detectIndentation": false,
+  "editor.insertSpaces": true,
+  "editor.tabSize": 2,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  
+  // Language-specific overrides
+  "languageserver-ruby.diagnostics": true,
+  "languageserver-ruby.completion": true,
+  "languageserver-ruby.hover": true,
+  "languageserver-ruby.signature": true,
+  
+  // Additional ERB/Rails support
+  "rails.experimental.enableGoToDefinition": true
+}

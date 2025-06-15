@@ -2,60 +2,26 @@
 
 module Dbwatcher
   module SessionHelper
-    # Helper method to safely get the sessions path
-    def sessions_index_path
-      if respond_to?(:sessions_path)
-        sessions_path
-      else
-        "/dbwatcher"
-      end
+    # Get session change count with fallback
+    def session_change_count(session)
+      safe_value(session, :change_count, 0).to_i
     end
 
-    # Format session status with appropriate styling
-    def session_status_badge(status)
-      css_class = case status.to_s.downcase
-                  when "active"
-                    "badge badge-success"
-                  when "completed"
-                    "badge badge-primary"
-                  when "error"
-                    "badge badge-danger"
-                  else
-                    "badge badge-secondary"
-                  end
-
-      content_tag(:span, status.to_s.capitalize, class: css_class)
+    # Determine if session is active
+    def session_active?(session)
+      safe_value(session, :ended_at).blank?
     end
 
-    # Format session duration for display
-    def format_session_duration(session)
-      return "N/A" unless session&.started_at
-
-      end_time = session.ended_at || Time.current
-      duration_minutes = ((end_time - session.started_at) / 60.0).round(2)
-
-      if duration_minutes < 1
-        "#{(duration_minutes * 60).round} seconds"
-      elsif duration_minutes < 60
-        "#{duration_minutes} minutes"
-      else
-        hours = (duration_minutes / 60).round(1)
-        "#{hours} hours"
-      end
+    # Format session name for display
+    def display_session_name(name)
+      name.to_s.gsub(/^HTTP \w+ /, "")
     end
 
-    # Generate session summary info
-    def session_summary_info(session)
-      return {} unless session
+    # Generate session ID display (truncated)
+    def display_session_id(id)
+      return "N/A" unless id
 
-      {
-        id: session.id,
-        status: session.status,
-        changes_count: session.changes.length,
-        tables_count: session.changes.map { |c| c[:table_name] }.uniq.length,
-        duration: format_session_duration(session),
-        started_at: session.started_at
-      }
+      "#{id[0..7]}..."
     end
   end
 end

@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
 module Dbwatcher
-  class DashboardController < ActionController::Base
-    protect_from_forgery with: :exception
-    layout "dbwatcher/application"
-
+  class DashboardController < BaseController
     def index
       dashboard_data = Dbwatcher::Services::DashboardDataAggregator.call
       @recent_sessions = dashboard_data[:recent_sessions]

@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
 module Dbwatcher
-  class TablesController < ActionController::Base
-    protect_from_forgery with: :exception
-    layout "dbwatcher/application"
-
+  class TablesController < BaseController
     def index
       @tables = Dbwatcher::Services::TableStatisticsCollector.call
     end

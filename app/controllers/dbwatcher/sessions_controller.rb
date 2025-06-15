@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
 module Dbwatcher
-  class SessionsController < ActionController::Base
-    protect_from_forgery with: :exception
-    layout "dbwatcher/application"
-
+  class SessionsController < BaseController
     def index
       @sessions = Storage.sessions.all
     end
@@ -14,7 +11,7 @@ module Dbwatcher
       @session = Storage.sessions.find(params[:id])
       Rails.logger.info "SessionsController#show: Loaded session: #{@session.inspect}"
 
-      return handle_session_not_found unless @session
+      return handle_not_found("Session", sessions_path) unless @session
 
       @tables_summary = Storage.sessions.build_tables_summary(@session)
       Rails.logger.info "SessionsController#show: Tables summary: #{@tables_summary.inspect}"
@@ -26,15 +23,11 @@ module Dbwatcher
     end
 
     def clear
-      cleared_count = Storage.session_storage.clear_all
-      redirect_to sessions_path, notice: "All sessions cleared (#{cleared_count} files removed)"
-    end
-
-    private
-
-    def handle_session_not_found
-      Rails.logger.warn "SessionsController#show: Session not found for ID: #{params[:id]}"
-      redirect_to sessions_path, alert: "Session not found"
+      clear_storage_with_message(
+        -> { Storage.session_storage.clear_all },
+        "All sessions",
+        sessions_path
+      )
     end
   end
 end

@@ -1,0 +1,4 @@
+<%# Reusable badge component %>
+<span class="badge <%= local_assigns[:badge_class] || 'bg-gray-600 text-white' %>" <%= "title=\"#{local_assigns[:tooltip]}\"".html_safe if local_assigns[:tooltip] %>>
+  <%= local_assigns[:content] %>
+</span>

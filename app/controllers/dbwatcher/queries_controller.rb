@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
 module Dbwatcher
-  class QueriesController < ActionController::Base
-    protect_from_forgery with: :exception
-    layout "dbwatcher/application"
-
+  class QueriesController < BaseController
     def index
       @date = params[:date] || Date.current.strftime("%Y-%m-%d")
       queries = Storage.queries.for_date(@date).all
@@ -17,8 +14,11 @@ module Dbwatcher
     end
 
     def clear
-      cleared_count = Storage.query_storage.clear_all
-      redirect_to queries_path, notice: "SQL query logs cleared (#{cleared_count} files removed)"
+      clear_storage_with_message(
+        -> { Storage.query_storage.clear_all },
+        "SQL query logs",
+        queries_path
+      )
     end
   end
 end

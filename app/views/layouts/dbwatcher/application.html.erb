@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>DBWatcher</title>
+    <title>DB Watcher</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
-    
+
     <!-- Alpine.js -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Custom styles for compact theme -->
     <style>
       :root {
@@ -20,14 +20,14 @@
         --gold-dark: #D4A11E;
         --gold-light: #FFC758;
       }
-      
+
       /* Compact table styles */
       .compact-table {
         font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
         font-size: 12px;
         line-height: 1.2;
       }
-      
+
       .compact-table th {
         padding: 4px 8px;
         font-weight: 500;
@@ -40,7 +40,7 @@
         top: 0;
         z-index: 10;
       }
-      
+
       .compact-table td {
         padding: 2px 8px;
         border-right: 1px solid #f0f0f0;
@@ -50,15 +50,15 @@
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      
+
       .compact-table tr:hover {
         background: #f8f8f8;
       }
-      
+
       .compact-table tr.selected {
         background: #e6f3ff;
       }
-      
+
       /* Sidebar styles */
       .sidebar-item {
         font-size: 13px;
@@ -69,17 +69,17 @@
         border-radius: 3px;
         transition: all 0.15s;
       }
-      
+
       .sidebar-item:hover {
         background: rgba(108, 173, 223, 0.1);
         color: #6CADDF;
       }
-      
+
       .sidebar-item.active {
         background: #00285D;
         color: white;
       }
-      
+
       /* Compact form controls */
       .compact-input {
         padding: 3px 8px;
@@ -87,7 +87,7 @@
         border: 1px solid #d1d5db;
         border-radius: 3px;
       }
-      
+
       .compact-select {
         padding: 3px 24px 3px 8px;
         font-size: 12px;
@@ -95,14 +95,14 @@
         border-radius: 3px;
         background-size: 16px;
       }
-      
+
       .compact-button {
         padding: 4px 12px;
         font-size: 12px;
         border-radius: 3px;
         font-weight: 500;
       }
-      
+
       /* Tab styles */
       .tab-bar {
         background: #f3f3f3;
@@ -112,7 +112,7 @@
         height: 32px;
         font-size: 12px;
       }
-      
+
       .tab-item {
         padding: 0 16px;
         height: 100%;
@@ -122,23 +122,23 @@
         cursor: pointer;
         transition: all 0.15s;
       }
-      
+
       .tab-item:hover {
         background: #e8e8e8;
       }
-      
+
       .tab-item.active {
         background: white;
         color: #00285D;
         font-weight: 500;
       }
-      
+
       /* Status badges */
       .badge-insert { background: #10b981; color: white; }
       .badge-update { background: #6CADDF; color: white; }
       .badge-delete { background: #ef4444; color: white; }
       .badge-select { background: #6b7280; color: white; }
-      
+
       .badge {
         padding: 1px 6px;
         font-size: 10px;
@@ -146,114 +146,114 @@
         font-weight: 500;
         text-transform: uppercase;
       }
-      
+
       /* Highlight colors */
       .highlight-change { background: rgba(255, 199, 88, 0.3); }
       .highlight-new { background: rgba(16, 185, 129, 0.2); }
       .highlight-deleted { background: rgba(239, 68, 68, 0.2); }
-      
+
       /* Splitter */
       .splitter {
         width: 4px;
         background: #e8e8e8;
         cursor: col-resize;
       }
-      
+
       .splitter:hover {
         background: #6CADDF;
       }
-      
+
       /* Scrollbar styling */
       ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
       }
-      
+
       ::-webkit-scrollbar-track {
         background: #f3f3f3;
       }
-      
+
       ::-webkit-scrollbar-thumb {
         background: #c8c8c8;
         border-radius: 4px;
       }
-      
+
       ::-webkit-scrollbar-thumb:hover {
         background: #6CADDF;
       }
-      
+
       /* Enhanced table styles for data readability */
       .table-detailed .compact-table td {
         max-width: 300px;
         padding: 4px 8px;
       }
-      
+
       .cell-content {
         position: relative;
         display: inline-block;
         max-width: 100%;
       }
-      
+
       .cell-compact {
         max-width: 150px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      
+
       .cell-detailed {
         max-width: 300px;
         white-space: pre-wrap;
         word-break: break-word;
       }
-      
+
       .cell-value {
         cursor: help;
       }
-      
+
       /* Column type styling */
       .column-meta {
         background-color: rgba(156, 163, 175, 0.1);
       }
-      
+
       .column-timestamp {
         background-color: rgba(59, 130, 246, 0.1);
         font-family: monospace;
       }
-      
+
       .column-id {
         background-color: rgba(245, 158, 11, 0.1);
         font-family: monospace;
       }
-      
+
       /* Tooltip improvements */
       .tooltip-content {
         max-height: 200px;
         overflow-y: auto;
         font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
       }
-      
+
       /* Essential mode adjustments */
       .view-essential .compact-table th,
       .view-essential .compact-table td {
         font-size: 11px;
         padding: 2px 6px;
       }
-      
+
       /* JSON/Array content indicators */
       .json-indicator {
         color: #6366f1;
         font-style: italic;
         font-size: 10px;
       }
-      
+
       .array-indicator {
         color: #059669;
         font-style: italic;
         font-size: 10px;
       }
     </style>
-    
+
     <script>
       tailwind.config = {
         theme: {
@@ -280,62 +280,62 @@
           <!-- Logo -->
           <div class="h-10 flex items-center justify-between px-3 border-b border-gray-700">
             <div class="flex items-center gap-2" x-show="!sidebarCollapsed">
-              <svg class="w-5 h-5 text-gold-light" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/>
+              <svg class="w-5 h-5 text-gold-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
-              <span class="text-sm font-medium text-white">DBWatcher</span>
+              <span class="text-sm font-medium text-white">DB Watcher</span>
             </div>
-            <button @click="sidebarCollapsed = !sidebarCollapsed" 
+            <button @click="sidebarCollapsed = !sidebarCollapsed"
                     class="p-1 hover:bg-gray-800 rounded text-gray-400">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       :d="sidebarCollapsed ? 'M13 5l7 7-7 7M5 5l7 7-7 7' : 'M11 19l-7-7 7-7m8 14l-7-7 7-7'"/>
               </svg>
             </button>
           </div>
-          
+
           <!-- Navigation -->
           <nav class="flex-1 py-2 overflow-y-auto">
             <%= link_to root_path, class: "sidebar-item #{current_page?(root_path) ? 'active' : ''}" do %>
               <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
               </svg>
               <span x-show="!sidebarCollapsed">Dashboard</span>
             <% end %>
-            
+
             <%= link_to sessions_path, class: "sidebar-item #{current_page?(sessions_path) ? 'active' : ''}" do %>
               <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
               <span x-show="!sidebarCollapsed">Sessions</span>
             <% end %>
-            
+
             <%= link_to tables_path, class: "sidebar-item #{current_page?(tables_path) ? 'active' : ''}" do %>
               <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
               </svg>
               <span x-show="!sidebarCollapsed">Tables</span>
             <% end %>
-            
+
             <%= link_to queries_path, class: "sidebar-item #{current_page?(queries_path) ? 'active' : ''}" do %>
               <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
               </svg>
               <span x-show="!sidebarCollapsed">SQL Logs</span>
             <% end %>
           </nav>
-          
+
           <!-- Actions -->
           <div class="p-2 border-t border-gray-700">
             <!-- TODO: Add more action later -->
           </div>
         </div>
       </aside>
-      
+
       <!-- Splitter -->
       <div class="splitter" x-show="!sidebarCollapsed"
            @mousedown="startResize($event)"
@@ -343,30 +343,30 @@
              startResize(e) {
                const startX = e.pageX;
                const startWidth = sidebarWidth;
-               
+
                const doDrag = (e) => {
                  sidebarWidth = Math.max(150, Math.min(400, startWidth + e.pageX - startX));
                };
-               
+
                const stopDrag = () => {
                  document.removeEventListener('mousemove', doDrag);
                  document.removeEventListener('mouseup', stopDrag);
                };
-               
+
                document.addEventListener('mousemove', doDrag);
                document.addEventListener('mouseup', stopDrag);
              }
            }">
       </div>
-      
+
       <!-- Main Content -->
       <main class="flex-1 overflow-hidden bg-white">
         <%= yield %>
       </main>
     </div>
-    
+
     <script>
-      mermaid.initialize({ 
+      mermaid.initialize({
         startOnLoad: true,
         theme: 'neutral',
         themeVariables: {

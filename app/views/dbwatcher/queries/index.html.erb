@@ -1,5 +1,5 @@
 <div class="h-full flex flex-col" x-data="queryLogs()">
-  <!-- Compact Header -->
+  <!-- Header with embedded stats -->
   <div class="h-10 bg-navy-dark text-white flex items-center px-4">
     <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
       <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
@@ -13,12 +13,11 @@
     </div>
   </div>
   
-  <!-- Tab Bar -->
-  <div class="tab-bar">
-    <div class="tab-item active">All Queries</div>
-    <div class="tab-item">Slow Queries</div>
-    <div class="tab-item">Recent</div>
-  </div>
+  <%= render 'dbwatcher/shared/tab_bar', tabs: [
+    { name: 'All Queries', active: true },
+    { name: 'Slow Queries', active: false },
+    { name: 'Recent', active: false }
+  ] %>
   
   <!-- Compact Toolbar -->
   <div class="bg-gray-100 border-b border-gray-300 px-3 py-1 flex items-center gap-3">
@@ -103,8 +102,7 @@
     </div>
   </div>
   
-  
-  <!-- Content -->
+  <!-- Content Area -->
   <div class="flex-1 overflow-auto">
     <div class="h-full">
       <table class="compact-table w-full">

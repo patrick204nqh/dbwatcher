@@ -1,0 +1,20 @@
+<%# Standard page layout wrapper %>
+<div class="h-full flex flex-col">
+  <%= render 'dbwatcher/shared/header', title: local_assigns[:page_title], subtitle: local_assigns[:page_subtitle] %>
+  
+  <% if local_assigns[:tabs] %>
+    <%= render 'dbwatcher/shared/tab_bar', tabs: local_assigns[:tabs] %>
+  <% end %>
+  
+  <% if local_assigns[:toolbar] %>
+    <!-- Toolbar -->
+    <div class="h-8 bg-gray-100 border-b border-gray-300 flex items-center px-4 gap-2">
+      <%= local_assigns[:toolbar] %>
+    </div>
+  <% end %>
+  
+  <!-- Content Area -->
+  <div class="flex-1 overflow-auto p-4">
+    <%= yield %>
+  </div>
+</div>

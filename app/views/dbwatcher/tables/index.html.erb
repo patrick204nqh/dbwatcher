@@ -1,18 +1,12 @@
+<%# Tables Index Page %>
 <div class="h-full flex flex-col">
-  <!-- Compact Header -->
-  <div class="h-10 bg-navy-dark text-white flex items-center px-4">
-    <h1 class="text-sm font-medium">Database Tables</h1>
-    <span class="ml-auto text-xs text-blue-light">
-      <%= @tables.count %> tables
-    </span>
-  </div>
+  <%= render 'dbwatcher/shared/header', title: 'Database Tables', subtitle: "#{@tables.count} tables" %>
   
-  <!-- Tab Bar -->
-  <div class="tab-bar">
-    <div class="tab-item active">All Tables</div>
-    <div class="tab-item">Modified</div>
-    <div class="tab-item">Recent</div>
-  </div>
+  <%= render 'dbwatcher/shared/tab_bar', tabs: [
+    { name: 'All Tables', active: true },
+    { name: 'Modified', active: false },
+    { name: 'Recent', active: false }
+  ] %>
   
   <!-- Toolbar -->
   <div class="h-8 bg-gray-100 border-b border-gray-300 flex items-center px-4 gap-2">
@@ -30,7 +24,7 @@
     </button>
   </div>
   
-  <!-- Content -->
+  <!-- Content Area -->
   <div class="flex-1 overflow-auto">
     <table class="compact-table w-full">
       <thead>

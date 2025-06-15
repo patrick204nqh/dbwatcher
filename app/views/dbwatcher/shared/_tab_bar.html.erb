@@ -1,0 +1,6 @@
+<%# Reusable tab bar component %>
+<div class="tab-bar">
+  <% (local_assigns[:tabs] || []).each do |tab| %>
+    <div class="tab-item <%= 'active' if tab[:active] %>"><%= tab[:name] %></div>
+  <% end %>
+</div>

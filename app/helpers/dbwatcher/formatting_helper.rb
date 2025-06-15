@@ -53,14 +53,6 @@ module Dbwatcher
       end
     end
 
-    # Check if a value needs a tooltip (long content)
-    def needs_tooltip?(value, max_length = 50)
-      return false if value.nil?
-
-      formatted_value = format_cell_value_simple(value)
-      formatted_value.length > max_length
-    end
-
     private
 
     # Format string values with JSON detection
