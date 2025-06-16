@@ -6,22 +6,22 @@
     </svg>
     <h1 class="text-sm font-medium truncate"><%= @session.name %></h1>
     <span class="ml-auto text-xs text-blue-light">
-      <%= Time.parse(@session.started_at.to_s).strftime("%H:%M:%S") rescue @session.started_at %> - 
+      <%= Time.parse(@session.started_at.to_s).strftime("%H:%M:%S") rescue @session.started_at %> -
       <%= Time.parse(@session.ended_at.to_s).strftime("%H:%M:%S") rescue @session.ended_at %>
     </span>
   </div>
-  
+
   <!-- Tab Bar -->
   <div class="tab-bar">
     <div class="tab-item" :class="{ active: activeTab === 'changes' }" @click="activeTab = 'changes'">Changes</div>
     <div class="tab-item" :class="{ active: activeTab === 'summary' }" @click="activeTab = 'summary'">Summary</div>
   </div>
-  
+
   <!-- Compact Toolbar -->
   <div class="bg-gray-100 border-b border-gray-300 px-3 py-1 flex items-center gap-3">
-    
+
     <div class="ml-auto flex items-center gap-2">
-      <button @click="exportData()" 
+      <button @click="exportData()"
               class="compact-button bg-white border border-gray-300 hover:bg-gray-50">
         <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
@@ -30,8 +30,8 @@
       </button>
     </div>
   </div>
-  
-  
+
+
   <!-- Content -->
   <div class="flex-1 overflow-auto">
     <!-- Summary Tab -->
@@ -59,16 +59,16 @@
         <% end %>
       </div>
     </div>
-    
+
     <!-- Changes Tab -->
     <div x-show="activeTab === 'changes'" class="h-full">
       <% @tables_summary.each do |table_name, summary| %>
         <div class="border-b border-gray-300" x-data="{ expanded: true }">
           <!-- Table Header with Column Controls -->
-          <div class="bg-gray-100 px-3 py-2 flex items-center cursor-pointer" 
+          <div class="bg-gray-100 px-3 py-2 flex items-center cursor-pointer"
                @click="expanded = !expanded"
                :id="`table-${table_name}`">
-            <svg class="w-3 h-3 mr-2 transition-transform" 
+            <svg class="w-3 h-3 mr-2 transition-transform"
                  :class="{ 'rotate-90': expanded }"
                  fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
@@ -86,7 +86,7 @@
               Columns
             </button>
           </div>
-          
+
           <!-- Column Selector Dropdown -->
           <div x-show="showColumnSelector === '<%= table_name %>'"
                x-transition
@@ -98,7 +98,7 @@
               <% if summary[:sample_record] %>
                 <% summary[:sample_record].keys.each do |column| %>
                   <label class="flex items-center text-xs hover:bg-gray-50 p-1 rounded">
-                    <input type="checkbox" 
+                    <input type="checkbox"
                            x-model="tableColumns['<%= table_name %>']['<%= column %>']"
                            class="mr-2">
                     <span class="flex-1"><%= column.to_s.humanize %></span>
@@ -107,13 +107,13 @@
               <% end %>
             </div>
             <div class="mt-2 pt-2 border-t border-gray-200 flex gap-1">
-              <button @click="selectAllColumns('<%= table_name %>')" 
+              <button @click="selectAllColumns('<%= table_name %>')"
                       class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">All</button>
-              <button @click="selectNoneColumns('<%= table_name %>')" 
+              <button @click="selectNoneColumns('<%= table_name %>')"
                       class="text-xs bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-700">None</button>
             </div>
           </div>
-          
+
           <!-- Table Content with Horizontal Scroll -->
           <div x-show="expanded" x-collapse class="overflow-auto">
             <div class="min-w-full">
@@ -126,7 +126,7 @@
                     <th class="text-left w-24 sticky bg-gray-100 z-20 border-r border-gray-300">Time</th>
                     <% if summary[:sample_record] %>
                       <% summary[:sample_record].keys.each do |column| %>
-                        <th class="text-left min-w-32 px-2" 
+                        <th class="text-left min-w-32 px-2"
                             x-show="tableColumns['<%= table_name %>']['<%= column %>']">
                           <%= column.to_s.humanize %>
                         </th>
@@ -137,19 +137,19 @@
                 <tbody>
                   <% summary[:changes].each_with_index do |change, index| %>
                     <% row_id = "#{table_name}_row_#{index}" %>
-                    <% operation = change['operation'] || change[:operation] %>
-                    <% timestamp = change['timestamp'] || change[:timestamp] %>
-                    <% snapshot = change['record_snapshot'] || change[:record_snapshot] || {} %>
-                    <% column_changes = change['changes'] || change[:changes] %>
-                    
+                    <% operation = change[:operation] %>
+                    <% timestamp = change[:timestamp] %>
+                    <% snapshot = change[:record_snapshot] || {} %>
+                    <% column_changes = change[:changes] %>
+
                     <tbody x-data="{ expanded: false }">
                       <tr class="hover:bg-blue-50">
                         <td class="text-center sticky left-0 bg-white z-10 border-r border-gray-200 w-16">
                           <div class="flex items-center justify-center gap-1">
                             <!-- Expand/Collapse Button -->
-                            <button @click="expanded = !expanded" 
+                            <button @click="expanded = !expanded"
                                     class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-gray-100">
-                              <svg class="w-3 h-3 transition-transform" 
+                              <svg class="w-3 h-3 transition-transform"
                                    :class="{ 'rotate-90': expanded }"
                                    fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
@@ -172,15 +172,22 @@
                             <span class="text-gray-400">--</span>
                           <% end %>
                         </td>
-                        
-                        <% if snapshot %>
-                          <% snapshot.each do |key, value| %>
-                            <td x-show="tableColumns['<%= table_name %>']['<%= key %>']" 
+
+                        <!-- Display all columns from sample_record in consistent order -->
+                        <% if summary[:sample_record] %>
+                          <% summary[:sample_record].keys.each do |column| %>
+                            <td x-show="tableColumns['<%= table_name %>']['<%= column %>']"
                                 class="relative px-2"
                                 @click.stop="">
-                              <% changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == key.to_s } %>
+                              <%
+                                # Get value from snapshot for this specific column
+                                value = snapshot&.dig(column) || snapshot&.dig(column.to_s) || snapshot&.dig(column.to_sym)
+                                changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == column.to_s }
+                              %>
                               <div class="min-w-32 max-w-48 truncate">
-                                <% if operation == 'UPDATE' && changed_column %>
+                                <% if value.nil? %>
+                                  <span class="text-gray-400 italic">--</span>
+                                <% elsif operation == 'UPDATE' && changed_column %>
                                   <div class="text-xs">
                                     <div class="text-red-600 line-through">
                                       <%= truncate_cell_value(changed_column['old_value'] || changed_column[:old_value]) %>
@@ -207,9 +214,9 @@
                           <% end %>
                         <% end %>
                       </tr>
-                      
+
                       <!-- Expanded Row Content -->
-                      <tr x-show="expanded" 
+                      <tr x-show="expanded"
                           x-collapse
                           class="bg-gray-50 border-t border-gray-200">
                       <td colspan="2" class="sticky left-0 bg-gray-50 z-10 border-r border-gray-200 p-3 w-40">
@@ -221,14 +228,23 @@
                           <% end %>
                         </div>
                       </td>
-                      <% if snapshot %>
-                        <% snapshot.each do |key, value| %>
-                          <td x-show="tableColumns['<%= table_name %>']['<%= key %>']" 
+                      <!-- Display expanded details for all columns in consistent order -->
+                      <% if summary[:sample_record] %>
+                        <% summary[:sample_record].keys.each do |column| %>
+                          <td x-show="tableColumns['<%= table_name %>']['<%= column %>']"
                               class="p-3 border-r border-gray-200 align-top">
-                            <% changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == key.to_s } %>
-                            <div class="text-xs font-medium text-gray-600 mb-1"><%= key.to_s.humanize %></div>
+                            <%
+                              # Get value from snapshot for this specific column
+                              value = snapshot&.dig(column) || snapshot&.dig(column.to_s) || snapshot&.dig(column.to_sym)
+                              changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == column.to_s }
+                            %>
+                            <div class="text-xs font-medium text-gray-600 mb-1"><%= column.to_s.humanize %></div>
                             <div class="max-w-md">
-                              <% if operation == 'UPDATE' && changed_column %>
+                              <% if value.nil? %>
+                                <div class="text-gray-400 bg-gray-100 p-2 rounded italic">
+                                  <span class="text-xs">No value</span>
+                                </div>
+                              <% elsif operation == 'UPDATE' && changed_column %>
                                 <div class="space-y-2">
                                   <div class="text-red-600 bg-red-50 p-2 rounded">
                                     <div class="text-xs font-medium mb-1">Old Value:</div>
@@ -275,7 +291,7 @@ function sessionView() {
     activeTab: 'changes',
     showColumnSelector: null,
     tableColumns: {},
-    
+
     init() {
       // Initialize column visibility for each table
       <% @tables_summary.each do |table_name, summary| %>
@@ -287,7 +303,7 @@ function sessionView() {
         <% end %>
       <% end %>
     },
-    
+
     scrollToTable(tableName) {
       this.activeTab = 'changes';
       setTimeout(() => {
@@ -297,23 +313,23 @@ function sessionView() {
         }
       }, 100);
     },
-    
+
     toggleColumnSelector(tableName) {
       this.showColumnSelector = this.showColumnSelector === tableName ? null : tableName;
     },
-    
+
     selectAllColumns(tableName) {
       Object.keys(this.tableColumns[tableName]).forEach(column => {
         this.tableColumns[tableName][column] = true;
       });
     },
-    
+
     selectNoneColumns(tableName) {
       Object.keys(this.tableColumns[tableName]).forEach(column => {
         this.tableColumns[tableName][column] = false;
       });
     },
-    
+
     exportData() {
       const data = [];
       <% @tables_summary.each do |table_name, summary| %>
@@ -327,12 +343,12 @@ function sessionView() {
           });
         <% end %>
       <% end %>
-      
+
       const csv = [
         ['Table', 'Operation', 'Timestamp', 'Record ID', 'Changes'],
         ...data.map(row => [row.table, row.operation, row.timestamp, row.record_id, row.changes])
       ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-      
+
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -344,4 +360,3 @@ function sessionView() {
   }
 }
 </script>
-

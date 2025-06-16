@@ -88,16 +88,39 @@ module Dbwatcher
             table_data[:changes] << change
           end
 
-          # Update sample record if not already set
+          # Update sample record to ensure all columns are captured with consistent ordering
+          #
+          # This method ensures that columns maintain a consistent order across all operations
+          # by preserving the order established by the first record and appending new columns at the end.
           #
           # @param table_data [Hash] table data hash
           # @param change [Hash] change data
           # @return [void]
           def update_sample_record(table_data, change)
-            return unless table_data[:sample_record].nil?
-
             snapshot = extract_record_snapshot(change)
-            table_data[:sample_record] = snapshot if snapshot
+            return unless snapshot.is_a?(Hash)
+
+            if table_data[:sample_record].nil?
+              # Initialize with first record's columns in their original order
+              table_data[:sample_record] = snapshot.dup
+            else
+              # Maintain consistent column ordering by preserving existing order
+              # and appending new columns at the end
+              existing_keys = table_data[:sample_record].keys
+              new_keys = snapshot.keys - existing_keys
+
+              # Add new columns from the current snapshot
+              new_keys.each do |key|
+                table_data[:sample_record][key] = snapshot[key]
+              end
+
+              # Update existing columns with new values if they exist
+              existing_keys.each do |key|
+                if snapshot.key?(key)
+                  table_data[:sample_record][key] = snapshot[key]
+                end
+              end
+            end
           end
 
           # Update record history for analysis
