@@ -62,7 +62,7 @@ RSpec.describe Dbwatcher::Storage::Api::Concerns::TableAnalyzer do
 
         # The column order should be established by the first record
         # and maintained throughout, with new columns appended at the end
-        expected_keys = [:id, :name, :email, :age, :status]
+        expected_keys = %i[id name email age status]
         actual_keys = users_summary[:sample_record].keys
 
         expect(actual_keys).to eq(expected_keys)
@@ -84,7 +84,7 @@ RSpec.describe Dbwatcher::Storage::Api::Concerns::TableAnalyzer do
 
         expect(users_summary).not_to be_nil
         expect(users_summary[:sample_record]).not_to be_nil
-        
+
         # The sample record should maintain consistent ordering
         actual_keys = users_summary[:sample_record].keys
         expect(actual_keys).to include(:id, :name, :email, :age, :status)
@@ -118,11 +118,11 @@ RSpec.describe Dbwatcher::Storage::Api::Concerns::TableAnalyzer do
 
         # Users table should maintain its column order
         users_columns = summary["users"][:sample_record].keys
-        expect(users_columns).to eq([:id, :name, :email, :age, :status])
+        expect(users_columns).to eq(%i[id name email age status])
 
         # Posts table should have its own column order
         posts_columns = summary["posts"][:sample_record].keys
-        expect(posts_columns).to eq([:title, :content, :id, :published])
+        expect(posts_columns).to eq(%i[title content id published])
       end
     end
 
@@ -154,7 +154,7 @@ RSpec.describe Dbwatcher::Storage::Api::Concerns::TableAnalyzer do
         summary = analyzer.build_tables_summary(session_with_nils)
         products_summary = summary["products"]
 
-        expect(products_summary[:sample_record].keys).to eq([:id, :name, :price, :description])
+        expect(products_summary[:sample_record].keys).to eq(%i[id name price description])
         expect(products_summary[:sample_record][:description]).to eq("Updated description")
       end
     end

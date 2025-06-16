@@ -116,9 +116,7 @@ module Dbwatcher
 
               # Update existing columns with new values if they exist
               existing_keys.each do |key|
-                if snapshot.key?(key)
-                  table_data[:sample_record][key] = snapshot[key]
-                end
+                table_data[:sample_record][key] = snapshot[key] if snapshot.key?(key)
               end
             end
           end

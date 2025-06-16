@@ -42,7 +42,7 @@ class DatabaseResetService < ApplicationService
         ActiveRecord::Base.connection.execute("ALTER TABLE #{table} AUTO_INCREMENT = 1")
       end
     end
-  rescue => e
+  rescue StandardError => e
     Rails.logger.warn "Could not reset sequences: #{e.message}"
   end
 end
