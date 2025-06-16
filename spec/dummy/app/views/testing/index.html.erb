@@ -1,0 +1,235 @@
+<% content_for :title, "DBWatcher Testing Interface" %>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .dbwatch-panel {
+    background: linear-gradient(135deg, #e0f2fe 0%, #0ea5e9 100%);
+    border: 2px solid #0284c7;
+  }
+  .test-button {
+    transition: all 0.2s ease;
+  }
+  .test-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  .stats-card {
+    transition: transform 0.2s ease;
+  }
+  .stats-card:hover {
+    transform: scale(1.05);
+  }
+</style>
+
+<div class="container mx-auto px-4 py-6 max-w-7xl">
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">🔍 DBWatcher Testing Interface</h1>
+    <p class="text-gray-600">Comprehensive database operations testing environment</p>
+    <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+      <p class="text-sm text-blue-800">
+        <strong>✨ NEW:</strong> All testing operations now include DBWatcher tracking!
+        Click any operation button below and then visit
+        <a href="/dbwatcher" class="font-semibold hover:underline">/dbwatcher</a>
+        to see detailed database change tracking.
+      </p>
+    </div>
+  </div>
+
+  <!-- Live Stats Panel -->
+  <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-lg font-semibold">📊 Live Database Statistics</h2>
+      <div id="stats-refresh" class="text-xs text-gray-500">Loading...</div>
+    </div>
+    <div id="stats-grid" class="grid grid-cols-3 md:grid-cols-6 gap-3">
+      <!-- Stats will be loaded here via JavaScript -->
+    </div>
+  </div>
+
+  <!-- DBWatcher Testing Panel -->
+  <div class="dbwatch-panel rounded-lg p-5 mb-6">
+    <div class="flex items-center mb-3">
+      <h2 class="text-xl font-bold text-white">🚀 Database Operations Testing</h2>
+      <span class="ml-3 bg-white text-blue-600 px-2 py-1 rounded text-xs font-medium">READY</span>
+    </div>
+
+    <p class="text-blue-100 mb-4 text-sm">
+      <strong>🔍 DBWatcher Integration:</strong> Add <code class="bg-blue-800 px-1 rounded">?dbwatch=true</code> to any URL to enable database tracking.
+      Visit <a href="/dbwatcher" class="text-white font-semibold hover:underline">/dbwatcher</a> to view tracked sessions.
+      <br><strong>💡 Pro Tip:</strong> Use the buttons below with tracking enabled to see detailed database operations!
+    </p>
+
+    <!-- Quick Actions -->
+    <div class="mb-4">
+      <h3 class="text-md font-semibold text-white mb-2">⚡ Quick Actions</h3>
+      <div class="flex flex-wrap gap-2">
+        <%= form_with url: reset_data_path, method: :post, local: true, class: "inline" do |f| %>
+          <%= f.hidden_field :dbwatch, value: "true" %>
+          <%= f.submit "🔄 Reset Database",
+                       class: "test-button bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm font-medium",
+                       confirm: "This will reset all test data. Continue?" %>
+        <% end %>
+        <%= link_to "📊 Quick Stats", quick_test_path(dbwatch: true),
+                    class: "test-button bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm font-medium" %>
+        <%= link_to "🏠 Users", users_path(dbwatch: true),
+                    class: "test-button bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm font-medium" %>
+        <%= link_to "📝 Posts", posts_path(dbwatch: true),
+                    class: "test-button bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded text-sm font-medium" %>
+      </div>
+    </div>
+
+    <!-- Standard Operations -->
+    <div class="mb-4">
+      <h3 class="text-md font-semibold text-white mb-2">📝 Standard Operations</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <%= form_with url: complex_transaction_path, method: :post, local: true, class: "inline w-full" do |f| %>
+          <%= f.hidden_field :dbwatch, value: "true" %>
+          <%= f.submit "🔗 Complex Transaction",
+                       class: "test-button bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded text-sm font-medium w-full" %>
+        <% end %>
+
+        <%= form_with url: mass_updates_path, method: :post, local: true, class: "inline w-full" do |f| %>
+          <%= f.hidden_field :dbwatch, value: "true" %>
+          <%= f.submit "📝 Mass Updates",
+                       class: "test-button bg-cyan-500 hover:bg-cyan-600 text-white px-3 py-2 rounded text-sm font-medium w-full" %>
+        <% end %>
+
+        <%= form_with url: cascade_deletes_path, method: :post, local: true, class: "inline w-full" do |f| %>
+          <%= f.hidden_field :dbwatch, value: "true" %>
+          <%= f.submit "🗑️ Cascade Deletes",
+                       class: "test-button bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm font-medium w-full",
+                       confirm: "This will delete records with cascading effects. Continue?" %>
+        <% end %>
+
+        <%= form_with url: nested_operations_path, method: :post, local: true, class: "inline w-full" do |f| %>
+          <%= f.hidden_field :dbwatch, value: "true" %>
+          <%= f.submit "🎯 Nested Operations",
+                       class: "test-button bg-violet-500 hover:bg-violet-600 text-white px-3 py-2 rounded text-sm font-medium w-full" %>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Advanced Operations -->
+    <div class="mb-4">
+      <h3 class="text-md font-semibold text-white mb-2">🚀 Advanced Operations</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <%= form_with url: bulk_operations_path, method: :post, local: true, class: "inline w-full" do |f| %>
+          <%= f.hidden_field :dbwatch, value: "true" %>
+          <%= f.submit "📦 Bulk Operations",
+                       class: "test-button bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded text-sm font-medium w-full" %>
+        <% end %>
+
+        <%= form_with url: concurrent_updates_path, method: :post, local: true, class: "inline w-full" do |f| %>
+          <%= f.hidden_field :dbwatch, value: "true" %>
+          <%= f.submit "⚡ Concurrent Updates",
+                       class: "test-button bg-pink-500 hover:bg-pink-600 text-white px-3 py-2 rounded text-sm font-medium w-full" %>
+        <% end %>
+
+        <%= form_with url: batch_processing_path, method: :post, local: true, class: "inline w-full" do |f| %>
+          <%= f.hidden_field :dbwatch, value: "true" %>
+          <%= f.submit "🔄 Batch Processing",
+                       class: "test-button bg-teal-500 hover:bg-teal-600 text-white px-3 py-2 rounded text-sm font-medium w-full" %>
+        <% end %>
+
+        <%= form_with url: trigger_errors_path, method: :post, local: true, class: "inline w-full" do |f| %>
+          <%= f.hidden_field :dbwatch, value: "true" %>
+          <%= f.submit "⚠️ Trigger Errors",
+                       class: "test-button bg-yellow-500 hover:bg-yellow-600 text-black px-3 py-2 rounded text-sm font-medium w-full",
+                       confirm: "This will trigger intentional errors. Continue?" %>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- High-Volume Operations -->
+    <div>
+      <h3 class="text-md font-semibold text-white mb-2">💥 High-Volume Operations</h3>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+        <%= form_with url: high_volume_inserts_path, method: :post, local: true, class: "inline w-full" do |f| %>
+          <%= f.hidden_field :dbwatch, value: "true" %>
+          <%= f.submit "📈 HV Inserts",
+                       class: "test-button bg-green-600 hover:bg-green-700 text-white px-2 py-2 rounded text-xs font-medium w-full",
+                       confirm: "Create hundreds of records?" %>
+        <% end %>
+
+        <%= form_with url: high_volume_updates_path, method: :post, local: true, class: "inline w-full" do |f| %>
+          <%= f.hidden_field :dbwatch, value: "true" %>
+          <%= f.submit "📊 HV Updates",
+                       class: "test-button bg-blue-600 hover:bg-blue-700 text-white px-2 py-2 rounded text-xs font-medium w-full",
+                       confirm: "Update hundreds of records?" %>
+        <% end %>
+
+        <%= form_with url: high_volume_deletes_path, method: :post, local: true, class: "inline w-full" do |f| %>
+          <%= f.hidden_field :dbwatch, value: "true" %>
+          <%= f.submit "📉 HV Deletes",
+                       class: "test-button bg-red-600 hover:bg-red-700 text-white px-2 py-2 rounded text-xs font-medium w-full",
+                       confirm: "Delete hundreds of records?" %>
+        <% end %>
+
+        <%= form_with url: mixed_high_volume_operations_path, method: :post, local: true, class: "inline w-full" do |f| %>
+          <%= f.hidden_field :dbwatch, value: "true" %>
+          <%= f.submit "🔀 HV Mixed",
+                       class: "test-button bg-purple-600 hover:bg-purple-700 text-white px-2 py-2 rounded text-xs font-medium w-full",
+                       confirm: "Perform mixed high-volume operations?" %>
+        <% end %>
+
+        <%= link_to "🔍 DBWatcher", "/dbwatcher?dbwatch=true",
+                    class: "test-button bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-2 rounded text-xs font-medium w-full text-center block" %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Load stats once on page load
+  function loadStats() {
+    fetch('/quick_test')
+      .then(response => response.json())
+      .then(data => {
+        const grid = document.getElementById('stats-grid');
+        grid.innerHTML = `
+          <div class="stats-card text-center p-2 bg-blue-50 rounded">
+            <div class="text-lg font-bold text-blue-600">${data.users.total}</div>
+            <div class="text-xs text-gray-500">Users</div>
+          </div>
+          <div class="stats-card text-center p-2 bg-green-50 rounded">
+            <div class="text-lg font-bold text-green-600">${data.users.active}</div>
+            <div class="text-xs text-gray-500">Active</div>
+          </div>
+          <div class="stats-card text-center p-2 bg-purple-50 rounded">
+            <div class="text-lg font-bold text-purple-600">${data.posts.total}</div>
+            <div class="text-xs text-gray-500">Posts</div>
+          </div>
+          <div class="stats-card text-center p-2 bg-orange-50 rounded">
+            <div class="text-lg font-bold text-orange-600">${data.comments.total}</div>
+            <div class="text-xs text-gray-500">Comments</div>
+          </div>
+          <div class="stats-card text-center p-2 bg-pink-50 rounded">
+            <div class="text-lg font-bold text-pink-600">${data.tags.total}</div>
+            <div class="text-xs text-gray-500">Tags</div>
+          </div>
+          <div class="stats-card text-center p-2 bg-indigo-50 rounded">
+            <div class="text-lg font-bold text-indigo-600">${data.roles.total}</div>
+            <div class="text-xs text-gray-500">Roles</div>
+          </div>
+        `;
+        document.getElementById('stats-refresh').innerHTML = `
+          <span>Updated: ${new Date().toLocaleTimeString()}</span>
+          <button onclick="loadStats()" class="ml-2 text-blue-600 hover:text-blue-800 text-xs underline">
+            🔄 Refresh
+          </button>
+        `;
+      })
+      .catch(error => {
+        console.error('Error loading stats:', error);
+        document.getElementById('stats-refresh').textContent = 'Error loading stats - Click to retry';
+        document.getElementById('stats-refresh').onclick = loadStats;
+        document.getElementById('stats-refresh').style.cursor = 'pointer';
+      });
+  }
+
+  // Load stats only once on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+  });
+</script>

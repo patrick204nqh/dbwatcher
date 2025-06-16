@@ -6,8 +6,8 @@ Rails.application.routes.draw do
   # Health check
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # Set root to users index for easy testing
-  root "users#index"
+  # Set root to testing interface for easy access
+  root "testing#index"
 
   # Users with comprehensive actions for testing
   resources :users do
@@ -47,27 +47,22 @@ Rails.application.routes.draw do
   # Roles for permissions
   resources :roles, except: [:show]
 
-  # Special testing namespace for complex database operations
-  namespace :testing do
-    get :complex_transaction, controller: "testing"
-    get :mass_updates, controller: "testing"
-    get :cascade_deletes, controller: "testing"
-    get :nested_operations, controller: "testing"
-    get :bulk_operations, controller: "testing"
-    get :concurrent_updates, controller: "testing"
-    get :trigger_errors, controller: "testing"
-    get :reset_data, controller: "testing"
-    post :complex_transaction, controller: "testing"
-    post :mass_updates, controller: "testing"
-    post :cascade_deletes, controller: "testing"
-    post :nested_operations, controller: "testing"
-    post :bulk_operations, controller: "testing"
-    post :concurrent_updates, controller: "testing"
-    post :trigger_errors, controller: "testing"
-    post :reset_data, controller: "testing"
-  end
+  # Testing actions accessible from root path
+  post :complex_transaction, to: "testing#complex_transaction"
+  post :mass_updates, to: "testing#mass_updates"
+  post :cascade_deletes, to: "testing#cascade_deletes"
+  post :nested_operations, to: "testing#nested_operations"
+  post :bulk_operations, to: "testing#bulk_operations"
+  post :concurrent_updates, to: "testing#concurrent_updates"
+  post :trigger_errors, to: "testing#trigger_errors"
+  post :reset_data, to: "testing#reset_data"
+  post :high_volume_inserts, to: "testing#high_volume_inserts"
+  post :high_volume_updates, to: "testing#high_volume_updates"
+  post :high_volume_deletes, to: "testing#high_volume_deletes"
+  post :mixed_high_volume_operations, to: "testing#mixed_high_volume_operations"
+  post :batch_processing, to: "testing#batch_processing"
 
   # Quick access routes for testing
-  get "/quick_test", to: "testing/testing#quick_test"
+  get "/quick_test", to: "testing#quick_test"
   get "/stats", to: "application#stats"
 end

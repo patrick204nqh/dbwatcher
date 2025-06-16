@@ -2,14 +2,13 @@
 
 class ApplicationController < ActionController::Base
   include Statisticsable
+  include DatabaseResettable
+
+  # Temporarily disable CSRF protection for testing
+  skip_before_action :verify_authenticity_token
 
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
-
-  # Simple homepage for the dummy app
-  def index
-    render plain: "Dummy Rails App - Test Environment for DBWatcher"
-  end
 
   # Database statistics endpoint for testing and monitoring
   def stats

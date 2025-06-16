@@ -7,7 +7,11 @@ module DatabaseResettable
   private
 
   def reset_database
-    DatabaseResetService.call
-    redirect_to users_path, notice: "🔄 Database reset successful! All data refreshed to default state."
+    result = DatabaseResetService.call
+    if result.success?
+      redirect_to root_path, notice: "🔄 Database reset successful! All data refreshed to default state."
+    else
+      redirect_to root_path, alert: "❌ Database reset failed: #{result.message}"
+    end
   end
 end

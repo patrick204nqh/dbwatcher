@@ -3,6 +3,9 @@
 Dbwatcher::Engine.routes.draw do
   root to: "dashboard#index"
 
+  # Dashboard clear all action
+  delete :clear_all, to: "dashboard#clear_all"
+
   resources :sessions do
     collection do
       delete :clear

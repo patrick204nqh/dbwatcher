@@ -11,6 +11,11 @@ module Testing
       bulk_operations
       concurrent_updates
       trigger_errors
+      high_volume_inserts
+      high_volume_updates
+      high_volume_deletes
+      mixed_high_volume_operations
+      batch_processing
     ].freeze
 
     def initialize(operation:, params: {})
@@ -104,6 +109,131 @@ module Testing
       )
     end
 
+    def perform_high_volume_inserts
+      insert_counts = {}
+
+      ActiveRecord::Base.transaction do
+        # Create many users (reduced from 50 to 10)
+        insert_counts[:users] = create_many_users(10)
+
+        # Create many posts for existing users (reduced from 100 to 20)
+        insert_counts[:posts] = create_many_posts(20)
+
+        # Create many comments (reduced from 200 to 30)
+        insert_counts[:comments] = create_many_comments(30)
+
+        # Create many tags (reduced from 30 to 10)
+        insert_counts[:tags] = create_many_tags(10)
+
+        # Create many user roles (reduced from 25 to 8)
+        insert_counts[:user_roles] = create_many_user_roles(8)
+      end
+
+      total_inserts = insert_counts.values.sum
+      success(
+        insert_counts,
+        "High-volume inserts completed! Created #{total_inserts} records: #{insert_counts.map { |k, v| "#{v} #{k}" }.join(", ")}"
+      )
+    end
+
+    def perform_high_volume_updates
+      update_counts = {}
+
+      # Update many users in batches
+      update_counts[:users] = batch_update_users
+
+      # Update many posts
+      update_counts[:posts] = batch_update_posts
+
+      # Update many comments
+      update_counts[:comments] = batch_update_comments
+
+      # Update profiles
+      update_counts[:profiles] = batch_update_profiles
+
+      total_updates = update_counts.values.sum
+      success(
+        update_counts,
+        "High-volume updates completed! Updated #{total_updates} records: #{update_counts.map { |k, v| "#{v} #{k}" }.join(", ")}"
+      )
+    end
+
+    def perform_high_volume_deletes
+      delete_counts = {}
+
+      # Delete many old comments
+      delete_counts[:comments] = delete_old_comments
+
+      # Delete many draft posts
+      delete_counts[:posts] = delete_many_draft_posts
+
+      # Delete inactive users and their associations
+      delete_counts[:users] = delete_inactive_users
+
+      # Delete unused tags
+      delete_counts[:tags] = delete_unused_tags
+
+      total_deletes = delete_counts.values.sum
+      success(
+        delete_counts,
+        "High-volume deletes completed! Deleted #{total_deletes} records: #{delete_counts.map { |k, v| "#{v} #{k}" }.join(", ")}"
+      )
+    end
+
+    def perform_mixed_high_volume_operations
+      operation_counts = { inserts: {}, updates: {}, deletes: {} }
+
+      # Phase 1: Create new records with specific characteristics for testing
+      ActiveRecord::Base.transaction do
+        # Create users with mix of active/inactive for update testing
+        operation_counts[:inserts][:users] = create_updatable_users(5)
+
+        # Create posts with mix of published/draft for update testing
+        operation_counts[:inserts][:posts] = create_updatable_posts(10)
+
+        # Create comments with mix of approved/unapproved for update testing
+        operation_counts[:inserts][:comments] = create_updatable_comments(15)
+
+        # Create some old data for deletion testing (after we have users)
+        operation_counts[:inserts][:old_comments] = create_old_test_comments(5)
+        operation_counts[:inserts][:old_draft_posts] = create_old_draft_posts(3)
+      end
+
+      # Phase 2: Update operations (separate from inserts so DBWatcher tracks them distinctly)
+      operation_counts[:updates][:users] = batch_update_users
+      operation_counts[:updates][:posts] = batch_update_posts
+      operation_counts[:updates][:comments] = batch_update_comments
+
+      # Phase 3: Delete operations (separate so DBWatcher tracks them distinctly)
+      operation_counts[:deletes][:comments] = delete_old_comments
+      operation_counts[:deletes][:posts] = delete_many_draft_posts
+
+      total_operations = operation_counts.values.map(&:values).flatten.sum
+      success(
+        operation_counts,
+        "Mixed high-volume operations completed! Performed #{total_operations} total operations: #{operation_counts.map { |phase, counts| "#{phase.capitalize}: #{counts.values.sum}" }.join(", ")}"
+      )
+    end
+
+    def perform_batch_processing
+      batch_results = {}
+
+      # Process users in batches of 10
+      batch_results[:user_batches] = process_users_in_batches(10)
+
+      # Process posts in batches of 15
+      batch_results[:post_batches] = process_posts_in_batches(15)
+
+      # Process comments in batches of 20
+      batch_results[:comment_batches] = process_comments_in_batches(20)
+
+      total_batches = batch_results.values.sum
+      success(
+        batch_results,
+        "Batch processing completed! Processed #{total_batches} batches across multiple tables"
+      )
+    end
+
     # Helper methods for operations
     def create_test_user
       User.create!(
@@ -164,19 +294,25 @@ module Testing
     end
 
     def update_user_login_counts
-      User.update_all("last_login_count = last_login_count + 1")
+      User.find_each do |user|
+        user.update!(last_login_count: user.last_login_count + 1)
+      end
     end
 
     def update_comment_approval
-      Comment.where(approved: false, created_at: 1.day.ago..).update_all(
-        approved: true,
-        updated_at: Time.current
-      )
+      Comment.where(approved: false, created_at: 1.day.ago..).find_each do |comment|
+        comment.update!(
+          approved: true,
+          updated_at: Time.current
+        )
+      end
     end
 
     def update_post_view_counts
       increment_value = rand(10..100)
-      Post.where(status: :published).update_all(["views_count = views_count + ?", increment_value])
+      Post.where(status: :published).find_each do |post|
+        post.update!(views_count: post.views_count + increment_value)
+      end
     end
 
     def find_user_with_associations
@@ -234,7 +370,9 @@ module Testing
 
     def process_recent_comments
       recent_comments = Comment.where(approved: false, created_at: 1.hour.ago..)
-      recent_comments.update_all(approved: true)
+      recent_comments.find_each do |comment|
+        comment.update!(approved: true)
+      end
     end
 
     def create_bulk_tags
@@ -256,11 +394,13 @@ module Testing
     end
 
     def update_user_logins
-      User.update_all("last_login_count = last_login_count + 1")
+      User.find_each do |user|
+        user.update!(last_login_count: user.last_login_count + 1)
+      end
     end
 
     def delete_old_posts
-      Post.where(created_at: ..6.months.ago, status: :draft).delete_all
+      Post.where(created_at: ..6.months.ago, status: :draft).find_each(&:destroy!)
     end
 
     def simulate_concurrent_updates(user)
@@ -292,6 +432,343 @@ module Testing
       nil
     rescue ActiveRecord::RecordInvalid => e
       { type: "duplicate", message: e.message }
+    end
+
+    # Helper methods for high-volume operations
+    def create_many_users(count)
+      created_count = 0
+
+      count.times do |i|
+        User.create!(
+          name: "Bulk User #{i + 1}",
+          email: "bulk_user_#{i + 1}_#{Time.current.to_i}@example.com",
+          age: rand(18..80),
+          active: [true, false].sample,
+          salary: rand(30_000..150_000),
+          birth_date: rand(60.years).seconds.ago.to_date,
+          preferences: { bulk_created: true, batch_id: Time.current.to_i }.to_json,
+          notes: "Created via high-volume insert test"
+        )
+        created_count += 1
+      end
+
+      created_count
+    end
+
+    def create_many_posts(count)
+      users = User.limit(10).pluck(:id)
+      return 0 if users.empty?
+
+      created_count = 0
+      count.times do |i|
+        Post.create!(
+          user_id: users.sample,
+          title: "Bulk Post #{i + 1} - Sample Title #{rand(1000)}",
+          content: "This is bulk content for post #{i + 1}. " * 10,
+          excerpt: "Excerpt for bulk post #{i + 1}",
+          status: %i[draft published].sample,
+          published_at: rand > 0.5 ? Time.current : nil,
+          featured: rand > 0.8,
+          views_count: rand(0..1000)
+        )
+        created_count += 1
+      end
+
+      created_count
+    end
+
+    def create_many_comments(count)
+      posts = Post.limit(20).pluck(:id)
+      users = User.limit(10).pluck(:id)
+      return 0 if posts.empty? || users.empty?
+
+      created_count = 0
+      count.times do |i|
+        Comment.create!(
+          post_id: posts.sample,
+          user_id: users.sample,
+          content: "Bulk comment #{i + 1}: This is a sample comment for testing purposes.",
+          approved: [true, false].sample
+        )
+        created_count += 1
+      end
+
+      created_count
+    end
+
+    def create_many_tags(count)
+      existing_tags = Tag.pluck(:name)
+      tag_names = []
+
+      count.times do |i|
+        tag_name = "BulkTag#{i + 1}"
+        tag_names << tag_name unless existing_tags.include?(tag_name)
+      end
+
+      return 0 if tag_names.empty?
+
+      tags_data = tag_names.map do |name|
+        {
+          name: name,
+          description: "Auto-generated tag: #{name}",
+          color: sample_color,
+          created_at: Time.current,
+          updated_at: Time.current
+        }
+      end
+
+      Tag.insert_all(tags_data)
+      tag_names.length
+    end
+
+    def create_many_user_roles(count)
+      users = User.limit(count).pluck(:id)
+      roles = Role.pluck(:id)
+      return 0 if users.empty? || roles.empty?
+
+      user_roles_data = []
+      users.each do |user_id|
+        role_id = roles.sample
+        user_roles_data << {
+          user_id: user_id,
+          role_id: role_id,
+          assigned_at: Time.current,
+          created_at: Time.current,
+          updated_at: Time.current
+        }
+      end
+
+      # Use insert_all with on_duplicate to avoid duplicate key errors
+      begin
+        UserRole.insert_all(user_roles_data, record_timestamps: true)
+        user_roles_data.length
+      rescue ActiveRecord::RecordNotUnique
+        # Handle duplicate entries gracefully
+        user_roles_data.length / 2 # Approximate successful inserts
+      end
+    end
+
+    def batch_update_users
+      users = User.where(active: true).limit(10)
+      updated_count = 0
+      users.find_each do |user|
+        user.update!(
+          last_login_count: user.last_login_count + rand(1..10),
+          updated_at: Time.current
+        )
+        updated_count += 1
+      end
+      updated_count
+    end
+
+    def batch_update_posts
+      posts = Post.where(status: :published).limit(8)
+      updated_count = 0
+      posts.find_each do |post|
+        post.update!(
+          views_count: post.views_count + rand(10..500),
+          updated_at: Time.current
+        )
+        updated_count += 1
+      end
+      updated_count
+    end
+
+    def batch_update_comments
+      comments = Comment.where(approved: false).limit(12)
+      updated_count = 0
+      comments.find_each do |comment|
+        comment.update!(
+          approved: true,
+          updated_at: Time.current
+        )
+        updated_count += 1
+      end
+      updated_count
+    end
+
+    def batch_update_profiles
+      profiles = Profile.limit(5)
+      updated_count = 0
+      profiles.find_each do |profile|
+        profile.update!(updated_at: Time.current)
+        updated_count += 1
+      end
+      updated_count
+    end
+
+    def delete_old_comments
+      comments = Comment.where(created_at: ..30.days.ago, approved: false)
+      deleted_count = 0
+      comments.find_each do |comment|
+        comment.destroy!
+        deleted_count += 1
+      end
+      deleted_count
+    end
+
+    def delete_many_draft_posts
+      posts = Post.where(status: :draft, created_at: ..7.days.ago)
+      deleted_count = 0
+      posts.find_each do |post|
+        post.destroy!
+        deleted_count += 1
+      end
+      deleted_count
+    end
+
+    def delete_inactive_users
+      users = User.where(active: false, created_at: ..90.days.ago)
+      deleted_count = 0
+      users.find_each do |user|
+        user.destroy!
+        deleted_count += 1
+      end
+      deleted_count
+    end
+
+    def delete_unused_tags
+      # Delete tags that aren't associated with any posts
+      unused_tags = Tag.left_joins(:posts).where(posts: { id: nil })
+      deleted_count = 0
+      unused_tags.find_each do |tag|
+        tag.destroy!
+        deleted_count += 1
+      end
+      deleted_count
+    end
+
+    def process_users_in_batches(batch_size)
+      batch_count = 0
+      User.in_batches(of: batch_size) do |batch|
+        batch.update_all(updated_at: Time.current)
+        batch_count += 1
+      end
+      batch_count
+    end
+
+    def process_posts_in_batches(batch_size)
+      batch_count = 0
+      Post.in_batches(of: batch_size) do |batch|
+        batch.update_all(views_count: "views_count + 1")
+        batch_count += 1
+      end
+      batch_count
+    end
+
+    def process_comments_in_batches(batch_size)
+      batch_count = 0
+      Comment.in_batches(of: batch_size) do |batch|
+        batch.where(approved: false).update_all(approved: true)
+        batch_count += 1
+      end
+      batch_count
+    end
+
+    # Helper methods for creating old test data that can be deleted
+    def create_old_test_comments(count)
+      posts = Post.limit(5).pluck(:id)
+      users = User.limit(3).pluck(:id)
+      return 0 if posts.empty? || users.empty?
+
+      created_count = 0
+      count.times do |i|
+        Comment.create!(
+          post_id: posts.sample,
+          user_id: users.sample,
+          content: "Old comment #{i + 1} for deletion testing",
+          approved: false,
+          created_at: 35.days.ago, # Older than 30 days
+          updated_at: 35.days.ago
+        )
+        created_count += 1
+      end
+
+      created_count
+    end
+
+    def create_old_draft_posts(count)
+      users = User.limit(3).pluck(:id)
+      return 0 if users.empty?
+
+      created_count = 0
+      count.times do |i|
+        Post.create!(
+          user_id: users.sample,
+          title: "Old Draft Post #{i + 1}",
+          content: "Old draft content for deletion testing",
+          excerpt: "Old draft excerpt",
+          status: :draft,
+          created_at: 10.days.ago, # Older than 7 days
+          updated_at: 10.days.ago
+        )
+        created_count += 1
+      end
+
+      created_count
+    end
+
+    # Helper methods for creating updatable test data
+    def create_updatable_users(count)
+      created_count = 0
+
+      count.times do |i|
+        User.create!(
+          name: "Updatable User #{i + 1}",
+          email: "updatable_user_#{i + 1}_#{Time.current.to_i}@example.com",
+          age: rand(18..80),
+          active: i.even?, # Mix of active/inactive for update testing
+          salary: rand(30_000..150_000),
+          birth_date: rand(60.years).seconds.ago.to_date,
+          preferences: { updatable: true, batch_id: Time.current.to_i }.to_json,
+          notes: "Created for update testing",
+          last_login_count: 0 # Set to 0 so update can increment
+        )
+        created_count += 1
+      end
+
+      created_count
+    end
+
+    def create_updatable_posts(count)
+      users = User.limit(10).pluck(:id)
+      return 0 if users.empty?
+
+      created_count = 0
+      count.times do |i|
+        Post.create!(
+          user_id: users.sample,
+          title: "Updatable Post #{i + 1} - Sample Title #{rand(1000)}",
+          content: "This is updatable content for post #{i + 1}. " * 10,
+          excerpt: "Updatable excerpt for post #{i + 1}",
+          status: i < 5 ? :published : :draft, # Mix of published/draft for update testing
+          published_at: i < 5 ? Time.current : nil,
+          featured: false,
+          views_count: 0 # Set to 0 so update can increment
+        )
+        created_count += 1
+      end
+
+      created_count
+    end
+
+    def create_updatable_comments(count)
+      posts = Post.limit(20).pluck(:id)
+      users = User.limit(10).pluck(:id)
+      return 0 if posts.empty? || users.empty?
+
+      created_count = 0
+      count.times do |i|
+        Comment.create!(
+          post_id: posts.sample,
+          user_id: users.sample,
+          content: "Updatable comment #{i + 1}: This comment can be updated for testing purposes.",
+          approved: i.even? # Mix of approved/unapproved for update testing
+        )
+        created_count += 1
+      end
+
+      created_count
     end
   end
 end
