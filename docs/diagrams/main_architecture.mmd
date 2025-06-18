@@ -1,0 +1,82 @@
+flowchart TB
+    %% Rails Application components
+    subgraph RailsApp["Rails Application"]
+        Router["Rails Router"]
+        Middleware["Rails Middleware Stack"]
+        ARCallbacks["ActiveRecord Callbacks"]
+        ARNotifications["ActiveRecord Notifications"]
+    end
+
+    %% Core DBWatcher Components
+    subgraph CoreModules["DBWatcher Core Modules"]
+        Middleware_DBW["DBWatcher Middleware (?dbwatch=true)"]
+        ManualTrack["Manual Tracking Dbwatcher.track {}"]
+        
+        Tracker["Tracker"]
+        ModelExt["Model Extension"]
+        
+        subgraph SessionLifecycle["Session Lifecycle"]
+            direction LR
+            RecordChanges["Record Model Changes"]
+        end
+        
+        Storage["Storage JSON File Interface"]
+        SQLLogger["SQL Logger"]
+    end
+
+    %% Service Layer
+    subgraph ServiceLayer["Service Layer"]
+        Services["Business Logic Services"]
+    end
+
+    %% Web Interface
+    subgraph WebInterface["Web Interface"]
+        Routes["/dashboard
+        /sessions
+        /tables
+        /queries"]
+    end
+
+    %% Key Integration Points
+    %% Session start triggers
+    Middleware --> Middleware_DBW
+    Middleware_DBW --> Tracker
+    ManualTrack --> Tracker
+    
+    %% Session lifecycle creation
+    Tracker --> SessionLifecycle
+    
+    %% Model change tracking
+    ARCallbacks --> ModelExt
+    ModelExt --> RecordChanges
+    
+    %% Session persistence
+    SessionLifecycle --> Storage
+    
+    %% SQL Query tracking
+    ARNotifications --> SQLLogger
+    SQLLogger --> Storage
+
+    %% Web interface flow
+    Router --> Routes
+    Routes --> Services
+    Services --> Storage
+
+    %% Explicit connections between components
+    classDef railsComponent fill:#e1f5fe,stroke:#01579b
+    classDef coreComponent fill:#e8f5e9,stroke:#2e7d32
+    classDef serviceComponent fill:#fff8e1,stroke:#ff8f00
+    classDef webComponent fill:#f3e5f5,stroke:#8e24aa
+
+    class Router,Middleware,ARCallbacks,ARNotifications railsComponent
+    class Tracker,Storage,SQLLogger,Middleware_DBW,ModelExt,ManualTrack coreComponent
+    class SessionLifecycle fill:#f8d7da,stroke:#c82333
+    class ServiceLayer serviceComponent
+    class Routes webComponent
+
+    %% Explanation labels
+    Middleware_DBW -. "Automatic tracking<br/>via ?dbwatch=true" .-> Tracker
+    ManualTrack -. "Manual tracking<br/>via explicit code" .-> Tracker
+    Tracker -. "Creates & manages<br/>session lifecycle" .-> SessionLifecycle
+    ModelExt -. "Captures changes via AR<br/>during active session" .-> RecordChanges
+    SessionLifecycle -. "All session data<br/>stored together" .-> Storage

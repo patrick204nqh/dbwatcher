@@ -1,0 +1,97 @@
+flowchart TB
+    %% Main UI Components
+    subgraph WebInterface["DBWatcher Web Interface"]
+        subgraph DashboardPage["Dashboard"]
+            direction TB
+            AppOverview["Application Overview"]
+            RecentSessions["Recent Sessions"]
+            PopularTables["Popular Tables"]
+            SlowQueries["Slow Queries"]
+        end
+        
+        subgraph SessionsPage["Sessions View (Session Centric)"]
+            direction TB
+            SessionList["Session List"]
+            SessionDetails["Session Details"]
+            SessionChanges["Changes in Session"]
+            SessionTables["Tables Changed"]
+            SessionQueries["Queries in Session"]
+        end
+        
+        subgraph TablesPage["Tables View (Table Centric)"]
+            direction TB
+            TableList["Table List"]
+            TableChanges["Changes by Table"]
+            TableSessions["Sessions with Changes"]
+            TableRecords["Record History"]
+        end
+        
+        subgraph QueriesPage["SQL Log View"]
+            direction TB
+            QueryList["SQL Query List"]
+            QueryDetails["Query Details"]
+            QueryPlan["Execution Plan"]
+            RelatedQueries["Related Queries"]
+        end
+    end
+    
+    %% Data Sources
+    subgraph DataSources["Data Sources"]
+        direction TB
+        SessionsData["Sessions Data"]
+        TablesData["Tables Data"]
+        QueriesData["SQL Queries Data"]
+    end
+    
+    %% Service Layer
+    subgraph Services["Service Layer"]
+        direction LR
+        DashboardService["Dashboard<br/>Data Aggregator"]
+        SessionsService["Sessions<br/>Service"]
+        TablesService["Tables<br/>Service"]
+        QueriesService["SQL Logs<br/>Service"]
+    end
+    
+    %% Dashboard uses all services
+    DashboardPage --> DashboardService
+    
+    %% Session page uses sessions service
+    SessionsPage --> SessionsService
+    
+    %% Tables page uses tables service
+    TablesPage --> TablesService
+    
+    %% Queries page uses queries service
+    QueriesPage --> QueriesService
+    
+    %% Services use data
+    DashboardService --> DataSources
+    SessionsService --> SessionsData
+    TablesService --> TablesData
+    QueriesService --> QueriesData
+    
+    %% Additional relationships and flows
+    SessionChanges --> TableChanges
+    TableChanges --> SessionChanges
+    
+    %% Styling
+    classDef dashboard fill:#e3f2fd,stroke:#0d47a1
+    classDef sessions fill:#e8f5e9,stroke:#2e7d32
+    classDef tables fill:#fff3e0,stroke:#e65100
+    classDef queries fill:#f3e5f5,stroke:#8e24aa
+    classDef data fill:#f9fbe7,stroke:#827717
+    classDef service fill:#fce4ec,stroke:#c2185b
+    
+    class AppOverview,RecentSessions,PopularTables,SlowQueries dashboard
+    class SessionList,SessionDetails,SessionChanges,SessionTables,SessionQueries sessions
+    class TableList,TableChanges,TableSessions,TableRecords tables
+    class QueryList,QueryDetails,QueryPlan,RelatedQueries queries
+    class SessionsData,TablesData,QueriesData data
+    class DashboardService,SessionsService,TablesService,QueriesService service
+    
+    %% Flow descriptions
+    SessionDetails -- "Table view" --> TableChanges
+    TableChanges -- "Session view" --> SessionChanges
+    
+    %% Bi-directional connection
+    SessionTables <--> TableSessions
