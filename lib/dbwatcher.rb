@@ -16,6 +16,12 @@ require_relative "dbwatcher/middleware"
 require_relative "dbwatcher/services/table_statistics_collector"
 require_relative "dbwatcher/services/dashboard_data_aggregator"
 require_relative "dbwatcher/services/query_filter_processor"
+require_relative "dbwatcher/services/base_service"
+require_relative "dbwatcher/services/diagram_generator"
+require_relative "dbwatcher/services/analyzers/session_data_processor"
+require_relative "dbwatcher/services/analyzers/table_summary_builder"
+require_relative "dbwatcher/services/analyzers/schema_relationship_analyzer"
+require_relative "dbwatcher/services/analyzers/model_association_analyzer"
 require_relative "dbwatcher/engine" if defined?(Rails)
 
 module Dbwatcher

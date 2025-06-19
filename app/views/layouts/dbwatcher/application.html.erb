@@ -8,6 +8,61 @@
     <!-- Alpine.js -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+    <!-- Mermaid.js for database diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js" integrity="sha256-44mGIwgIumDPEgK7mKZGXKE//IrvVOIBO1CpUtbZXeA=" crossorigin="anonymous"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        if (window.mermaid) {
+          try {
+            // Configure mermaid globally with baseline settings
+            window.mermaid.initialize({
+              startOnLoad: false, // We'll manually trigger rendering 
+              theme: 'neutral',
+              securityLevel: 'loose',
+              logLevel: 'warn',
+              
+              // Configure flowchart for model associations
+              flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'linear',
+                diagramPadding: 8,
+                nodeSpacing: 50,
+                rankSpacing: 80
+              },
+              
+              // Configure ER diagrams for database tables
+              er: {
+                useMaxWidth: true,
+                layoutDirection: 'LR',
+                entityPadding: 15,
+                minEntityWidth: 100
+              },
+              
+              // Legacy graph configuration (for compatibility)
+              graph: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                padding: 20
+              }
+            });
+            
+            console.log('Mermaid initialized successfully');
+            
+            // Register custom Mermaid error handler
+            window.mermaid.parseError = function(err, hash) {
+              console.error('Mermaid parse error:', err);
+              // We'll handle errors in the renderMermaid method
+            };
+          } catch (e) {
+            console.error('Failed to initialize Mermaid:', e);
+          }
+        } else {
+          console.warn('Mermaid library not loaded on page load');
+        }
+      });
+    </script>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -252,6 +307,74 @@
         font-style: italic;
         font-size: 10px;
       }
+
+      /* Diagram styles */
+      .mermaid {
+        text-align: center;
+        padding: 20px;
+        background: #fafafa;
+        border-radius: 4px;
+      }
+
+      .mermaid svg {
+        max-width: 100%;
+        height: auto !important;
+        min-height: 150px;
+        margin: 0 auto;
+        display: block;
+      }
+
+      #diagram-container {
+        min-height: 300px;
+        max-height: 600px;
+        overflow: auto;
+        padding: 10px;
+        background: white;
+        position: relative;
+      }
+
+      /* Ensure SVG paths have some minimal stroke */
+      .mermaid svg path {
+        stroke-width: 1.5px;
+        vector-effect: non-scaling-stroke;
+      }
+
+      /* Better visibility for nodes */
+      .mermaid .node rect,
+      .mermaid .node circle,
+      .mermaid .node ellipse,
+      .mermaid .node polygon,
+      .mermaid .entityBox {
+        stroke-width: 1.5px !important;
+        fill: #fff !important;
+        stroke: #333 !important;
+      }
+      
+      /* Flowchart specific styles (for model associations) */
+      .mermaid .flowchart-link {
+        stroke-width: 2px !important;
+        fill: none !important;
+      }
+      
+      .mermaid .edgeLabel {
+        background-color: #fff !important;
+        border-radius: 4px !important;
+        padding: 2px 4px !important;
+        font-size: 12px !important;
+      }
+      
+      /* Make sure marker-end arrows are visible */
+      .mermaid marker {
+        fill: #333 !important;
+        stroke: none !important;
+      }
+      
+      /* Ensure SVG elements have minimum dimensions */
+      .mermaid .flowchart-link path {
+        stroke-width: 2px !important;
+        min-width: 2px !important;
+        min-height: 2px !important;
+      }
     </style>
 
     <script>
@@ -374,20 +497,5 @@
         <%= yield %>
       </main>
     </div>
-
-    <script>
-      mermaid.initialize({
-        startOnLoad: true,
-        theme: 'neutral',
-        themeVariables: {
-          primaryColor: '#00285D',
-          primaryTextColor: '#fff',
-          primaryBorderColor: '#6CADDF',
-          lineColor: '#96C1E7',
-          secondaryColor: '#FFC758',
-          tertiaryColor: '#D4A11E'
-        }
-      });
-    </script>
   </body>
 </html>

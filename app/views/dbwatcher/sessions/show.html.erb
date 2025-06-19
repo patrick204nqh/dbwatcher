@@ -15,6 +15,7 @@
   <div class="tab-bar">
     <div class="tab-item" :class="{ active: activeTab === 'changes' }" @click="activeTab = 'changes'">Changes</div>
     <div class="tab-item" :class="{ active: activeTab === 'summary' }" @click="activeTab = 'summary'">Summary</div>
+    <div class="tab-item" :class="{ active: activeTab === 'diagrams' }" @click="activeTab = 'diagrams'">Diagrams</div>
   </div>
 
   <!-- Compact Toolbar -->
@@ -282,6 +283,52 @@
         </div>
       <% end %>
     </div>
+
+    <!-- Diagrams Tab -->
+    <div x-show="activeTab === 'diagrams'" class="h-full">
+      <div class="p-4">
+        <!-- Diagram Controls -->
+        <div class="mb-4 flex gap-2 items-center">
+          <select x-model="selectedDiagramType" @change="loadDiagram()" class="compact-select">
+            <option value="database_tables">Database Tables (Schema)</option>
+            <option value="model_associations">Model Associations</option>
+          </select>
+
+          <button @click="loadDiagram()"
+                  class="compact-button bg-blue-medium text-white hover:bg-blue-dark">
+            Generate Diagram
+          </button>
+
+          <button @click="exportDiagram()"
+                  class="compact-button bg-white border border-gray-300 hover:bg-gray-50"
+                  x-show="diagramContent">
+            Export SVG
+          </button>
+        </div>
+
+        <!-- Diagram Container -->
+        <div class="border border-gray-300 rounded bg-white min-h-96">
+          <!-- Empty State -->
+          <div x-show="!diagramContent && !loading" class="p-8 text-center text-gray-500">
+            <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            <p class="text-sm">Select a diagram type and click Generate</p>
+          </div>
+
+          <!-- Loading State -->
+          <div x-show="loading" class="p-8 text-center">
+            <div class="text-sm text-gray-500">Generating diagram...</div>
+          </div>
+
+          <!-- Diagram Content -->
+          <div id="diagram-container" x-show="diagramContent" class="p-4 overflow-auto">
+            <!-- Mermaid diagram will be rendered here -->
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -291,6 +338,9 @@ function sessionView() {
     activeTab: 'changes',
     showColumnSelector: null,
     tableColumns: {},
+    selectedDiagramType: 'database_tables',
+    diagramContent: null,
+    loading: false,
 
     init() {
       // Initialize column visibility for each table
@@ -356,7 +406,233 @@ function sessionView() {
       a.download = `session-<%= @session.id %>-changes.csv`;
       a.click();
       URL.revokeObjectURL(url);
-    }
+    },
+
+    async loadDiagram() {
+      this.loading = true;
+      this.diagramContent = null;
+
+      const container = document.getElementById('diagram-container');
+      if (!container) {
+        this.loading = false;
+        return;
+      }
+
+      try {
+        const response = await fetch(`/dbwatcher/sessions/<%= @session.id %>/diagram?diagram_type=${this.selectedDiagramType}`);
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+          console.error('Diagram generation error:', data.error);
+          throw new Error(data.error);
+        }
+
+        // Store the content but ensure it's valid for rendering
+        if (typeof data.content !== 'string' || !data.content.trim()) {
+          throw new Error('Received empty diagram content from server');
+        }
+
+        // Add some debug info as HTML comments to help with troubleshooting
+        this.diagramContent = `%%{init: {'theme': 'neutral', 'themeVariables': {'fontSize': '14px'} }}%%\n${data.content}`;
+
+        console.log('Received diagram content:', this.diagramContent);
+
+        // We'll handle content updating in the renderMermaid method
+        // Define fallback in case mermaid isn't loaded yet
+        if (!window.mermaid) {
+          console.warn('Mermaid library not loaded, attempting to load it');
+          await this.loadMermaidLibrary();
+        }
+
+        await this.renderMermaid();
+      } catch (error) {
+        console.error('Failed to load diagram:', error);
+        container.innerHTML = `<div class="p-4 text-red-600 bg-red-100 border border-red-300 rounded">
+          <p class="font-bold">Error loading diagram</p>
+          <p>${error.message || 'Failed to load diagram. Please try again.'}</p>
+          <p class="mt-2 text-sm">Try refreshing the page or selecting a different diagram type.</p>
+        </div>`;
+        container.style.display = 'block';
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async loadMermaidLibrary() {
+      // This is a fallback in case the library didn't load in the layout
+      return new Promise((resolve, reject) => {
+        if (window.mermaid) {
+          resolve();
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
+        script.onload = () => {
+          window.mermaid.initialize({
+            startOnLoad: true,
+            theme: 'neutral',
+            securityLevel: 'loose'
+          });
+          resolve();
+        };
+        script.onerror = () => reject(new Error('Failed to load Mermaid library'));
+        document.head.appendChild(script);
+      });
+    },
+
+    async renderMermaid() {
+      if (!this.diagramContent) return;
+
+      const container = document.getElementById('diagram-container');
+      if (!container) return;
+
+      try {
+        // Determine diagram type - this affects rendering approach
+        const isModelAssociationDiagram = this.selectedDiagramType === 'model_associations';
+        console.log(`Attempting to render ${isModelAssociationDiagram ? 'model association' : 'database tables'} diagram`);
+        
+        // Clear the container
+        container.innerHTML = '';
+        
+        // Create a wrapper with unique ID
+        const wrapperId = `diagram-wrapper-${Date.now()}`;
+        const wrapper = document.createElement('div');
+        wrapper.id = wrapperId;
+        wrapper.className = 'mermaid-wrapper';
+        container.appendChild(wrapper);
+        
+        // Create a fresh mermaid element
+        const diagramDiv = document.createElement('div');
+        diagramDiv.className = 'mermaid';
+        
+        // Special handling for model association diagrams
+        if (isModelAssociationDiagram) {
+          // For model associations, ensure we're using flowchart syntax
+          if (!this.diagramContent.includes('flowchart')) {
+            // If not already containing flowchart, modify it
+            diagramDiv.textContent = this.diagramContent.replace(/^graph LR/, 'flowchart LR');
+          } else {
+            diagramDiv.textContent = this.diagramContent;
+          }
+        } else {
+          diagramDiv.textContent = this.diagramContent;
+        }
+        
+        wrapper.appendChild(diagramDiv);
+
+        // Reset Mermaid to avoid any state issues
+        if (window.mermaid) {
+          // Always completely reset mermaid for each render to avoid state issues
+          if (typeof window.mermaid.reset === 'function') {
+            window.mermaid.reset();
+          }
+
+          // Configure specific settings based on diagram type
+          const settings = {
+            startOnLoad: false, // We'll manually trigger
+            theme: 'neutral',
+            securityLevel: 'loose',
+            logLevel: 'warn',
+            themeVariables: {
+              fontSize: '14px',
+              fontFamily: 'Consolas, Monaco, Lucida Console, monospace'
+            }
+          };
+          
+          // Add type-specific settings
+          if (isModelAssociationDiagram) {
+            settings.flowchart = {
+              htmlLabels: true,
+              useMaxWidth: true,
+              curve: 'linear', // Linear for cleaner model association lines
+              nodeSpacing: 50,
+              rankSpacing: 100
+            };
+          } else {
+            settings.er = {
+              useMaxWidth: true,
+              layoutDirection: 'LR',
+              minEntityWidth: 100,
+              minEntityHeight: 75
+            };
+          }
+          
+          // Initialize with our settings
+          window.mermaid.initialize(settings);
+          
+          try {
+            // Modern API approach
+            const result = await window.mermaid.run({
+              querySelector: '.mermaid',
+              nodes: [diagramDiv]
+            });
+            
+            console.log('Diagram rendered successfully using modern API');
+          } catch (modernError) {
+            console.warn('Modern API rendering failed, trying alternative methods:', modernError);
+            
+            try {
+              // Try another approach with ID-based rendering
+              const id = `mermaid-${Date.now()}`;
+              diagramDiv.id = id;
+              
+              const { svg } = await window.mermaid.render(id, diagramDiv.textContent);
+              wrapper.innerHTML = svg;
+              console.log('Diagram rendered successfully using ID-based rendering');
+            } catch (idError) {
+              console.error('ID-based rendering also failed:', idError);
+              
+              // One last attempt with direct parsing - simplest approach
+              try {
+                window.mermaid.parse(diagramDiv.textContent);
+                console.log('Parsing successful, letting mermaid handle rendering');
+                // If parsing succeeds but rendering fails, we'll try the manual approach
+                wrapper.innerHTML = '<div class="mermaid">' + diagramDiv.textContent + '</div>';
+                window.mermaid.init(undefined, wrapper.querySelectorAll('.mermaid'));
+              } catch (parseError) {
+                throw new Error(`Cannot parse diagram: ${parseError.message}`);
+              }
+            }
+          }
+        } else {
+          throw new Error('Mermaid library not available');
+        }
+      } catch (error) {
+        console.error('Mermaid rendering error:', error);
+        container.innerHTML = `<div class="p-4 text-red-600 bg-red-100 border border-red-300 rounded">
+          <p class="font-bold">Diagram rendering error</p>
+          <p>${error.message || 'Could not render diagram'}</p>
+          <p class="mt-2 text-sm text-gray-700">Technical details: ${error.stack ? error.stack.split('\n')[0] : ''}</p>
+          <div class="mt-4 p-2 bg-gray-100 text-xs overflow-auto max-h-40 font-mono">
+            <pre>${this.diagramContent || 'No content'}</pre>
+          </div>
+        </div>`;
+      }
+    },
+
+    exportDiagram() {
+      if (!this.diagramContent) return;
+
+      const svg = document.querySelector('#diagram-container svg');
+      if (svg) {
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const blob = new Blob([svgData], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `session-<%= @session.id %>-${this.selectedDiagramType}.svg`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        alert('No diagram to export. Please generate a diagram first.');
+      }
+    },
   }
 }
 </script>
