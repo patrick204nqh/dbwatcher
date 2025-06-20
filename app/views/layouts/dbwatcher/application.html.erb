@@ -10,55 +10,56 @@
 
     <!-- Mermaid.js for database diagrams -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js" integrity="sha256-44mGIwgIumDPEgK7mKZGXKE//IrvVOIBO1CpUtbZXeA=" crossorigin="anonymous"></script>
+
+    <!-- DBWatcher JavaScript -->
+    <%= javascript_include_tag "dbwatcher/mermaid_helper" %>
+
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        if (window.mermaid) {
-          try {
-            // Configure mermaid globally with baseline settings
-            window.mermaid.initialize({
-              startOnLoad: false, // We'll manually trigger rendering 
-              theme: 'neutral',
-              securityLevel: 'loose',
-              logLevel: 'warn',
-              
-              // Configure flowchart for model associations
-              flowchart: {
-                useMaxWidth: true,
-                htmlLabels: true,
-                curve: 'linear',
-                diagramPadding: 8,
-                nodeSpacing: 50,
-                rankSpacing: 80
-              },
-              
-              // Configure ER diagrams for database tables
-              er: {
-                useMaxWidth: true,
-                layoutDirection: 'LR',
-                entityPadding: 15,
-                minEntityWidth: 100
-              },
-              
-              // Legacy graph configuration (for compatibility)
-              graph: {
-                useMaxWidth: true,
-                htmlLabels: true,
-                padding: 20
-              }
-            });
-            
-            console.log('Mermaid initialized successfully');
-            
-            // Register custom Mermaid error handler
-            window.mermaid.parseError = function(err, hash) {
-              console.error('Mermaid parse error:', err);
-              // We'll handle errors in the renderMermaid method
-            };
-          } catch (e) {
-            console.error('Failed to initialize Mermaid:', e);
-          }
+        // Initialize MermaidHelper when the DOM is loaded
+        if (window.MermaidHelper) {
+          MermaidHelper.initialize()
+            .then(() => console.log('MermaidHelper initialized successfully'))
+            .catch(error => console.error('Error initializing MermaidHelper:', error));
         } else {
-          console.warn('Mermaid library not loaded on page load');
+          console.warn('MermaidHelper not available');
+
+          // Fallback to direct mermaid initialization
+          if (window.mermaid) {
+            try {
+              // Configure mermaid globally with baseline settings
+              window.mermaid.initialize({
+                startOnLoad: false, // We'll manually trigger rendering
+                theme: 'neutral',
+                securityLevel: 'loose',
+                logLevel: 'warn',
+
+                // Configure flowchart for model associations
+                flowchart: {
+                  useMaxWidth: true,
+                  htmlLabels: true,
+                  curve: 'linear',
+                  diagramPadding: 8,
+                  nodeSpacing: 50,
+                  rankSpacing: 80
+                },
+
+                // Configure ER diagrams for database tables
+                er: {
+                  useMaxWidth: true,
+                  layoutDirection: 'LR',
+                  entityPadding: 15,
+                  minEntityWidth: 100
+                }
+              });
+
+              console.log('Mermaid initialized successfully (fallback)');
+            } catch (e) {
+              console.error('Failed to initialize Mermaid:', e);
+            }
+          } else {
+            console.warn('Mermaid library not loaded on page load');
+          }
         }
       });
     </script>
@@ -333,6 +334,20 @@
         position: relative;
       }
 
+      .mermaid-wrapper {
+        display: inline-block;
+        min-width: 100%;
+        transform-origin: center top;
+        transition: transform 0.2s ease;
+      }
+
+      /* Responsive diagram container */
+      @media (max-width: 768px) {
+        #diagram-container {
+          max-height: 400px;
+        }
+      }
+
       /* Ensure SVG paths have some minimal stroke */
       .mermaid svg path {
         stroke-width: 1.5px;
@@ -349,26 +364,26 @@
         fill: #fff !important;
         stroke: #333 !important;
       }
-      
+
       /* Flowchart specific styles (for model associations) */
       .mermaid .flowchart-link {
         stroke-width: 2px !important;
         fill: none !important;
       }
-      
+
       .mermaid .edgeLabel {
         background-color: #fff !important;
         border-radius: 4px !important;
         padding: 2px 4px !important;
         font-size: 12px !important;
       }
-      
+
       /* Make sure marker-end arrows are visible */
       .mermaid marker {
         fill: #333 !important;
         stroke: none !important;
       }
-      
+
       /* Ensure SVG elements have minimum dimensions */
       .mermaid .flowchart-link path {
         stroke-width: 2px !important;

@@ -31,27 +31,27 @@ module Dbwatcher
 
           log_service_start "Analyzing model associations", analysis_context
           start_time = Time.current
-          
+
           begin
             Rails.logger.debug "ModelAssociationAnalyzer: Starting analysis with #{models.length} models"
             associations = extract_model_associations
-            
+
             log_service_completion(start_time, {
                                      associations_found: associations.length,
                                      models_analyzed: models.length
                                    })
-            
+
             # Log some sample data to help with debugging
             if associations.any?
               sample_association = associations.first
-              Rails.logger.debug "ModelAssociationAnalyzer: Sample association - " + 
-                                 "source_model: #{sample_association[:source_model]}, " + 
-                                 "target_model: #{sample_association[:target_model]}, " + 
+              Rails.logger.debug "ModelAssociationAnalyzer: Sample association - " +
+                                 "source_model: #{sample_association[:source_model]}, " +
+                                 "target_model: #{sample_association[:target_model]}, " +
                                  "type: #{sample_association[:type]}"
             else
               Rails.logger.info "ModelAssociationAnalyzer: No associations found"
             end
-            
+
             associations
           rescue StandardError => e
             Rails.logger.error "ModelAssociationAnalyzer error: #{e.class}: #{e.message}\n#{e.backtrace.join("\n")}"
@@ -116,38 +116,34 @@ module Dbwatcher
         # @return [Array<Hash>] associations array
         def extract_model_associations
           associations = []
-          
+
           begin
             Rails.logger.debug "ModelAssociationAnalyzer: Starting extraction from #{models.length} models"
-            
+
             models.each do |model|
-              begin
-                Rails.logger.debug "ModelAssociationAnalyzer: Processing model: #{model.name}"
-                model_associations = get_model_associations(model)
-                
-                model_associations.each do |association|
-                  begin
-                    # Only include associations where target is also in scope
-                    if target_model_in_scope?(association)
-                      relationship = build_association_relationship(model, association)
-                      associations << relationship if relationship
-                    end
-                  rescue StandardError => e
-                    Rails.logger.warn "ModelAssociationAnalyzer: Error processing association in #{model.name}: #{e.message}"
-                    # Continue with next association
-                  end
+              Rails.logger.debug "ModelAssociationAnalyzer: Processing model: #{model.name}"
+              model_associations = get_model_associations(model)
+
+              model_associations.each do |association|
+                # Only include associations where target is also in scope
+                if target_model_in_scope?(association)
+                  relationship = build_association_relationship(model, association)
+                  associations << relationship if relationship
                 end
               rescue StandardError => e
-                Rails.logger.warn "ModelAssociationAnalyzer: Error processing model #{model.name}: #{e.message}"
-                # Continue with next model
+                Rails.logger.warn "ModelAssociationAnalyzer: Error processing association in #{model.name}: #{e.message}"
+                # Continue with next association
               end
+            rescue StandardError => e
+              Rails.logger.warn "ModelAssociationAnalyzer: Error processing model #{model.name}: #{e.message}"
+              # Continue with next model
             end
-            
+
             Rails.logger.debug "ModelAssociationAnalyzer: Extracted #{associations.compact.length} valid associations"
           rescue StandardError => e
             Rails.logger.error "ModelAssociationAnalyzer: Error in extraction process: #{e.message}"
           end
-          
+
           associations.compact
         end
 

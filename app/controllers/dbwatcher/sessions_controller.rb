@@ -27,10 +27,19 @@ module Dbwatcher
       Rails.logger.info "SessionsController#diagram: Generating diagram for session #{params[:id]} type: #{params[:diagram_type]}"
 
       begin
-        diagram_data = Storage.sessions.diagram_data(
-          params[:id],
-          params[:diagram_type] || "database_tables"
-        )
+        # Generate cache key based on session ID and diagram type
+        cache_key = "diagram_#{params[:id]}_#{params[:diagram_type] || "database_tables"}"
+
+        # Try to get from cache first
+        diagram_data = Rails.cache.fetch(cache_key, expires_in: 1.hour) do
+          Rails.logger.info "SessionsController#diagram: Cache miss, generating fresh diagram"
+
+          # Generate fresh diagram if not in cache
+          Storage.sessions.diagram_data(
+            params[:id],
+            params[:diagram_type] || "database_tables"
+          )
+        end
 
         if diagram_data[:error]
           Rails.logger.error "SessionsController#diagram: Error generating diagram: #{diagram_data[:error]}"

@@ -125,29 +125,29 @@ module Dbwatcher
       # @return [Hash] diagram result
       def generate_model_graph(session_id = nil)
         session_id ||= @session_id
-        
+
         begin
           session = Storage.sessions.find(session_id)
-          
+
           # Log before calling analyzer
           Rails.logger.info "DiagramGenerator: Starting model association analysis for session #{session_id}"
-          
+
           analyzer = Analyzers::ModelAssociationAnalyzer.new(session)
           associations = analyzer.call
-          
+
           # Log what we got from analyzer
           Rails.logger.info "DiagramGenerator: Found #{associations&.size || 0} model associations"
-          
+
           if associations.nil? || associations.empty?
             Rails.logger.info "DiagramGenerator: No model associations found for session #{session_id}"
             content = "flowchart LR\n    EmptyNode[\"No model associations found\"]\n    style EmptyNode fill:#f9f9f9,stroke:#999"
           else
             content = build_graph_content(associations)
           end
-          
+
           # Log the content length
           Rails.logger.info "DiagramGenerator: Generated model graph content with #{content.lines.count} lines"
-          
+
           # Use 'flowchart' type for compatibility with newer Mermaid versions
           success_response(content, "flowchart")
         rescue StandardError => e
@@ -226,25 +226,25 @@ module Dbwatcher
 
         # Log for debugging
         Rails.logger.debug "Building model association diagram with #{associations.size} associations"
-        
+
         # First define all nodes to ensure they exist before edges
         added_nodes = Set.new
         associations.each do |assoc|
           next unless assoc && assoc.is_a?(Hash)
-          
+
           source_model = assoc[:source_model].to_s
           target_model = assoc[:target_model].to_s
-          
+
           next if source_model.empty? || target_model.empty?
-          
-          source_id = "node_#{Digest::MD5.hexdigest(source_model)[0,8]}"
-          target_id = "node_#{Digest::MD5.hexdigest(target_model)[0,8]}"
-          
+
+          source_id = "node_#{Digest::MD5.hexdigest(source_model)[0, 8]}"
+          target_id = "node_#{Digest::MD5.hexdigest(target_model)[0, 8]}"
+
           unless added_nodes.include?(source_id)
             lines << "    #{source_id}[\"#{source_model}\"]"
             added_nodes << source_id
           end
-          
+
           unless added_nodes.include?(target_id)
             lines << "    #{target_id}[\"#{target_model}\"]"
             added_nodes << target_id
@@ -258,30 +258,30 @@ module Dbwatcher
         associations.each do |assoc|
           next unless assoc && assoc.is_a?(Hash)
           next unless assoc[:source_model] && assoc[:target_model]
-          
+
           source_model = assoc[:source_model].to_s
           target_model = assoc[:target_model].to_s
-          
-          source_id = "node_#{Digest::MD5.hexdigest(source_model)[0,8]}"
-          target_id = "node_#{Digest::MD5.hexdigest(target_model)[0,8]}"
-          
+
+          source_id = "node_#{Digest::MD5.hexdigest(source_model)[0, 8]}"
+          target_id = "node_#{Digest::MD5.hexdigest(target_model)[0, 8]}"
+
           # Use a simple text for association type to avoid syntax issues
-          assoc_type = assoc[:type].to_s.gsub(/[^\w\s]/, '')
-          
+          assoc_type = assoc[:type].to_s.gsub(/[^\w\s]/, "")
+
           # Create unique edge identifier
           edge_key = "#{source_id}->#{target_id}->#{assoc_type}"
           next if added_edges.include?(edge_key)
-          
+
           added_edges << edge_key
-          
+
           # Build edge with simple text label to avoid syntax issues
           lines << "    #{source_id} -->|#{assoc_type}| #{target_id}"
         end
-        
+
         # If no edges were created, add a note
         if added_edges.empty? && added_nodes.any?
           lines << "    %% No valid edges could be created between models"
-          first_node = "node_#{Digest::MD5.hexdigest(associations.first[:source_model].to_s)[0,8]}"
+          first_node = "node_#{Digest::MD5.hexdigest(associations.first[:source_model].to_s)[0, 8]}"
           lines << "    Note[\"No relationships could be visualized\"]"
           lines << "    #{first_node} -.-> Note"
           lines << "    style Note fill:#fff7e0,stroke:#e0d0a0,stroke-width:1px,color:#806000,font-style:italic"

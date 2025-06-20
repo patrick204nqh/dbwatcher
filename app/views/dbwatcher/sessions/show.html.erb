@@ -288,7 +288,7 @@
     <div x-show="activeTab === 'diagrams'" class="h-full">
       <div class="p-4">
         <!-- Diagram Controls -->
-        <div class="mb-4 flex gap-2 items-center">
+        <div class="mb-4 flex gap-2 items-center flex-wrap">
           <select x-model="selectedDiagramType" @change="loadDiagram()" class="compact-select">
             <option value="database_tables">Database Tables (Schema)</option>
             <option value="model_associations">Model Associations</option>
@@ -304,6 +304,24 @@
                   x-show="diagramContent">
             Export SVG
           </button>
+
+          <!-- Zoom Controls -->
+          <div class="flex items-center gap-1 ml-auto" x-show="diagramContent">
+            <button @click="zoomDiagram(-0.1)" class="compact-button bg-white border border-gray-300 hover:bg-gray-50">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+              </svg>
+            </button>
+            <span class="text-xs" x-text="`${Math.round(zoomLevel * 100)}%`"></span>
+            <button @click="zoomDiagram(0.1)" class="compact-button bg-white border border-gray-300 hover:bg-gray-50">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+            </button>
+            <button @click="resetZoom()" class="compact-button bg-white border border-gray-300 hover:bg-gray-50 text-xs">
+              Reset
+            </button>
+          </div>
         </div>
 
         <!-- Diagram Container -->
@@ -319,12 +337,33 @@
 
           <!-- Loading State -->
           <div x-show="loading" class="p-8 text-center">
-            <div class="text-sm text-gray-500">Generating diagram...</div>
+            <div class="animate-pulse flex flex-col items-center">
+              <div class="w-12 h-12 bg-blue-100 rounded-full mb-2 flex items-center justify-center">
+                <svg class="w-6 h-6 text-blue-medium animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              <div class="text-sm text-gray-500">Generating diagram...</div>
+            </div>
           </div>
 
           <!-- Diagram Content -->
-          <div id="diagram-container" x-show="diagramContent" class="p-4 overflow-auto">
+          <div id="diagram-container"
+               x-show="diagramContent"
+               class="p-4 overflow-auto"
+               @mousedown="startPan($event)"
+               :style="`cursor: ${isPanning ? 'grabbing' : 'grab'}`">
             <!-- Mermaid diagram will be rendered here -->
+          </div>
+
+          <!-- Error State -->
+          <div x-show="diagramError" class="p-4 text-red-600 bg-red-50 border border-red-200 rounded m-4">
+            <p class="font-medium mb-2">Error rendering diagram</p>
+            <p class="text-sm mb-2" x-text="diagramError"></p>
+            <button @click="diagramError = null; loadDiagram()" class="compact-button bg-red-600 text-white hover:bg-red-700">
+              Try Again
+            </button>
           </div>
         </div>
       </div>
@@ -340,7 +379,13 @@ function sessionView() {
     tableColumns: {},
     selectedDiagramType: 'database_tables',
     diagramContent: null,
+    diagramError: null,
     loading: false,
+    zoomLevel: 1,
+    isPanning: false,
+    panStartX: 0,
+    panStartY: 0,
+    diagramCache: {},
 
     init() {
       // Initialize column visibility for each table
@@ -411,10 +456,22 @@ function sessionView() {
     async loadDiagram() {
       this.loading = true;
       this.diagramContent = null;
+      this.diagramError = null;
+      this.resetZoom();
 
       const container = document.getElementById('diagram-container');
       if (!container) {
         this.loading = false;
+        return;
+      }
+
+      // Check cache first
+      const cacheKey = `<%= @session.id %>_${this.selectedDiagramType}`;
+      if (this.diagramCache[cacheKey]) {
+        console.log('Using cached diagram');
+        this.diagramContent = this.diagramCache[cacheKey];
+        this.loading = false;
+        await this.renderMermaid();
         return;
       }
 
@@ -440,50 +497,18 @@ function sessionView() {
         // Add some debug info as HTML comments to help with troubleshooting
         this.diagramContent = `%%{init: {'theme': 'neutral', 'themeVariables': {'fontSize': '14px'} }}%%\n${data.content}`;
 
-        console.log('Received diagram content:', this.diagramContent);
+        // Cache the diagram
+        this.diagramCache[cacheKey] = this.diagramContent;
 
-        // We'll handle content updating in the renderMermaid method
-        // Define fallback in case mermaid isn't loaded yet
-        if (!window.mermaid) {
-          console.warn('Mermaid library not loaded, attempting to load it');
-          await this.loadMermaidLibrary();
-        }
+        console.log('Received diagram content:', this.diagramContent);
 
         await this.renderMermaid();
       } catch (error) {
         console.error('Failed to load diagram:', error);
-        container.innerHTML = `<div class="p-4 text-red-600 bg-red-100 border border-red-300 rounded">
-          <p class="font-bold">Error loading diagram</p>
-          <p>${error.message || 'Failed to load diagram. Please try again.'}</p>
-          <p class="mt-2 text-sm">Try refreshing the page or selecting a different diagram type.</p>
-        </div>`;
-        container.style.display = 'block';
+        this.diagramError = error.message || 'Failed to load diagram. Please try again.';
       } finally {
         this.loading = false;
       }
-    },
-
-    async loadMermaidLibrary() {
-      // This is a fallback in case the library didn't load in the layout
-      return new Promise((resolve, reject) => {
-        if (window.mermaid) {
-          resolve();
-          return;
-        }
-
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
-        script.onload = () => {
-          window.mermaid.initialize({
-            startOnLoad: true,
-            theme: 'neutral',
-            securityLevel: 'loose'
-          });
-          resolve();
-        };
-        script.onerror = () => reject(new Error('Failed to load Mermaid library'));
-        document.head.appendChild(script);
-      });
     },
 
     async renderMermaid() {
@@ -493,144 +518,238 @@ function sessionView() {
       if (!container) return;
 
       try {
-        // Determine diagram type - this affects rendering approach
-        const isModelAssociationDiagram = this.selectedDiagramType === 'model_associations';
-        console.log(`Attempting to render ${isModelAssociationDiagram ? 'model association' : 'database tables'} diagram`);
-        
-        // Clear the container
-        container.innerHTML = '';
-        
-        // Create a wrapper with unique ID
-        const wrapperId = `diagram-wrapper-${Date.now()}`;
-        const wrapper = document.createElement('div');
-        wrapper.id = wrapperId;
-        wrapper.className = 'mermaid-wrapper';
-        container.appendChild(wrapper);
-        
-        // Create a fresh mermaid element
-        const diagramDiv = document.createElement('div');
-        diagramDiv.className = 'mermaid';
-        
-        // Special handling for model association diagrams
-        if (isModelAssociationDiagram) {
-          // For model associations, ensure we're using flowchart syntax
-          if (!this.diagramContent.includes('flowchart')) {
-            // If not already containing flowchart, modify it
-            diagramDiv.textContent = this.diagramContent.replace(/^graph LR/, 'flowchart LR');
+        // Use MermaidHelper if available
+        if (window.MermaidHelper) {
+          await window.MermaidHelper.renderDiagram(
+            this.diagramContent,
+            container,
+            this.selectedDiagramType
+          );
+
+          // Apply zoom level after rendering
+          this.applyZoom();
+
+          // Add accessibility features
+          window.MermaidHelper.enhanceAccessibility(container);
+        } else {
+          // Fallback to original implementation
+          // Determine diagram type - this affects rendering approach
+          const isModelAssociationDiagram = this.selectedDiagramType === 'model_associations';
+          console.log(`Attempting to render ${isModelAssociationDiagram ? 'model association' : 'database tables'} diagram`);
+
+          // Clear the container
+          container.innerHTML = '';
+
+          // Create a wrapper with unique ID
+          const wrapperId = `diagram-wrapper-${Date.now()}`;
+          const wrapper = document.createElement('div');
+          wrapper.id = wrapperId;
+          wrapper.className = 'mermaid-wrapper';
+          container.appendChild(wrapper);
+
+          // Create a fresh mermaid element
+          const diagramDiv = document.createElement('div');
+          diagramDiv.className = 'mermaid';
+
+          // Special handling for model association diagrams
+          if (isModelAssociationDiagram) {
+            // For model associations, ensure we're using flowchart syntax
+            if (!this.diagramContent.includes('flowchart')) {
+              // If not already containing flowchart, modify it
+              diagramDiv.textContent = this.diagramContent.replace(/^graph LR/, 'flowchart LR');
+            } else {
+              diagramDiv.textContent = this.diagramContent;
+            }
           } else {
             diagramDiv.textContent = this.diagramContent;
           }
-        } else {
-          diagramDiv.textContent = this.diagramContent;
-        }
-        
-        wrapper.appendChild(diagramDiv);
 
-        // Reset Mermaid to avoid any state issues
-        if (window.mermaid) {
-          // Always completely reset mermaid for each render to avoid state issues
-          if (typeof window.mermaid.reset === 'function') {
-            window.mermaid.reset();
-          }
+          wrapper.appendChild(diagramDiv);
 
-          // Configure specific settings based on diagram type
-          const settings = {
-            startOnLoad: false, // We'll manually trigger
-            theme: 'neutral',
-            securityLevel: 'loose',
-            logLevel: 'warn',
-            themeVariables: {
-              fontSize: '14px',
-              fontFamily: 'Consolas, Monaco, Lucida Console, monospace'
+          // Reset Mermaid to avoid any state issues
+          if (window.mermaid) {
+            // Always completely reset mermaid for each render to avoid state issues
+            if (typeof window.mermaid.reset === 'function') {
+              window.mermaid.reset();
             }
-          };
-          
-          // Add type-specific settings
-          if (isModelAssociationDiagram) {
-            settings.flowchart = {
-              htmlLabels: true,
-              useMaxWidth: true,
-              curve: 'linear', // Linear for cleaner model association lines
-              nodeSpacing: 50,
-              rankSpacing: 100
+
+            // Configure specific settings based on diagram type
+            const settings = {
+              startOnLoad: false, // We'll manually trigger
+              theme: 'neutral',
+              securityLevel: 'loose',
+              logLevel: 'warn',
+              themeVariables: {
+                fontSize: '14px',
+                fontFamily: 'Consolas, Monaco, Lucida Console, monospace'
+              }
             };
-          } else {
-            settings.er = {
-              useMaxWidth: true,
-              layoutDirection: 'LR',
-              minEntityWidth: 100,
-              minEntityHeight: 75
-            };
-          }
-          
-          // Initialize with our settings
-          window.mermaid.initialize(settings);
-          
-          try {
-            // Modern API approach
-            const result = await window.mermaid.run({
-              querySelector: '.mermaid',
-              nodes: [diagramDiv]
-            });
-            
-            console.log('Diagram rendered successfully using modern API');
-          } catch (modernError) {
-            console.warn('Modern API rendering failed, trying alternative methods:', modernError);
-            
+
+            // Add type-specific settings
+            if (isModelAssociationDiagram) {
+              settings.flowchart = {
+                htmlLabels: true,
+                useMaxWidth: true,
+                curve: 'linear', // Linear for cleaner model association lines
+                nodeSpacing: 50,
+                rankSpacing: 100
+              };
+            } else {
+              settings.er = {
+                useMaxWidth: true,
+                layoutDirection: 'LR',
+                minEntityWidth: 100,
+                minEntityHeight: 75
+              };
+            }
+
+            // Initialize with our settings
+            window.mermaid.initialize(settings);
+
             try {
-              // Try another approach with ID-based rendering
-              const id = `mermaid-${Date.now()}`;
-              diagramDiv.id = id;
-              
-              const { svg } = await window.mermaid.render(id, diagramDiv.textContent);
-              wrapper.innerHTML = svg;
-              console.log('Diagram rendered successfully using ID-based rendering');
-            } catch (idError) {
-              console.error('ID-based rendering also failed:', idError);
-              
-              // One last attempt with direct parsing - simplest approach
+              // Modern API approach
+              const result = await window.mermaid.run({
+                querySelector: '.mermaid',
+                nodes: [diagramDiv]
+              });
+
+              console.log('Diagram rendered successfully using modern API');
+
+              // Apply zoom level after rendering
+              this.applyZoom();
+            } catch (modernError) {
+              console.warn('Modern API rendering failed, trying alternative methods:', modernError);
+
               try {
-                window.mermaid.parse(diagramDiv.textContent);
-                console.log('Parsing successful, letting mermaid handle rendering');
-                // If parsing succeeds but rendering fails, we'll try the manual approach
-                wrapper.innerHTML = '<div class="mermaid">' + diagramDiv.textContent + '</div>';
-                window.mermaid.init(undefined, wrapper.querySelectorAll('.mermaid'));
-              } catch (parseError) {
-                throw new Error(`Cannot parse diagram: ${parseError.message}`);
+                // Try another approach with ID-based rendering
+                const id = `mermaid-${Date.now()}`;
+                diagramDiv.id = id;
+
+                const { svg } = await window.mermaid.render(id, diagramDiv.textContent);
+                wrapper.innerHTML = svg;
+                console.log('Diagram rendered successfully using ID-based rendering');
+
+                // Apply zoom level after rendering
+                this.applyZoom();
+              } catch (idError) {
+                console.error('ID-based rendering also failed:', idError);
+
+                // One last attempt with direct parsing - simplest approach
+                try {
+                  window.mermaid.parse(diagramDiv.textContent);
+                  console.log('Parsing successful, letting mermaid handle rendering');
+                  // If parsing succeeds but rendering fails, we'll try the manual approach
+                  wrapper.innerHTML = '<div class="mermaid">' + diagramDiv.textContent + '</div>';
+                  window.mermaid.init(undefined, wrapper.querySelectorAll('.mermaid'));
+
+                  // Apply zoom level after rendering
+                  this.applyZoom();
+                } catch (parseError) {
+                  throw new Error(`Cannot parse diagram: ${parseError.message}`);
+                }
               }
             }
+          } else {
+            throw new Error('Mermaid library not available');
           }
-        } else {
-          throw new Error('Mermaid library not available');
         }
       } catch (error) {
         console.error('Mermaid rendering error:', error);
-        container.innerHTML = `<div class="p-4 text-red-600 bg-red-100 border border-red-300 rounded">
-          <p class="font-bold">Diagram rendering error</p>
-          <p>${error.message || 'Could not render diagram'}</p>
-          <p class="mt-2 text-sm text-gray-700">Technical details: ${error.stack ? error.stack.split('\n')[0] : ''}</p>
-          <div class="mt-4 p-2 bg-gray-100 text-xs overflow-auto max-h-40 font-mono">
-            <pre>${this.diagramContent || 'No content'}</pre>
-          </div>
-        </div>`;
+        this.diagramError = error.message || 'Could not render diagram';
       }
+    },
+
+    zoomDiagram(delta) {
+      // Adjust zoom level with bounds
+      this.zoomLevel = Math.max(0.5, Math.min(2, this.zoomLevel + delta));
+      this.applyZoom();
+    },
+
+    resetZoom() {
+      this.zoomLevel = 1;
+      this.applyZoom();
+    },
+
+    applyZoom() {
+      const svg = document.querySelector('#diagram-container svg');
+      if (svg) {
+        const wrapper = svg.closest('.mermaid-wrapper');
+        if (wrapper) {
+          wrapper.style.transform = `scale(${this.zoomLevel})`;
+          wrapper.style.transformOrigin = 'center top';
+          wrapper.style.transition = 'transform 0.2s';
+        }
+      }
+    },
+
+    startPan(e) {
+      // Only enable panning when we have a diagram
+      if (!this.diagramContent) return;
+
+      // Only start panning on left mouse button
+      if (e.button !== 0) return;
+
+      this.isPanning = true;
+      this.panStartX = e.clientX;
+      this.panStartY = e.clientY;
+
+      const container = document.getElementById('diagram-container');
+      const initialScrollLeft = container.scrollLeft;
+      const initialScrollTop = container.scrollTop;
+
+      const handleMouseMove = (e) => {
+        if (!this.isPanning) return;
+
+        const dx = this.panStartX - e.clientX;
+        const dy = this.panStartY - e.clientY;
+
+        container.scrollLeft = initialScrollLeft + dx;
+        container.scrollTop = initialScrollTop + dy;
+      };
+
+      const handleMouseUp = () => {
+        this.isPanning = false;
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     },
 
     exportDiagram() {
       if (!this.diagramContent) return;
 
-      const svg = document.querySelector('#diagram-container svg');
-      if (svg) {
-        const svgData = new XMLSerializer().serializeToString(svg);
-        const blob = new Blob([svgData], { type: 'image/svg+xml' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `session-<%= @session.id %>-${this.selectedDiagramType}.svg`;
-        a.click();
-        URL.revokeObjectURL(url);
+      if (window.MermaidHelper) {
+        // Use MermaidHelper for export
+        const container = document.getElementById('diagram-container');
+        const filename = `session-<%= @session.id %>-${this.selectedDiagramType}.svg`;
+        const success = window.MermaidHelper.exportDiagram(container, filename);
+
+        if (!success) {
+          alert('Failed to export diagram. Please try again.');
+        }
       } else {
-        alert('No diagram to export. Please generate a diagram first.');
+        // Fallback to original implementation
+        const svg = document.querySelector('#diagram-container svg');
+        if (svg) {
+          // Clone the SVG to avoid modifying the displayed one
+          const svgClone = svg.cloneNode(true);
+
+          // Reset any transform on the clone
+          svgClone.style.transform = '';
+
+          const svgData = new XMLSerializer().serializeToString(svgClone);
+          const blob = new Blob([svgData], { type: 'image/svg+xml' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `session-<%= @session.id %>-${this.selectedDiagramType}.svg`;
+          a.click();
+          URL.revokeObjectURL(url);
+        } else {
+          alert('No diagram to export. Please generate a diagram first.');
+        }
       }
     },
   }
