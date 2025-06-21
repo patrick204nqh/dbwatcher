@@ -30,7 +30,7 @@ module Dbwatcher
         def call
           log_service_start("session_id=#{session.id} changes_count=#{session.changes.length}")
 
-          start_time = Time.current
+          start_time = Time.now
 
           tables = {}
 
@@ -38,6 +38,21 @@ module Dbwatcher
             initialize_table_data(tables, table_name)
             update_table_data(tables[table_name], change)
             update_sample_record(tables[table_name], change)
+          end
+
+          # Filter out tables with no operations
+          tables.reject! { |_, data| data[:total_operations].zero? }
+
+          # Convert operation counts to string keys for view compatibility
+          tables.each do |_, data|
+            data[:operations] = {
+              "INSERT" => data[:operations][:insert] || 0,
+              "UPDATE" => data[:operations][:update] || 0,
+              "DELETE" => data[:operations][:delete] || 0
+            }
+
+            # Remove operations with zero count
+            data[:operations].reject! { |_, count| count.zero? }
           end
 
           result_context = {
@@ -117,9 +132,16 @@ module Dbwatcher
           when "update" then :update
           when "delete" then :delete
           else
-            log_warning("Unknown operation type: #{operation_str}")
+            log_warning("Unknown operation type: #{operation_str || "nil"}")
             :unknown
           end
+        end
+
+        # Log a warning message
+        #
+        # @param message [String] warning message
+        def log_warning(message)
+          puts "[WARNING] #{service_name}: #{message}"
         end
 
         # Extract record data from various change formats

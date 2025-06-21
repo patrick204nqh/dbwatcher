@@ -56,7 +56,7 @@ module Dbwatcher
       # @param start_time [Time] service start time
       # @param context [Hash] additional context
       def log_service_completion(start_time, context = {})
-        duration = Time.current - start_time
+        duration = Time.now - start_time
         log_info "#{self.class.name}: Completed in #{duration.round(3)}s", context.merge(duration: duration)
       end
     end
