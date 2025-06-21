@@ -1,380 +1,19 @@
 <div class="h-full flex flex-col" x-data="sessionView()">
-  <!-- Compact Header -->
-  <div class="h-10 bg-navy-dark text-white flex items-center px-4">
-    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-    </svg>
-    <h1 class="text-sm font-medium truncate"><%= @session.name %></h1>
-    <span class="ml-auto text-xs text-blue-light">
-      <%= Time.parse(@session.started_at.to_s).strftime("%H:%M:%S") rescue @session.started_at %> -
-      <%= Time.parse(@session.ended_at.to_s).strftime("%H:%M:%S") rescue @session.ended_at %>
-    </span>
-  </div>
-
-  <!-- Tab Bar -->
-  <div class="tab-bar">
-    <div class="tab-item" :class="{ active: activeTab === 'changes' }" @click="activeTab = 'changes'">Changes</div>
-    <div class="tab-item" :class="{ active: activeTab === 'summary' }" @click="activeTab = 'summary'">Summary</div>
-    <div class="tab-item" :class="{ active: activeTab === 'diagrams' }" @click="activeTab = 'diagrams'">Diagrams</div>
-  </div>
-
-  <!-- Compact Toolbar -->
-  <div class="bg-gray-100 border-b border-gray-300 px-3 py-1 flex items-center gap-3">
-
-    <div class="ml-auto flex items-center gap-2">
-      <button @click="exportData()"
-              class="compact-button bg-white border border-gray-300 hover:bg-gray-50">
-        <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
-        </svg>
-        Export
-      </button>
-    </div>
-  </div>
-
+  <%= render partial: 'session_header', locals: { session: @session } %>
+  <%= render partial: 'tab_navigation' %>
 
   <!-- Content -->
   <div class="flex-1 overflow-auto">
-    <!-- Summary Tab -->
-    <div x-show="activeTab === 'summary'" class="p-4">
-      <div class="grid grid-cols-3 gap-3 mb-4">
-        <% @tables_summary.each do |table_name, summary| %>
-          <div class="border border-gray-300 rounded p-3 hover:shadow-md cursor-pointer bg-white"
-               @click="activeTab = 'changes'; scrollToTable('<%= table_name %>')">
-            <h4 class="text-sm font-medium text-navy-dark mb-2"><%= table_name %></h4>
-            <div class="space-y-1 text-xs">
-              <div class="flex justify-between">
-                <span class="badge badge-insert">INSERT</span>
-                <span><%= summary[:operations]['INSERT'] %></span>
-              </div>
-              <div class="flex justify-between">
-                <span class="badge badge-update">UPDATE</span>
-                <span><%= summary[:operations]['UPDATE'] %></span>
-              </div>
-              <div class="flex justify-between">
-                <span class="badge badge-delete">DELETE</span>
-                <span><%= summary[:operations]['DELETE'] %></span>
-              </div>
-            </div>
-          </div>
-        <% end %>
-      </div>
-    </div>
-
-    <!-- Changes Tab -->
-    <div x-show="activeTab === 'changes'" class="h-full">
-      <% @tables_summary.each do |table_name, summary| %>
-        <div class="border-b border-gray-300" x-data="{ expanded: true }">
-          <!-- Table Header with Column Controls -->
-          <div class="bg-gray-100 px-3 py-2 flex items-center cursor-pointer"
-               @click="expanded = !expanded"
-               :id="`table-${table_name}`">
-            <svg class="w-3 h-3 mr-2 transition-transform"
-                 :class="{ 'rotate-90': expanded }"
-                 fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-            </svg>
-            <h3 class="text-sm font-medium text-gray-900 flex-1"><%= table_name %></h3>
-            <div class="flex gap-2 mr-4">
-              <% summary[:operations].each do |op, count| %>
-                <% next if count == 0 %>
-                <span class="badge badge-<%= op.downcase %>"><%= count %></span>
-              <% end %>
-            </div>
-            <!-- Column Visibility Button -->
-            <button @click.stop="toggleColumnSelector('<%= table_name %>')"
-                    class="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50 relative">
-              Columns
-            </button>
-          </div>
-
-          <!-- Column Selector Dropdown -->
-          <div x-show="showColumnSelector === '<%= table_name %>'"
-               x-transition
-               @click.away="showColumnSelector = null"
-               class="absolute z-50 bg-white border border-gray-300 rounded shadow-lg p-3 max-h-64 overflow-auto"
-               style="right: 1rem; margin-top: -2px;">
-            <div class="text-xs font-medium mb-2">Select Visible Columns:</div>
-            <div class="space-y-1 min-w-48">
-              <% if summary[:sample_record] %>
-                <% summary[:sample_record].keys.each do |column| %>
-                  <label class="flex items-center text-xs hover:bg-gray-50 p-1 rounded">
-                    <input type="checkbox"
-                           x-model="tableColumns['<%= table_name %>']['<%= column %>']"
-                           class="mr-2">
-                    <span class="flex-1"><%= column.to_s.humanize %></span>
-                  </label>
-                <% end %>
-              <% end %>
-            </div>
-            <div class="mt-2 pt-2 border-t border-gray-200 flex gap-1">
-              <button @click="selectAllColumns('<%= table_name %>')"
-                      class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">All</button>
-              <button @click="selectNoneColumns('<%= table_name %>')"
-                      class="text-xs bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-700">None</button>
-            </div>
-          </div>
-
-          <!-- Table Content with Horizontal Scroll -->
-          <div x-show="expanded" x-collapse class="overflow-auto">
-            <div class="min-w-full">
-              <table class="compact-table w-full">
-                <thead>
-                  <tr class="sticky top-0 bg-gray-100 z-10">
-                    <th class="text-center w-16 sticky left-0 bg-gray-100 z-20 border-r border-gray-300">
-                      <span class="text-xs">Op</span>
-                    </th>
-                    <th class="text-left w-24 sticky bg-gray-100 z-20 border-r border-gray-300">Time</th>
-                    <% if summary[:sample_record] %>
-                      <% summary[:sample_record].keys.each do |column| %>
-                        <th class="text-left min-w-32 px-2"
-                            x-show="tableColumns['<%= table_name %>']['<%= column %>']">
-                          <%= column.to_s.humanize %>
-                        </th>
-                      <% end %>
-                    <% end %>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% summary[:changes].each_with_index do |change, index| %>
-                    <% row_id = "#{table_name}_row_#{index}" %>
-                    <% operation = change[:operation] %>
-                    <% timestamp = change[:timestamp] %>
-                    <% snapshot = change[:record_snapshot] || {} %>
-                    <% column_changes = change[:changes] %>
-
-                    <tbody x-data="{ expanded: false }">
-                      <tr class="hover:bg-blue-50">
-                        <td class="text-center sticky left-0 bg-white z-10 border-r border-gray-200 w-16">
-                          <div class="flex items-center justify-center gap-1">
-                            <!-- Expand/Collapse Button -->
-                            <button @click="expanded = !expanded"
-                                    class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-gray-100">
-                              <svg class="w-3 h-3 transition-transform"
-                                   :class="{ 'rotate-90': expanded }"
-                                   fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                              </svg>
-                            </button>
-                            <!-- Operation Badge -->
-                            <% if operation %>
-                              <span class="badge badge-<%= operation.downcase %>">
-                                <%= operation[0] %>
-                              </span>
-                            <% else %>
-                              <span class="badge">?</span>
-                            <% end %>
-                          </div>
-                        </td>
-                        <td class="text-xs text-gray-600 sticky bg-white z-10 border-r border-gray-200 w-24">
-                          <% if timestamp %>
-                            <%= Time.parse(timestamp.to_s).strftime("%H:%M:%S") rescue timestamp %>
-                          <% else %>
-                            <span class="text-gray-400">--</span>
-                          <% end %>
-                        </td>
-
-                        <!-- Display all columns from sample_record in consistent order -->
-                        <% if summary[:sample_record] %>
-                          <% summary[:sample_record].keys.each do |column| %>
-                            <td x-show="tableColumns['<%= table_name %>']['<%= column %>']"
-                                class="relative px-2"
-                                @click.stop="">
-                              <%
-                                # Get value from snapshot for this specific column
-                                value = snapshot&.dig(column) || snapshot&.dig(column.to_s) || snapshot&.dig(column.to_sym)
-                                changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == column.to_s }
-                              %>
-                              <div class="min-w-32 max-w-48 truncate">
-                                <% if value.nil? %>
-                                  <span class="text-gray-400 italic">--</span>
-                                <% elsif operation == 'UPDATE' && changed_column %>
-                                  <div class="text-xs">
-                                    <div class="text-red-600 line-through">
-                                      <%= truncate_cell_value(changed_column['old_value'] || changed_column[:old_value]) %>
-                                    </div>
-                                    <div class="text-green-600 font-medium">
-                                      <%= truncate_cell_value(changed_column['new_value'] || changed_column[:new_value]) %>
-                                    </div>
-                                  </div>
-                                <% elsif operation == 'INSERT' %>
-                                  <span class="text-green-600 font-medium">
-                                    <%= truncate_cell_value(value) %>
-                                  </span>
-                                <% elsif operation == 'DELETE' %>
-                                  <span class="text-red-600 line-through">
-                                    <%= truncate_cell_value(value) %>
-                                  </span>
-                                <% else %>
-                                  <span class="text-gray-700">
-                                    <%= truncate_cell_value(value) %>
-                                  </span>
-                                <% end %>
-                              </div>
-                            </td>
-                          <% end %>
-                        <% end %>
-                      </tr>
-
-                      <!-- Expanded Row Content -->
-                      <tr x-show="expanded"
-                          x-collapse
-                          class="bg-gray-50 border-t border-gray-200">
-                      <td colspan="2" class="sticky left-0 bg-gray-50 z-10 border-r border-gray-200 p-3 w-40">
-                        <div class="text-xs font-medium text-gray-700 mb-2">Record Details</div>
-                        <div class="text-xs text-gray-600">
-                          Operation: <span class="badge badge-<%= operation&.downcase %>"><%= operation %></span>
-                          <% if timestamp %>
-                            <br>Time: <%= Time.parse(timestamp.to_s).strftime("%H:%M:%S.%L") rescue timestamp %>
-                          <% end %>
-                        </div>
-                      </td>
-                      <!-- Display expanded details for all columns in consistent order -->
-                      <% if summary[:sample_record] %>
-                        <% summary[:sample_record].keys.each do |column| %>
-                          <td x-show="tableColumns['<%= table_name %>']['<%= column %>']"
-                              class="p-3 border-r border-gray-200 align-top">
-                            <%
-                              # Get value from snapshot for this specific column
-                              value = snapshot&.dig(column) || snapshot&.dig(column.to_s) || snapshot&.dig(column.to_sym)
-                              changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == column.to_s }
-                            %>
-                            <div class="text-xs font-medium text-gray-600 mb-1"><%= column.to_s.humanize %></div>
-                            <div class="max-w-md">
-                              <% if value.nil? %>
-                                <div class="text-gray-400 bg-gray-100 p-2 rounded italic">
-                                  <span class="text-xs">No value</span>
-                                </div>
-                              <% elsif operation == 'UPDATE' && changed_column %>
-                                <div class="space-y-2">
-                                  <div class="text-red-600 bg-red-50 p-2 rounded">
-                                    <div class="text-xs font-medium mb-1">Old Value:</div>
-                                    <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(changed_column['old_value'] || changed_column[:old_value]) %></pre>
-                                  </div>
-                                  <div class="text-green-600 bg-green-50 p-2 rounded">
-                                    <div class="text-xs font-medium mb-1">New Value:</div>
-                                    <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(changed_column['new_value'] || changed_column[:new_value]) %></pre>
-                                  </div>
-                                </div>
-                              <% elsif operation == 'INSERT' %>
-                                <div class="text-green-600 bg-green-50 p-2 rounded">
-                                  <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(value) %></pre>
-                                </div>
-                              <% elsif operation == 'DELETE' %>
-                                <div class="text-red-600 bg-red-50 p-2 rounded">
-                                  <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(value) %></pre>
-                                </div>
-                              <% else %>
-                                <div class="text-gray-700 bg-gray-100 p-2 rounded">
-                                  <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(value) %></pre>
-                                </div>
-                              <% end %>
-                            </div>
-                          </td>
-                        <% end %>
-                      <% end %>
-                    </tr>
-                    </tbody>
-                  <% end %>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      <% end %>
-    </div>
-
-    <!-- Diagrams Tab -->
-    <div x-show="activeTab === 'diagrams'" class="h-full">
-      <div class="p-4">
-        <!-- Diagram Controls -->
-        <div class="mb-4 flex gap-2 items-center flex-wrap">
-          <select x-model="selectedDiagramType" @change="loadDiagram()" class="compact-select">
-            <option value="database_tables">Database Tables (Schema)</option>
-            <option value="model_associations">Model Associations</option>
-          </select>
-
-          <button @click="loadDiagram()"
-                  class="compact-button bg-blue-medium text-white hover:bg-blue-dark">
-            Generate Diagram
-          </button>
-
-          <button @click="exportDiagram()"
-                  class="compact-button bg-white border border-gray-300 hover:bg-gray-50"
-                  x-show="diagramContent">
-            Export SVG
-          </button>
-
-          <!-- Zoom Controls -->
-          <div class="flex items-center gap-1 ml-auto" x-show="diagramContent">
-            <button @click="zoomDiagram(-0.1)" class="compact-button bg-white border border-gray-300 hover:bg-gray-50">
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
-              </svg>
-            </button>
-            <span class="text-xs" x-text="`${Math.round(zoomLevel * 100)}%`"></span>
-            <button @click="zoomDiagram(0.1)" class="compact-button bg-white border border-gray-300 hover:bg-gray-50">
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-              </svg>
-            </button>
-            <button @click="resetZoom()" class="compact-button bg-white border border-gray-300 hover:bg-gray-50 text-xs">
-              Reset
-            </button>
-          </div>
-        </div>
-
-        <!-- Diagram Container -->
-        <div class="border border-gray-300 rounded bg-white min-h-96">
-          <!-- Empty State -->
-          <div x-show="!diagramContent && !loading" class="p-8 text-center text-gray-500">
-            <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-            </svg>
-            <p class="text-sm">Select a diagram type and click Generate</p>
-          </div>
-
-          <!-- Loading State -->
-          <div x-show="loading" class="p-8 text-center">
-            <div class="animate-pulse flex flex-col items-center">
-              <div class="w-12 h-12 bg-blue-100 rounded-full mb-2 flex items-center justify-center">
-                <svg class="w-6 h-6 text-blue-medium animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              </div>
-              <div class="text-sm text-gray-500">Generating diagram...</div>
-            </div>
-          </div>
-
-          <!-- Diagram Content -->
-          <div id="diagram-container"
-               x-show="diagramContent"
-               class="p-4 overflow-auto"
-               @mousedown="startPan($event)"
-               :style="`cursor: ${isPanning ? 'grabbing' : 'grab'}`">
-            <!-- Mermaid diagram will be rendered here -->
-          </div>
-
-          <!-- Error State -->
-          <div x-show="diagramError" class="p-4 text-red-600 bg-red-50 border border-red-200 rounded m-4">
-            <p class="font-medium mb-2">Error rendering diagram</p>
-            <p class="text-sm mb-2" x-text="diagramError"></p>
-            <button @click="diagramError = null; loadDiagram()" class="compact-button bg-red-600 text-white hover:bg-red-700">
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <%= render partial: 'summary_tab', locals: { tables_summary: @tables_summary } %>
+    <%= render partial: 'changes_tab', locals: { tables_summary: @tables_summary } %>
+    <%= render partial: 'diagrams_tab' %>
   </div>
 </div>
 
 <script>
 function sessionView() {
   return {
-    activeTab: 'changes',
+    activeTab: '<%= @active_tab %>',
     showColumnSelector: null,
     tableColumns: {},
     selectedDiagramType: 'database_tables',
@@ -397,10 +36,30 @@ function sessionView() {
           <% end %>
         <% end %>
       <% end %>
+
+      // Set up browser navigation handling
+      window.addEventListener('popstate', () => {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab') || 'changes';
+        if (this.activeTab !== tab) {
+          this.activeTab = tab;
+        }
+      });
+    },
+
+    setActiveTab(tab) {
+      this.activeTab = tab;
+      this.updateURL(tab);
+    },
+
+    updateURL(tab) {
+      const url = new URL(window.location);
+      url.searchParams.set('tab', tab);
+      window.history.pushState({}, '', url);
     },
 
     scrollToTable(tableName) {
-      this.activeTab = 'changes';
+      this.setActiveTab('changes');
       setTimeout(() => {
         const element = document.getElementById(`table-${tableName}`);
         if (element) {

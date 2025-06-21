@@ -14,6 +14,7 @@ module Dbwatcher
       return handle_not_found("Session", sessions_path) unless @session
 
       @tables_summary = Storage.sessions.build_tables_summary(@session)
+      @active_tab = validate_tab_parameter(params[:tab])
       Rails.logger.info "SessionsController#show: Tables summary: #{@tables_summary.inspect}"
 
       respond_to do |format|
@@ -76,6 +77,13 @@ module Dbwatcher
         "All sessions",
         sessions_path
       )
+    end
+
+    private
+
+    def validate_tab_parameter(tab)
+      valid_tabs = %w[changes summary diagrams]
+      valid_tabs.include?(tab) ? tab : "changes"
     end
   end
 end
