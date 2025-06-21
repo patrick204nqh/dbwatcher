@@ -2,7 +2,7 @@
  * Mermaid.js Helper
  *
  * This module provides utilities for working with Mermaid.js diagrams
- * in the DBWatcher application.
+ * in the DBWatcher application with native SVG interactions.
  */
 
 const MermaidHelper = {
@@ -85,7 +85,7 @@ const MermaidHelper = {
   },
 
   /**
-   * Render a Mermaid diagram
+   * Render a Mermaid diagram with native interactions
    *
    * @param {string} content - Mermaid diagram content
    * @param {HTMLElement} container - Container element
@@ -152,6 +152,9 @@ const MermaidHelper = {
             nodes: [diagramDiv]
           });
 
+          // Enable native SVG interactions after rendering
+          this.enableInteractions(container);
+
           console.log('Diagram rendered successfully using modern API');
           resolve({ success: true, method: 'modern-api' });
         } catch (modernError) {
@@ -164,6 +167,10 @@ const MermaidHelper = {
 
             const { svg } = await window.mermaid.render(id, diagramDiv.textContent);
             wrapper.innerHTML = svg;
+
+            // Enable native SVG interactions after rendering
+            this.enableInteractions(container);
+
             console.log('Diagram rendered successfully using ID-based rendering');
             resolve({ success: true, method: 'id-based' });
           } catch (idError) {
@@ -177,6 +184,10 @@ const MermaidHelper = {
               // If parsing succeeds but rendering fails, we'll try the manual approach
               wrapper.innerHTML = '<div class="mermaid">' + diagramDiv.textContent + '</div>';
               window.mermaid.init(undefined, wrapper.querySelectorAll('.mermaid'));
+
+              // Enable native SVG interactions after rendering
+              setTimeout(() => this.enableInteractions(container), 100);
+
               resolve({ success: true, method: 'init' });
             } catch (parseError) {
               reject(new Error(`Cannot parse diagram: ${parseError.message}`));
@@ -188,6 +199,137 @@ const MermaidHelper = {
         reject(error);
       }
     });
+  },
+
+  /**
+   * Enable native SVG interactions on the rendered diagram
+   *
+   * @param {HTMLElement} container - Container element with the diagram
+   * @returns {Object|null} Interaction controller or null if failed
+   */
+  enableInteractions: function(container) {
+    if (!window.SvgInteractions) {
+      console.warn('SvgInteractions not available, interactions will be limited');
+      return null;
+    }
+
+    try {
+      const controller = window.SvgInteractions.enable(container, {
+        enableZoom: true,
+        enablePan: true,
+        enableKeyboard: true,
+        enableTouch: true,
+        minZoom: 0.1,
+        maxZoom: 5,
+        zoomStep: 0.1
+      });
+
+      if (controller) {
+        // Store controller on container for external access
+        container._svgController = controller;
+
+        // Add visual feedback for interactions
+        this.addInteractionFeedback(container);
+
+        console.log('Native SVG interactions enabled');
+      }
+
+      return controller;
+    } catch (error) {
+      console.error('Failed to enable SVG interactions:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Add visual feedback for interactions
+   *
+   * @param {HTMLElement} container - Container element
+   */
+  addInteractionFeedback: function(container) {
+    // Add zoom level indicator
+    const indicator = document.createElement('div');
+    indicator.className = 'zoom-indicator';
+    indicator.style.cssText = `
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: monospace;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 1000;
+    `;
+    indicator.textContent = '100%';
+
+    // Make container relative if not already
+    if (getComputedStyle(container).position === 'static') {
+      container.style.position = 'relative';
+    }
+
+    container.appendChild(indicator);
+
+    // Listen for transform changes to update indicator
+    container.addEventListener('svgTransformChanged', (e) => {
+      const { zoom } = e.detail;
+      indicator.textContent = `${Math.round(zoom * 100)}%`;
+
+      // Show indicator briefly
+      indicator.style.opacity = '1';
+      clearTimeout(indicator._hideTimeout);
+      indicator._hideTimeout = setTimeout(() => {
+        indicator.style.opacity = '0';
+      }, 1500);
+    });
+
+    // Add keyboard hint
+    const hint = document.createElement('div');
+    hint.className = 'interaction-hint';
+    hint.style.cssText = `
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: sans-serif;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 1000;
+      max-width: 200px;
+      line-height: 1.3;
+    `;
+    hint.innerHTML = `
+      <div><strong>Mouse:</strong> Wheel=zoom, Drag=pan</div>
+      <div><strong>Keys:</strong> +/- zoom, 0 reset, arrows pan</div>
+      <div><strong>Touch:</strong> Pinch zoom, drag pan</div>
+    `;
+
+    container.appendChild(hint);
+
+    // Show hint on focus/hover
+    const svg = container.querySelector('svg');
+    if (svg) {
+      const showHint = () => {
+        hint.style.opacity = '1';
+      };
+      const hideHint = () => {
+        hint.style.opacity = '0';
+      };
+
+      svg.addEventListener('focus', showHint);
+      svg.addEventListener('blur', hideHint);
+      container.addEventListener('mouseenter', showHint);
+      container.addEventListener('mouseleave', hideHint);
+    }
   },
 
   /**
@@ -252,15 +394,20 @@ const MermaidHelper = {
       // Clone the SVG to avoid modifying the displayed one
       const svgClone = svg.cloneNode(true);
 
-      // Reset any transform on the clone
-      svgClone.style.transform = '';
+      // Reset any viewBox transform on the clone to export original view
+      const originalViewBox = svg.getAttribute('data-original-viewbox');
+      if (originalViewBox) {
+        svgClone.setAttribute('viewBox', originalViewBox);
+      }
 
       // Ensure SVG has proper dimensions
       if (!svgClone.hasAttribute('width') || !svgClone.hasAttribute('height')) {
         const bbox = svg.getBBox();
         svgClone.setAttribute('width', bbox.width);
         svgClone.setAttribute('height', bbox.height);
-        svgClone.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+        if (!originalViewBox) {
+          svgClone.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+        }
       }
 
       const svgData = new XMLSerializer().serializeToString(svgClone);
@@ -281,20 +428,41 @@ const MermaidHelper = {
   },
 
   /**
-   * Apply zoom level to a diagram
+   * Get current zoom level from native interactions
+   *
+   * @param {HTMLElement} container - Container element with the diagram
+   * @returns {number} Current zoom level (1.0 = 100%)
+   */
+  getCurrentZoom: function(container) {
+    const controller = container._svgController;
+    if (controller) {
+      return controller.getState().zoom;
+    }
+    return 1.0;
+  },
+
+  /**
+   * Set zoom level using native interactions
    *
    * @param {HTMLElement} container - Container element with the diagram
    * @param {number} zoomLevel - Zoom level (1.0 = 100%)
    */
-  applyZoom: function(container, zoomLevel) {
-    const svg = container.querySelector('svg');
-    if (!svg) return;
+  setZoom: function(container, zoomLevel) {
+    const controller = container._svgController;
+    if (controller) {
+      controller.zoomTo(zoomLevel);
+    }
+  },
 
-    const wrapper = svg.closest('.mermaid-wrapper');
-    if (wrapper) {
-      wrapper.style.transform = `scale(${zoomLevel})`;
-      wrapper.style.transformOrigin = 'center top';
-      wrapper.style.transition = 'transform 0.2s';
+  /**
+   * Reset diagram view to original state
+   *
+   * @param {HTMLElement} container - Container element with the diagram
+   */
+  resetView: function(container) {
+    const controller = container._svgController;
+    if (controller) {
+      controller.reset();
     }
   },
 

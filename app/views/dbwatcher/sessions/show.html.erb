@@ -20,10 +20,6 @@ function sessionView() {
     diagramContent: null,
     diagramError: null,
     loading: false,
-    zoomLevel: 1,
-    isPanning: false,
-    panStartX: 0,
-    panStartY: 0,
     diagramCache: {},
 
     init() {
@@ -116,7 +112,6 @@ function sessionView() {
       this.loading = true;
       this.diagramContent = null;
       this.diagramError = null;
-      this.resetZoom();
 
       const container = document.getElementById('diagram-container');
       if (!container) {
@@ -318,62 +313,12 @@ function sessionView() {
       }
     },
 
-    zoomDiagram(delta) {
-      // Adjust zoom level with bounds
-      this.zoomLevel = Math.max(0.5, Math.min(2, this.zoomLevel + delta));
-      this.applyZoom();
-    },
-
-    resetZoom() {
-      this.zoomLevel = 1;
-      this.applyZoom();
-    },
-
-    applyZoom() {
-      const svg = document.querySelector('#diagram-container svg');
-      if (svg) {
-        const wrapper = svg.closest('.mermaid-wrapper');
-        if (wrapper) {
-          wrapper.style.transform = `scale(${this.zoomLevel})`;
-          wrapper.style.transformOrigin = 'center top';
-          wrapper.style.transition = 'transform 0.2s';
-        }
-      }
-    },
-
-    startPan(e) {
-      // Only enable panning when we have a diagram
-      if (!this.diagramContent) return;
-
-      // Only start panning on left mouse button
-      if (e.button !== 0) return;
-
-      this.isPanning = true;
-      this.panStartX = e.clientX;
-      this.panStartY = e.clientY;
-
+    resetView() {
+      // Use native interaction system to reset view
       const container = document.getElementById('diagram-container');
-      const initialScrollLeft = container.scrollLeft;
-      const initialScrollTop = container.scrollTop;
-
-      const handleMouseMove = (e) => {
-        if (!this.isPanning) return;
-
-        const dx = this.panStartX - e.clientX;
-        const dy = this.panStartY - e.clientY;
-
-        container.scrollLeft = initialScrollLeft + dx;
-        container.scrollTop = initialScrollTop + dy;
-      };
-
-      const handleMouseUp = () => {
-        this.isPanning = false;
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      if (container && window.MermaidHelper) {
+        window.MermaidHelper.resetView(container);
+      }
     },
 
     exportDiagram() {

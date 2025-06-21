@@ -19,21 +19,10 @@
         Export SVG
       </button>
 
-      <!-- Zoom Controls -->
+      <!-- Reset View Button (native interactions handle zoom/pan) -->
       <div class="flex items-center gap-1 ml-auto" x-show="diagramContent">
-        <button @click="zoomDiagram(-0.1)" class="compact-button bg-white border border-gray-300 hover:bg-gray-50">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
-          </svg>
-        </button>
-        <span class="text-xs" x-text="`${Math.round(zoomLevel * 100)}%`"></span>
-        <button @click="zoomDiagram(0.1)" class="compact-button bg-white border border-gray-300 hover:bg-gray-50">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-        </button>
-        <button @click="resetZoom()" class="compact-button bg-white border border-gray-300 hover:bg-gray-50 text-xs">
-          Reset
+        <button @click="resetView()" class="compact-button bg-white border border-gray-300 hover:bg-gray-50 text-xs">
+          Reset View
         </button>
       </div>
     </div>
@@ -65,10 +54,8 @@
       <!-- Diagram Content -->
       <div id="diagram-container"
            x-show="diagramContent"
-           class="p-4 overflow-auto"
-           @mousedown="startPan($event)"
-           :style="`cursor: ${isPanning ? 'grabbing' : 'grab'}`">
-        <!-- Mermaid diagram will be rendered here -->
+           class="p-4 overflow-hidden">
+        <!-- Mermaid diagram will be rendered here with native interactions -->
       </div>
 
       <!-- Error State -->
