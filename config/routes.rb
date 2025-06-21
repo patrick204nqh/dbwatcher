@@ -7,6 +7,11 @@ Dbwatcher::Engine.routes.draw do
   delete :clear_all, to: "dashboard#clear_all"
 
   resources :sessions do
+    member do
+      get :diagram
+      get :summary
+    end
+
     collection do
       delete :clear
     end
