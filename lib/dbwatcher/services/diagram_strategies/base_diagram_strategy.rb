@@ -29,13 +29,98 @@ module Dbwatcher
           @logger = dependencies[:logger] || Rails.logger || Logger.new($stdout)
         end
 
-        # Generate diagram for given session (abstract method)
+        # Generate diagram for given session (legacy method)
         #
         # @param session_id [String] session identifier
         # @return [Hash] diagram generation result
         # @raise [NotImplementedError] if not implemented by subclass
         def generate(session_id)
           raise NotImplementedError, "Subclasses must implement generate method"
+        end
+
+        # Generate diagram from standardized dataset (new method)
+        #
+        # @param dataset [DiagramData::DiagramDataset] standardized dataset
+        # @return [Hash] diagram generation result
+        def generate_from_dataset(dataset)
+          @logger.info("Generating diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships")
+          start_time = Time.current
+
+          begin
+            # Validate dataset meets requirements
+            validation_errors = validate_dataset(dataset)
+            if validation_errors.any?
+              return error_response("Dataset validation failed: #{validation_errors.join("; ")}")
+            end
+
+            # Generate diagram using dataset
+            result = render_diagram(dataset)
+
+            log_operation_completion("diagram generation", Time.current - start_time, {
+                                       entities_count: dataset.entities.size,
+                                       relationships_count: dataset.relationships.size
+                                     })
+
+            result
+          rescue StandardError => e
+            @logger.error("Diagram generation failed: #{e.class}: #{e.message}\n#{e.backtrace.join("\n")}")
+            error_response("Diagram generation failed: #{e.message}")
+          end
+        end
+
+        # Define what data requirements this strategy needs
+        #
+        # @return [Hash] data requirements specification
+        def data_requirements
+          {
+            minimum_entities: 0,
+            minimum_relationships: 0,
+            required_entity_types: [],
+            required_relationship_types: [],
+            optional_entity_types: [],
+            optional_relationship_types: []
+          }
+        end
+
+        # Validate if dataset meets requirements
+        #
+        # @param dataset [DiagramData::DiagramDataset] dataset to validate
+        # @return [Array<String>] array of validation errors (empty if valid)
+        def validate_dataset(dataset)
+          errors = []
+
+          unless dataset.is_a?(Dbwatcher::Services::DiagramData::DiagramDataset)
+            errors << "Invalid dataset type: expected DiagramDataset, got #{dataset.class}"
+            return errors
+          end
+
+          errors << "Dataset is invalid: #{dataset.validation_errors.join(", ")}" unless dataset.valid?
+
+          reqs = data_requirements
+
+          # Check minimum entities
+          if dataset.entities.size < reqs[:minimum_entities]
+            errors << "Insufficient entities: #{dataset.entities.size} < #{reqs[:minimum_entities]}"
+          end
+
+          # Check minimum relationships
+          if dataset.relationships.size < reqs[:minimum_relationships]
+            errors << "Insufficient relationships: #{dataset.relationships.size} < #{reqs[:minimum_relationships]}"
+          end
+
+          # Check required entity types
+          entity_types = dataset.entities.values.map(&:type).uniq
+          missing_entity_types = reqs[:required_entity_types] - entity_types
+          errors << "Missing required entity types: #{missing_entity_types.join(", ")}" if missing_entity_types.any?
+
+          # Check required relationship types
+          relationship_types = dataset.relationships.map(&:type).uniq
+          missing_relationship_types = reqs[:required_relationship_types] - relationship_types
+          if missing_relationship_types.any?
+            errors << "Missing required relationship types: #{missing_relationship_types.join(", ")}"
+          end
+
+          errors
         end
 
         # Get strategy metadata (abstract method)
@@ -48,7 +133,8 @@ module Dbwatcher
             description: strategy_description,
             supported_features: supported_features,
             configuration: configurable_options,
-            mermaid_type: mermaid_diagram_type
+            mermaid_type: mermaid_diagram_type,
+            data_requirements: data_requirements
           }
         end
 
@@ -64,7 +150,27 @@ module Dbwatcher
           false
         end
 
+        # Check if strategy can handle given dataset
+        #
+        # @param dataset [DiagramData::DiagramDataset] dataset to check
+        # @return [Boolean] true if strategy can handle dataset
+        def can_handle_dataset?(dataset)
+          validate_dataset(dataset).empty?
+        rescue StandardError => e
+          @logger.warn "Strategy cannot handle dataset: #{e.message}"
+          false
+        end
+
         protected
+
+        # Render diagram from dataset (abstract method)
+        #
+        # @param dataset [DiagramData::DiagramDataset] standardized dataset
+        # @return [Hash] diagram generation result
+        # @raise [NotImplementedError] if not implemented by subclass
+        def render_diagram(dataset)
+          raise NotImplementedError, "Subclasses must implement render_diagram method"
+        end
 
         # Build empty diagram with message
         #
@@ -200,21 +306,21 @@ module Dbwatcher
 
         # Get supported features
         #
-        # @return [Array<String>] list of supported features
+        # @return [Array<Symbol>] supported features
         def supported_features
           []
         end
 
         # Get configurable options
         #
-        # @return [Hash] configurable options with metadata
+        # @return [Hash] configurable options with defaults
         def configurable_options
           {}
         end
 
         # Get Mermaid diagram type
         #
-        # @return [String] Mermaid diagram type (e.g., 'erDiagram', 'flowchart')
+        # @return [String] Mermaid diagram type
         # @raise [NotImplementedError] if not implemented by subclass
         def mermaid_diagram_type
           raise NotImplementedError, "Subclasses must implement mermaid_diagram_type"

@@ -45,8 +45,12 @@ module Dbwatcher
             Rails.logger.info "SessionsController#diagram: Generating model associations diagram"
 
             # Check if we can get model associations directly
-            associations = Storage.sessions.model_associations(params[:id])
-            Rails.logger.info "SessionsController#diagram: Found #{associations.is_a?(Array) ? associations.size : "unknown"} model associations"
+            dataset = Storage.sessions.model_associations(params[:id])
+            if dataset.respond_to?(:entities) && dataset.respond_to?(:relationships)
+              Rails.logger.info "SessionsController#diagram: Found dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
+            else
+              Rails.logger.info "SessionsController#diagram: Found dataset: #{dataset.class.name}"
+            end
           end
 
           # Generate fresh diagram

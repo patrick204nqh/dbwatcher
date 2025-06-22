@@ -25,7 +25,7 @@ module Dbwatcher
                             Dbwatcher::Services::Analyzers::SchemaRelationshipAnalyzer
         end
 
-        # Generate ERD diagram for session
+        # Generate ERD diagram for session (legacy method)
         #
         # @param session_id [String] session identifier
         # @return [Hash] diagram generation result
@@ -46,7 +46,41 @@ module Dbwatcher
           result
         end
 
+        # Define data requirements for ERD diagrams
+        #
+        # @return [Hash] data requirements specification
+        def data_requirements
+          {
+            minimum_entities: 1,
+            minimum_relationships: 0,
+            required_entity_types: [],
+            required_relationship_types: [],
+            optional_entity_types: %w[table model],
+            optional_relationship_types: %w[schema_foreign_key has_many belongs_to has_one]
+          }
+        end
+
         protected
+
+        # Render ERD diagram from standardized dataset
+        #
+        # @param dataset [DiagramData::DiagramDataset] standardized dataset
+        # @return [Hash] diagram generation result
+        def render_diagram(dataset)
+          @logger.debug "Rendering ERD diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
+
+          # Generate diagram content directly from dataset
+          content = if dataset.relationships.empty? && dataset.entities.empty?
+                      @syntax_builder.build_empty_erd("No database relationships or tables found")
+                    elsif dataset.relationships.empty?
+                      # Show isolated tables if no relationships but entities exist
+                      @syntax_builder.build_erd_diagram_with_tables(dataset.entities.values, erd_generation_options)
+                    else
+                      @syntax_builder.build_erd_diagram_from_dataset(dataset, erd_generation_options)
+                    end
+
+          success_response(content, "erDiagram")
+        end
 
         # Check if session has required data for ERD generation
         #
@@ -62,7 +96,7 @@ module Dbwatcher
 
         private
 
-        # Generate ERD diagram content
+        # Generate ERD diagram content (legacy method)
         #
         # @param session_id [String] session identifier
         # @return [Hash] generation result

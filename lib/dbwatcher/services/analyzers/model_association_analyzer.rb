@@ -12,7 +12,7 @@ module Dbwatcher
       #   analyzer = ModelAssociationAnalyzer.new(session)
       #   associations = analyzer.call
       #   # => [{ source_model: "User", target_model: "Order", type: "has_many" }]
-      class ModelAssociationAnalyzer < BaseService
+      class ModelAssociationAnalyzer < BaseAnalyzer
         # Initialize with session
         #
         # @param session [Session] session to analyze (optional for global analysis)
@@ -42,48 +42,120 @@ module Dbwatcher
           super()
         end
 
-        # Analyze model associations
+        # New standardized interface: analyze model associations
         #
+        # @param context [Hash] analysis context
         # @return [Array<Hash>] array of association data
-        def call
+        def analyze(context)
           return [] unless models_available?
 
-          log_service_start "Analyzing model associations", analysis_context
-          start_time = Time.current
+          Rails.logger.debug "ModelAssociationAnalyzer: Starting analysis with #{models.length} models"
+          associations = extract_model_associations
 
-          begin
-            Rails.logger.debug "ModelAssociationAnalyzer: Starting analysis with #{models.length} models"
-            associations = extract_model_associations
-
-            log_service_completion(start_time, {
-                                     associations_found: associations.length,
-                                     models_analyzed: models.length
-                                   })
-
-            # Log some sample data to help with debugging
-            if associations.any?
-              sample_association = associations.first
-              Rails.logger.debug "ModelAssociationAnalyzer: Sample association - " \
-                                 "source_model: #{sample_association[:source_model]}, " \
-                                 "target_model: #{sample_association[:target_model]}, " \
-                                 "type: #{sample_association[:type]}"
-            else
-              Rails.logger.info "ModelAssociationAnalyzer: No associations found"
-            end
-
-            # If no associations found but we have models, generate a placeholder
-            if associations.empty? && models.any?
-              Rails.logger.info "ModelAssociationAnalyzer: Creating placeholder associations " \
-                                "for #{models.length} models"
-              associations = generate_placeholder_associations
-            end
-
-            associations
-          rescue StandardError => e
-            Rails.logger.error "ModelAssociationAnalyzer error: #{e.class}: #{e.message}\n#{e.backtrace.join("\n")}"
-            # Return empty array instead of failing
-            []
+          # Log some sample data to help with debugging
+          if associations.any?
+            sample_association = associations.first
+            Rails.logger.debug "ModelAssociationAnalyzer: Sample association - " \
+                               "source_model: #{sample_association[:source_model]}, " \
+                               "target_model: #{sample_association[:target_model]}, " \
+                               "type: #{sample_association[:type]}"
+          else
+            Rails.logger.info "ModelAssociationAnalyzer: No associations found"
           end
+
+          # If no associations found but we have models, generate a placeholder
+          if associations.empty? && models.any?
+            Rails.logger.info "ModelAssociationAnalyzer: Creating placeholder associations " \
+                              "for #{models.length} models"
+            associations = generate_placeholder_associations
+          end
+
+          associations
+        end
+
+        # Transform raw association data to DiagramDataset
+        #
+        # @param raw_data [Array<Hash>] raw association data
+        # @return [DiagramData::DiagramDataset] standardized dataset
+        def transform_to_dataset(raw_data)
+          dataset = create_empty_dataset
+          dataset.metadata.merge!({
+                                    analyzer_type: "model_associations",
+                                    total_associations: raw_data.length,
+                                    models_analyzed: models.length
+                                  })
+
+          # Create entities for each unique model
+          model_entities = {}
+          raw_data.each do |association|
+            # Create source entity
+            if association[:source_model] && !model_entities.key?(association[:source_model])
+              entity = create_entity(
+                id: association[:source_table] || association[:source_model].downcase,
+                name: association[:source_model],
+                type: "model",
+                metadata: {
+                  table_name: association[:source_table],
+                  model_class: association[:source_model]
+                }
+              )
+              dataset.add_entity(entity)
+              model_entities[association[:source_model]] = entity
+            end
+
+            # Create target entity (if exists)
+            next unless association[:target_model] && !model_entities.key?(association[:target_model])
+
+            entity = create_entity(
+              id: association[:target_table] || association[:target_model].downcase,
+              name: association[:target_model],
+              type: "model",
+              metadata: {
+                table_name: association[:target_table],
+                model_class: association[:target_model]
+              }
+            )
+            dataset.add_entity(entity)
+            model_entities[association[:target_model]] = entity
+          end
+
+          # Create relationships
+          raw_data.each do |association|
+            next if association[:type] == "node_only" || !association[:target_model]
+
+            source_id = association[:source_table] || association[:source_model].downcase
+            target_id = association[:target_table] || association[:target_model].downcase
+
+            # Skip self-referential relationships (source and target are the same)
+            if source_id == target_id
+              Rails.logger.info "ModelAssociationAnalyzer: Skipping self-referential relationship for #{source_id}"
+              next
+            end
+
+            relationship = create_relationship(
+              source_id: source_id,
+              target_id: target_id,
+              type: association[:type],
+              label: association[:association_name],
+              metadata: {
+                association_name: association[:association_name],
+                source_model: association[:source_model],
+                target_model: association[:target_model],
+                original_type: association[:type]
+              }
+            )
+
+            dataset.add_relationship(relationship)
+          end
+
+          dataset
+        end
+
+        # Analyzer capabilities
+        #
+        # @return [Array<Symbol>] capabilities
+        def capabilities
+          %i[model_associations activerecord_models table_relationships]
         end
 
         private
@@ -445,6 +517,24 @@ module Dbwatcher
             models_found: models.length,
             analyzing_scope: session_tables.any? ? "session" : "global"
           }
+        end
+
+        private
+
+        # Implement required abstract methods from BaseAnalyzer
+
+        # Get analyzer name
+        #
+        # @return [String] analyzer name
+        def analyzer_name
+          "Model Association Analyzer"
+        end
+
+        # Get analyzer description
+        #
+        # @return [String] analyzer description
+        def analyzer_description
+          "Analyzes ActiveRecord model associations to detect relationships between models"
         end
       end
     end

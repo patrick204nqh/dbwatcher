@@ -25,7 +25,7 @@ module Dbwatcher
                             Dbwatcher::Services::Analyzers::ModelAssociationAnalyzer
         end
 
-        # Generate flowchart diagram for session
+        # Generate flowchart diagram for session (legacy method)
         #
         # @param session_id [String] session identifier
         # @return [Hash] diagram generation result
@@ -47,7 +47,41 @@ module Dbwatcher
           result
         end
 
+        # Define data requirements for flowchart diagrams
+        #
+        # @return [Hash] data requirements specification
+        def data_requirements
+          {
+            minimum_entities: 1,
+            minimum_relationships: 0,
+            required_entity_types: [],
+            required_relationship_types: [],
+            optional_entity_types: %w[model table],
+            optional_relationship_types: %w[has_many belongs_to has_one has_and_belongs_to_many through polymorphic]
+          }
+        end
+
         protected
+
+        # Render flowchart diagram from standardized dataset
+        #
+        # @param dataset [DiagramData::DiagramDataset] standardized dataset
+        # @return [Hash] diagram generation result
+        def render_diagram(dataset)
+          @logger.debug "Rendering flowchart diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
+
+          # Generate diagram content directly from dataset
+          content = if dataset.relationships.empty? && dataset.entities.empty?
+                      @syntax_builder.build_empty_flowchart("No model associations or entities found")
+                    elsif dataset.relationships.empty?
+                      # Show isolated nodes if no relationships but entities exist
+                      @syntax_builder.build_flowchart_with_nodes(dataset.entities.values, flowchart_generation_options)
+                    else
+                      @syntax_builder.build_flowchart_diagram_from_dataset(dataset, flowchart_generation_options)
+                    end
+
+          success_response(content, "flowchart")
+        end
 
         # Check if session has required data for flowchart generation
         #
@@ -63,7 +97,7 @@ module Dbwatcher
 
         private
 
-        # Generate flowchart diagram content
+        # Generate flowchart diagram content (legacy method)
         #
         # @param session_id [String] session identifier
         # @return [Hash] generation result

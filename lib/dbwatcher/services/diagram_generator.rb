@@ -7,6 +7,7 @@ require_relative "mermaid_syntax_builder"
 require_relative "diagram_strategies/base_diagram_strategy"
 require_relative "diagram_strategies/erd_diagram_strategy"
 require_relative "diagram_strategies/flowchart_diagram_strategy"
+require_relative "analyzers/base_analyzer"
 require_relative "analyzers/schema_relationship_analyzer"
 require_relative "analyzers/model_association_analyzer"
 
@@ -16,9 +17,15 @@ module Dbwatcher
     #
     # This service coordinates diagram generation by delegating to appropriate
     # strategy classes while providing caching, error handling, and observability.
+    # Supports both legacy session-based generation and new dataset-based generation.
     #
-    # @example
+    # @example Legacy mode
     #   generator = DiagramGenerator.new(session_id, 'database_tables')
+    #   result = generator.call
+    #   # => { content: "erDiagram\n    USERS ||--o{ ORDERS : user_id", type: 'erDiagram' }
+    #
+    # @example Dataset mode
+    #   generator = DiagramGenerator.new(session_id, 'database_tables', dataset: dataset)
     #   result = generator.call
     #   # => { content: "erDiagram\n    USERS ||--o{ ORDERS : user_id", type: 'erDiagram' }
     class DiagramGenerator < BaseService
@@ -58,8 +65,8 @@ module Dbwatcher
             return cached_result
           end
 
-          # Generate new diagram using strategy
-          result = generate_diagram_using_strategy
+          # Generate diagram using standardized analyzer-to-strategy flow
+          result = generate_with_analysis
 
           # Cache successful results
           cache_result(result) if result[:success]
@@ -67,9 +74,31 @@ module Dbwatcher
           log_generation_completion(start_time, result)
           result
         rescue StandardError => e
-          # Use new comprehensive error handling for all errors
+          # Use comprehensive error handling for all errors
           @error_handler.handle_generation_error(e, error_context)
         end
+      end
+
+      # Generate diagram with analysis using standardized flow
+      #
+      # @return [Hash] diagram generation result
+      def generate_with_analysis
+        @logger.info("Generating diagram with analysis for session #{@session_id}")
+
+        # Validate diagram type first
+        unless @registry.type_exists?(@diagram_type)
+          raise DiagramTypeRegistry::UnknownTypeError, "Invalid diagram type: #{@diagram_type}"
+        end
+
+        # Determine appropriate analyzer for diagram type and analyze
+        analyzer = select_analyzer_for_diagram_type
+        dataset = analyzer.call # This calls the standardized interface internally
+
+        @logger.debug("Generated dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships")
+
+        # Create strategy and generate diagram from dataset
+        strategy = @registry.create_strategy(@diagram_type, strategy_dependencies)
+        strategy.generate_from_dataset(dataset)
       end
 
       # Get available diagram types with metadata
@@ -89,17 +118,32 @@ module Dbwatcher
 
       private
 
-      # Generate diagram using appropriate strategy
+      # Select appropriate analyzer for diagram type
       #
-      # @return [Hash] diagram generation result
-      def generate_diagram_using_strategy
-        # Validate diagram type first
-        unless @registry.type_exists?(@diagram_type)
-          raise DiagramTypeRegistry::UnknownTypeError, "Invalid diagram type: #{@diagram_type}"
-        end
+      # @return [BaseAnalyzer] analyzer instance
+      def select_analyzer_for_diagram_type
+        session = load_session_for_analysis
 
-        strategy = @registry.create_strategy(@diagram_type, strategy_dependencies)
-        strategy.generate(@session_id)
+        case @diagram_type
+        when "database_tables", "erd"
+          Dbwatcher::Services::Analyzers::SchemaRelationshipAnalyzer.new(session)
+        when "model_associations", "flowchart"
+          Dbwatcher::Services::Analyzers::ModelAssociationAnalyzer.new(session)
+        else
+          # Default to schema analyzer for unknown types
+          @logger.warn("Unknown diagram type #{@diagram_type}, defaulting to schema analyzer")
+          Dbwatcher::Services::Analyzers::SchemaRelationshipAnalyzer.new(session)
+        end
+      end
+
+      # Load session for analysis
+      #
+      # @return [Object] session object
+      def load_session_for_analysis
+        Dbwatcher::Storage.sessions.find(@session_id)
+      rescue StandardError => e
+        @logger.warn("Could not load session #{@session_id}: #{e.message}")
+        nil
       end
 
       # Build strategy dependencies

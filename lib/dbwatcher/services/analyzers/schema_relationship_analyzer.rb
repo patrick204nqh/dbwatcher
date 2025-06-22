@@ -12,7 +12,7 @@ module Dbwatcher
       #   analyzer = SchemaRelationshipAnalyzer.new(session)
       #   relationships = analyzer.call
       #   # => [{ from_table: "orders", to_table: "users", constraint_name: "fk_orders_user_id" }]
-      class SchemaRelationshipAnalyzer < BaseService
+      class SchemaRelationshipAnalyzer < BaseAnalyzer
         # Initialize with session
         #
         # @param session [Session] session to analyze (optional for global analysis)
@@ -23,23 +23,112 @@ module Dbwatcher
           super()
         end
 
-        # Analyze schema relationships
+        # New standardized interface: analyze schema relationships
         #
+        # @param context [Hash] analysis context
         # @return [Array<Hash>] array of relationship data
-        def call
+        def analyze(context)
           return [] unless schema_available?
 
-          log_service_start "Analyzing schema relationships", analysis_context
-          start_time = Time.current
-
+          Rails.logger.debug "SchemaRelationshipAnalyzer: Starting analysis with #{tables_to_analyze.length} tables"
           relationships = extract_foreign_key_relationships
 
-          log_service_completion(start_time, {
-                                   relationships_found: relationships.length,
-                                   tables_analyzed: tables_to_analyze.length
-                                 })
+          # Log some sample data to help with debugging
+          if relationships.any?
+            sample_relationship = relationships.first
+            Rails.logger.debug "SchemaRelationshipAnalyzer: Sample relationship - " \
+                               "from_table: #{sample_relationship[:from_table]}, " \
+                               "to_table: #{sample_relationship[:to_table]}, " \
+                               "type: #{sample_relationship[:type]}"
+          else
+            Rails.logger.info "SchemaRelationshipAnalyzer: No relationships found"
+          end
 
           relationships
+        end
+
+        # Transform raw relationship data to DiagramDataset
+        #
+        # @param raw_data [Array<Hash>] raw relationship data
+        # @return [DiagramData::DiagramDataset] standardized dataset
+        def transform_to_dataset(raw_data)
+          dataset = create_empty_dataset
+          dataset.metadata.merge!({
+                                    analyzer_type: "schema_relationships",
+                                    total_relationships: raw_data.length,
+                                    tables_analyzed: tables_to_analyze.length
+                                  })
+
+          # Create entities for each unique table
+          table_entities = {}
+          raw_data.each do |relationship|
+            # Create source entity
+            if relationship[:from_table] && !table_entities.key?(relationship[:from_table])
+              entity = create_entity(
+                id: relationship[:from_table],
+                name: relationship[:from_table],
+                type: "table",
+                metadata: {
+                  table_name: relationship[:from_table],
+                  source: "database_schema"
+                }
+              )
+              dataset.add_entity(entity)
+              table_entities[relationship[:from_table]] = entity
+            end
+
+            # Create target entity
+            next unless relationship[:to_table] && !table_entities.key?(relationship[:to_table])
+
+            entity = create_entity(
+              id: relationship[:to_table],
+              name: relationship[:to_table],
+              type: "table",
+              metadata: {
+                table_name: relationship[:to_table],
+                source: "database_schema"
+              }
+            )
+            dataset.add_entity(entity)
+            table_entities[relationship[:to_table]] = entity
+          end
+
+          # Create relationships
+          raw_data.each do |relationship|
+            next unless relationship[:from_table] && relationship[:to_table]
+
+            # Skip self-referential relationships (source and target are the same)
+            if relationship[:from_table] == relationship[:to_table]
+              Rails.logger.info "SchemaRelationshipAnalyzer: Skipping self-referential relationship for #{relationship[:from_table]}"
+              next
+            end
+
+            relationship_obj = create_relationship(
+              source_id: relationship[:from_table],
+              target_id: relationship[:to_table],
+              type: relationship[:type],
+              label: relationship[:constraint_name],
+              metadata: {
+                constraint_name: relationship[:constraint_name],
+                from_column: relationship[:from_column],
+                to_column: relationship[:to_column],
+                on_delete: relationship[:on_delete],
+                on_update: relationship[:on_update],
+                original_type: relationship[:type]
+              }
+            )
+
+            dataset.add_relationship(relationship_obj)
+          end
+
+          dataset
+        end
+
+        # Analyzer capabilities
+        #
+        # @return [Array<Symbol>] capabilities
+        def capabilities
+          %i[schema_relationships foreign_keys database_constraints]
         end
 
         private
@@ -152,6 +241,22 @@ module Dbwatcher
             total_db_tables: connection&.tables&.length || 0,
             analyzing_scope: session_tables.any? ? "session" : "global"
           }
+        end
+
+        # Abstract method implementations for BaseAnalyzer
+
+        # Get analyzer name
+        #
+        # @return [String] human-readable analyzer name
+        def analyzer_name
+          "Schema Relationship Analyzer"
+        end
+
+        # Get analyzer description
+        #
+        # @return [String] analyzer description
+        def analyzer_description
+          "Analyzes database schema to detect foreign key relationships between tables"
         end
       end
     end

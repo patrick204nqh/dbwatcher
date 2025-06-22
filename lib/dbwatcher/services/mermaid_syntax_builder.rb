@@ -131,6 +131,113 @@ module Dbwatcher
         end
       end
 
+      # Build ERD diagram from standardized dataset
+      #
+      # @param dataset [DiagramData::DiagramDataset] standardized dataset
+      # @param options [Hash] generation options
+      # @return [String] Mermaid ERD syntax
+      def build_erd_diagram_from_dataset(dataset, options = {})
+        @logger.debug "Building ERD diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
+
+        # Convert dataset to legacy format for existing build methods
+        legacy_relationships = dataset.relationships.map do |relationship|
+          {
+            type: relationship.metadata[:original_type] || relationship.type,
+            from_table: relationship.source_id,
+            to_table: relationship.target_id,
+            from_column: relationship.metadata[:from_column],
+            to_column: relationship.metadata[:to_column],
+            constraint_name: relationship.metadata[:constraint_name] || relationship.label,
+            on_delete: relationship.metadata[:on_delete],
+            on_update: relationship.metadata[:on_update]
+          }
+        end
+
+        build_erd_diagram(legacy_relationships, options)
+      end
+
+      # Build flowchart diagram from standardized dataset
+      #
+      # @param dataset [DiagramData::DiagramDataset] standardized dataset
+      # @param options [Hash] generation options
+      # @return [String] Mermaid flowchart syntax
+      def build_flowchart_diagram_from_dataset(dataset, options = {})
+        @logger.debug "Building flowchart diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
+
+        legacy_associations = []
+
+        # Add node-only entries for isolated entities
+        dataset.isolated_entities.each do |entity|
+          legacy_associations << {
+            type: "node_only",
+            source_model: entity.name,
+            source_table: entity.metadata[:table_name] || entity.id,
+            target_model: nil,
+            target_table: nil,
+            association_name: nil
+          }
+        end
+
+        # Add relationships
+        dataset.relationships.each do |relationship|
+          source_entity = dataset.get_entity(relationship.source_id)
+          target_entity = dataset.get_entity(relationship.target_id)
+
+          legacy_associations << {
+            type: relationship.metadata[:original_type] || relationship.type,
+            source_model: source_entity&.name || relationship.source_id,
+            source_table: source_entity&.metadata&.dig(:table_name) || relationship.source_id,
+            target_model: target_entity&.name || relationship.target_id,
+            target_table: target_entity&.metadata&.dig(:table_name) || relationship.target_id,
+            association_name: relationship.metadata[:association_name] || relationship.label
+          }
+        end
+
+        build_flowchart_diagram(legacy_associations, options)
+      end
+
+      # Build ERD diagram with isolated tables
+      #
+      # @param entities [Array<BaseEntity>] isolated table entities
+      # @param options [Hash] generation options
+      # @return [String] Mermaid ERD syntax
+      def build_erd_diagram_with_tables(entities, options = {})
+        @logger.debug "Building ERD diagram with #{entities.size} isolated tables"
+
+        content = ["erDiagram"]
+
+        entities.each do |entity|
+          table_name = sanitize_table_name(entity.name)
+          content << "    #{table_name} {}"
+        end
+
+        result = content.join("\n")
+        validate_syntax!(result, "erDiagram") if @config[:validate_syntax]
+        result
+      end
+
+      # Build flowchart diagram with isolated nodes
+      #
+      # @param entities [Array<BaseEntity>] isolated node entities
+      # @param options [Hash] generation options
+      # @return [String] Mermaid flowchart syntax
+      def build_flowchart_with_nodes(entities, options = {})
+        @logger.debug "Building flowchart diagram with #{entities.size} isolated nodes"
+
+        direction = options[:layout_direction] || "TD"
+        content = ["flowchart #{direction}"]
+
+        entities.each do |entity|
+          node_id = generate_node_id(entity.name)
+          node_label = sanitize_text(entity.name)
+          content << "    #{node_id}[\"#{node_label}\"]"
+        end
+
+        result = content.join("\n")
+        validate_syntax!(result, "flowchart") if @config[:validate_syntax]
+        result
+      end
+
       private
 
       # Default configuration
