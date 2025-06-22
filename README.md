@@ -24,7 +24,7 @@ _Main dashboard showing tracked sessions and operations_
 
 _Detailed view of a tracked session_
 
-[View more screenshots in here →](docs/screenshots)
+[View more screenshots in here →](docs/screenshots.md)
 
 ## Installation
 
