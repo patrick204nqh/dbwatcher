@@ -46,6 +46,11 @@ function sessionView() {
     setActiveTab(tab) {
       this.activeTab = tab;
       this.updateURL(tab);
+
+      // Auto-generate diagram when switching to diagrams tab
+      if (tab === 'diagrams' && !this.diagramContent && !this.loading) {
+        this.loadDiagram();
+      }
     },
 
     updateURL(tab) {
@@ -108,20 +113,16 @@ function sessionView() {
       URL.revokeObjectURL(url);
     },
 
-    async loadDiagram() {
+    async loadDiagram(refresh = false) {
+      // Don't reload if already loading
+      if (this.loading) return;
+
       this.loading = true;
-      this.diagramContent = null;
       this.diagramError = null;
 
-      const container = document.getElementById('diagram-container');
-      if (!container) {
-        this.loading = false;
-        return;
-      }
-
-      // Check cache first
+      // Check cache first (unless refresh is requested)
       const cacheKey = `<%= @session.id %>_${this.selectedDiagramType}`;
-      if (this.diagramCache[cacheKey]) {
+      if (!refresh && this.diagramCache[cacheKey]) {
         console.log('Using cached diagram');
         this.diagramContent = this.diagramCache[cacheKey];
         this.loading = false;
@@ -130,7 +131,9 @@ function sessionView() {
       }
 
       try {
-        const response = await fetch(`/dbwatcher/sessions/<%= @session.id %>/diagram?diagram_type=${this.selectedDiagramType}`);
+        // Add refresh parameter to force server-side cache refresh
+        const refreshParam = refresh ? '&refresh=true' : '';
+        const response = await fetch(`/dbwatcher/sessions/<%= @session.id %>/diagram?diagram_type=${this.selectedDiagramType}${refreshParam}`);
 
         if (!response.ok) {
           throw new Error(`Server error: ${response.status} ${response.statusText}`);
@@ -153,8 +156,6 @@ function sessionView() {
 
         // Cache the diagram
         this.diagramCache[cacheKey] = this.diagramContent;
-
-        console.log('Received diagram content:', this.diagramContent);
 
         await this.renderMermaid();
       } catch (error) {
@@ -179,133 +180,8 @@ function sessionView() {
             container,
             this.selectedDiagramType
           );
-
-          // Apply zoom level after rendering
-          this.applyZoom();
-
-          // Add accessibility features
-          window.MermaidHelper.enhanceAccessibility(container);
         } else {
-          // Fallback to original implementation
-          // Determine diagram type - this affects rendering approach
-          const isModelAssociationDiagram = this.selectedDiagramType === 'model_associations';
-          console.log(`Attempting to render ${isModelAssociationDiagram ? 'model association' : 'database tables'} diagram`);
-
-          // Clear the container
-          container.innerHTML = '';
-
-          // Create a wrapper with unique ID
-          const wrapperId = `diagram-wrapper-${Date.now()}`;
-          const wrapper = document.createElement('div');
-          wrapper.id = wrapperId;
-          wrapper.className = 'mermaid-wrapper';
-          container.appendChild(wrapper);
-
-          // Create a fresh mermaid element
-          const diagramDiv = document.createElement('div');
-          diagramDiv.className = 'mermaid';
-
-          // Special handling for model association diagrams
-          if (isModelAssociationDiagram) {
-            // For model associations, ensure we're using flowchart syntax
-            if (!this.diagramContent.includes('flowchart')) {
-              // If not already containing flowchart, modify it
-              diagramDiv.textContent = this.diagramContent.replace(/^graph LR/, 'flowchart LR');
-            } else {
-              diagramDiv.textContent = this.diagramContent;
-            }
-          } else {
-            diagramDiv.textContent = this.diagramContent;
-          }
-
-          wrapper.appendChild(diagramDiv);
-
-          // Reset Mermaid to avoid any state issues
-          if (window.mermaid) {
-            // Always completely reset mermaid for each render to avoid state issues
-            if (typeof window.mermaid.reset === 'function') {
-              window.mermaid.reset();
-            }
-
-            // Configure specific settings based on diagram type
-            const settings = {
-              startOnLoad: false, // We'll manually trigger
-              theme: 'neutral',
-              securityLevel: 'loose',
-              logLevel: 'warn',
-              themeVariables: {
-                fontSize: '14px',
-                fontFamily: 'Consolas, Monaco, Lucida Console, monospace'
-              }
-            };
-
-            // Add type-specific settings
-            if (isModelAssociationDiagram) {
-              settings.flowchart = {
-                htmlLabels: true,
-                useMaxWidth: true,
-                curve: 'linear', // Linear for cleaner model association lines
-                nodeSpacing: 50,
-                rankSpacing: 100
-              };
-            } else {
-              settings.er = {
-                useMaxWidth: true,
-                layoutDirection: 'LR',
-                minEntityWidth: 100,
-                minEntityHeight: 75
-              };
-            }
-
-            // Initialize with our settings
-            window.mermaid.initialize(settings);
-
-            try {
-              // Modern API approach
-              const result = await window.mermaid.run({
-                querySelector: '.mermaid',
-                nodes: [diagramDiv]
-              });
-
-              console.log('Diagram rendered successfully using modern API');
-
-              // Apply zoom level after rendering
-              this.applyZoom();
-            } catch (modernError) {
-              console.warn('Modern API rendering failed, trying alternative methods:', modernError);
-
-              try {
-                // Try another approach with ID-based rendering
-                const id = `mermaid-${Date.now()}`;
-                diagramDiv.id = id;
-
-                const { svg } = await window.mermaid.render(id, diagramDiv.textContent);
-                wrapper.innerHTML = svg;
-                console.log('Diagram rendered successfully using ID-based rendering');
-
-                // Apply zoom level after rendering
-                this.applyZoom();
-              } catch (idError) {
-                console.error('ID-based rendering also failed:', idError);
-
-                // One last attempt with direct parsing - simplest approach
-                try {
-                  window.mermaid.parse(diagramDiv.textContent);
-                  console.log('Parsing successful, letting mermaid handle rendering');
-                  // If parsing succeeds but rendering fails, we'll try the manual approach
-                  wrapper.innerHTML = '<div class="mermaid">' + diagramDiv.textContent + '</div>';
-                  window.mermaid.init(undefined, wrapper.querySelectorAll('.mermaid'));
-
-                  // Apply zoom level after rendering
-                  this.applyZoom();
-                } catch (parseError) {
-                  throw new Error(`Cannot parse diagram: ${parseError.message}`);
-                }
-              }
-            }
-          } else {
-            throw new Error('Mermaid library not available');
-          }
+          throw new Error('Mermaid helper not available');
         }
       } catch (error) {
         console.error('Mermaid rendering error:', error);
@@ -334,28 +210,9 @@ function sessionView() {
           alert('Failed to export diagram. Please try again.');
         }
       } else {
-        // Fallback to original implementation
-        const svg = document.querySelector('#diagram-container svg');
-        if (svg) {
-          // Clone the SVG to avoid modifying the displayed one
-          const svgClone = svg.cloneNode(true);
-
-          // Reset any transform on the clone
-          svgClone.style.transform = '';
-
-          const svgData = new XMLSerializer().serializeToString(svgClone);
-          const blob = new Blob([svgData], { type: 'image/svg+xml' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `session-<%= @session.id %>-${this.selectedDiagramType}.svg`;
-          a.click();
-          URL.revokeObjectURL(url);
-        } else {
-          alert('No diagram to export. Please generate a diagram first.');
-        }
+        alert('Mermaid helper not available. Please try again.');
       }
-    },
+    }
   }
 }
 </script>

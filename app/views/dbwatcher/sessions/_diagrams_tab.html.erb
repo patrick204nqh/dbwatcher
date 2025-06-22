@@ -1,37 +1,104 @@
 <!-- Diagrams Tab -->
-<div x-show="activeTab === 'diagrams'" class="h-full">
-  <div class="p-4">
+<div
+  x-show="activeTab === 'diagrams'"
+  class="h-full"
+  x-init="activeTab === 'diagrams' && !diagramContent && loadDiagram()"
+  x-data="{
+    viewMode: 'preview',
+    exporting: false,
+    toggleViewMode() {
+      this.viewMode = this.viewMode === 'preview' ? 'code' : 'preview';
+    },
+    copyToClipboard(elementId) {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+
+      const text = element.textContent;
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          const notification = document.createElement('div');
+          notification.textContent = 'Copied to clipboard!';
+          notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg';
+          document.body.appendChild(notification);
+          setTimeout(() => notification.remove(), 2000);
+        })
+        .catch(err => console.error('Failed to copy:', err));
+    }
+  }"
+>
+  <!-- Diagram Container with full-height layout -->
+  <div class="flex flex-col h-full" style="<%= diagram_container_css_variables %>">
     <!-- Diagram Controls -->
-    <div class="mb-4 flex gap-2 items-center flex-wrap">
-      <select x-model="selectedDiagramType" @change="loadDiagram()" class="compact-select">
-        <option value="database_tables">Database Tables (Schema)</option>
-        <option value="model_associations">Model Associations</option>
-      </select>
+    <div class="p-4 border-b border-gray-200 bg-gray-50">
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-2">
+          <select
+            x-model="selectedDiagramType"
+            @change="loadDiagram()"
+            class="compact-select"
+          >
+            <%= diagram_type_options %>
+          </select>
 
-      <button @click="loadDiagram()"
-              class="compact-button bg-blue-medium text-white hover:bg-blue-dark">
-        Generate Diagram
-      </button>
+          <button
+            @click="loadDiagram(true)"
+            class="<%= diagram_button_classes(:primary) %>"
+          >
+            Generate Diagram
+          </button>
+        </div>
 
-      <button @click="exportDiagram()"
-              class="compact-button bg-white border border-gray-300 hover:bg-gray-50"
-              x-show="diagramContent">
-        Export SVG
-      </button>
+        <!-- Right-aligned controls -->
+        <div class="flex items-center gap-2 ml-auto">
+          <!-- Toggle View Button -->
+          <button
+            x-show="diagramContent"
+            @click="toggleViewMode()"
+            class="<%= diagram_button_classes(:toggle) %>"
+            title="Toggle between code and preview"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+            </svg>
+            <span x-text="viewMode === 'preview' ? 'View Code' : 'View Preview'"></span>
+          </button>
 
-      <!-- Reset View Button (native interactions handle zoom/pan) -->
-      <div class="flex items-center gap-1 ml-auto" x-show="diagramContent">
-        <button @click="resetView()" class="compact-button bg-white border border-gray-300 hover:bg-gray-50 text-xs">
-          Reset View
-        </button>
+          <!-- Export Button -->
+          <button
+            x-show="diagramContent"
+            @click="exportDiagram(); exporting = true; setTimeout(() => exporting = false, 1000)"
+            class="<%= diagram_button_classes(:secondary) %>"
+            title="Export as SVG"
+          >
+            <svg x-show="!exporting" class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            <svg x-show="exporting" class="w-4 h-4 mr-1 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Export SVG
+          </button>
+
+          <!-- Reset View Button -->
+          <button
+            x-show="diagramContent && viewMode === 'preview'"
+            @click="resetView()"
+            class="<%= diagram_button_classes(:secondary) %> text-xs"
+          >
+            Reset View
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Diagram Container -->
-    <div class="border border-gray-300 rounded bg-white min-h-96">
+    <!-- Diagram Content Area - Full Height -->
+    <div class="flex-1 overflow-hidden relative" style="height: var(--diagram-height, calc(100vh - 176px)); min-height: var(--diagram-min-height, 500px);">
       <!-- Empty State -->
-      <div x-show="!diagramContent && !loading" class="p-8 text-center text-gray-500">
-        <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor">
+      <div
+        x-show="!diagramContent && !loading"
+        class="absolute inset-0 flex flex-col items-center justify-center text-gray-500"
+      >
+        <svg class="w-12 h-12 mb-2 text-gray-400" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
         </svg>
@@ -39,7 +106,10 @@
       </div>
 
       <!-- Loading State -->
-      <div x-show="loading" class="p-8 text-center">
+      <div
+        x-show="loading"
+        class="absolute inset-0 flex flex-col items-center justify-center"
+      >
         <div class="animate-pulse flex flex-col items-center">
           <div class="w-12 h-12 bg-blue-100 rounded-full mb-2 flex items-center justify-center">
             <svg class="w-6 h-6 text-blue-medium animate-spin" fill="none" viewBox="0 0 24 24">
@@ -51,20 +121,51 @@
         </div>
       </div>
 
-      <!-- Diagram Content -->
-      <div id="diagram-container"
-           x-show="diagramContent"
-           class="p-4 overflow-hidden">
+      <!-- Preview Mode - Rendered Diagram -->
+      <div
+        id="diagram-container"
+        x-show="diagramContent && viewMode === 'preview'"
+        class="absolute inset-0 p-4 overflow-hidden"
+      >
         <!-- Mermaid diagram will be rendered here with native interactions -->
       </div>
 
+      <!-- Code Mode - Mermaid Code with Syntax Highlighting -->
+      <div
+        x-show="diagramContent && viewMode === 'code'"
+        class="absolute inset-0 p-4 overflow-auto"
+      >
+        <div class="relative">
+          <!-- Copy button -->
+          <button
+            @click="copyToClipboard('mermaid-code')"
+            class="absolute top-2 right-2 p-1 bg-gray-700 text-white rounded hover:bg-gray-600"
+            title="Copy to clipboard"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+            </svg>
+          </button>
+
+          <!-- Code display -->
+          <pre id="mermaid-code" class="language-mermaid p-4 bg-gray-800 text-white rounded overflow-auto">
+            <code x-text="diagramContent"></code>
+          </pre>
+        </div>
+      </div>
+
       <!-- Error State -->
-      <div x-show="diagramError" class="p-4 text-red-600 bg-red-50 border border-red-200 rounded m-4">
-        <p class="font-medium mb-2">Error rendering diagram</p>
-        <p class="text-sm mb-2" x-text="diagramError"></p>
-        <button @click="diagramError = null; loadDiagram()" class="compact-button bg-red-600 text-white hover:bg-red-700">
-          Try Again
-        </button>
+      <div
+        x-show="diagramError"
+        class="absolute inset-0 flex items-center justify-center"
+      >
+        <div class="p-4 text-red-600 bg-red-50 border border-red-200 rounded m-4 max-w-lg">
+          <p class="font-medium mb-2">Error rendering diagram</p>
+          <p class="text-sm mb-2" x-text="diagramError"></p>
+          <button @click="diagramError = null; loadDiagram()" class="<%= diagram_button_classes(:primary) %> bg-red-600 hover:bg-red-700">
+            Try Again
+          </button>
+        </div>
       </div>
     </div>
   </div>

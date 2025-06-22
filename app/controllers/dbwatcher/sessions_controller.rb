@@ -28,18 +28,38 @@ module Dbwatcher
       Rails.logger.info "SessionsController#diagram: Generating diagram for session #{params[:id]} type: #{params[:diagram_type]}"
 
       begin
+        diagram_type = params[:diagram_type] || "database_tables"
+
         # Generate cache key based on session ID and diagram type
-        cache_key = "diagram_#{params[:id]}_#{params[:diagram_type] || "database_tables"}"
+        cache_key = "diagram_#{params[:id]}_#{diagram_type}"
+
+        # Clear cache for this diagram if requested
+        Rails.cache.delete(cache_key) if params[:refresh] == "true"
 
         # Try to get from cache first
         diagram_data = Rails.cache.fetch(cache_key, expires_in: 1.hour) do
-          Rails.logger.info "SessionsController#diagram: Cache miss, generating fresh diagram"
+          Rails.logger.info "SessionsController#diagram: Cache miss, generating fresh diagram for type: #{diagram_type}"
 
-          # Generate fresh diagram if not in cache
-          Storage.sessions.diagram_data(
-            params[:id],
-            params[:diagram_type] || "database_tables"
-          )
+          # For model associations, add extra debugging
+          if diagram_type == "model_associations"
+            Rails.logger.info "SessionsController#diagram: Generating model associations diagram"
+
+            # Check if we can get model associations directly
+            associations = Storage.sessions.model_associations(params[:id])
+            Rails.logger.info "SessionsController#diagram: Found #{associations.is_a?(Array) ? associations.size : "unknown"} model associations"
+          end
+
+          # Generate fresh diagram
+          result = Storage.sessions.diagram_data(params[:id], diagram_type)
+
+          # Log the result for debugging
+          if result[:error]
+            Rails.logger.error "SessionsController#diagram: Error in diagram generation: #{result[:error]}"
+          else
+            Rails.logger.info "SessionsController#diagram: Successfully generated #{diagram_type} diagram with #{result[:content]&.lines&.count || 0} lines"
+          end
+
+          result
         end
 
         if diagram_data[:error]

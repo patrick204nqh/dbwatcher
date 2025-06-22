@@ -13,6 +13,11 @@ module Dbwatcher
     # Common error handling
     rescue_from StandardError, with: :handle_error
 
+    # Include helpers
+    helper Dbwatcher::ApplicationHelper
+    helper Dbwatcher::FormattingHelper
+    helper Dbwatcher::DiagramHelper if defined?(Dbwatcher::DiagramHelper)
+
     protected
 
     # Set current time for consistent timestamp usage across views

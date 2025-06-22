@@ -19,7 +19,26 @@ module Dbwatcher
         def initialize(session = nil)
           @session = session
           @session_tables = session ? extract_session_tables : []
+
+          # Log session tables for debugging
+          if @session_tables.any?
+            table_list = @session_tables.join(", ")
+            Rails.logger.info "ModelAssociationAnalyzer: Found #{@session_tables.size} tables " \
+                              "in session: #{table_list}"
+          else
+            Rails.logger.warn "ModelAssociationAnalyzer: No tables found in session"
+          end
+
           @models = discover_session_models
+
+          # Log discovered models for debugging
+          if @models.any?
+            model_names = @models.map(&:name).join(", ")
+            Rails.logger.info "ModelAssociationAnalyzer: Discovered #{@models.size} models: #{model_names}"
+          else
+            Rails.logger.warn "ModelAssociationAnalyzer: No models discovered for session tables"
+          end
+
           super()
         end
 
@@ -44,12 +63,19 @@ module Dbwatcher
             # Log some sample data to help with debugging
             if associations.any?
               sample_association = associations.first
-              Rails.logger.debug "ModelAssociationAnalyzer: Sample association - " +
-                                 "source_model: #{sample_association[:source_model]}, " +
-                                 "target_model: #{sample_association[:target_model]}, " +
+              Rails.logger.debug "ModelAssociationAnalyzer: Sample association - " \
+                                 "source_model: #{sample_association[:source_model]}, " \
+                                 "target_model: #{sample_association[:target_model]}, " \
                                  "type: #{sample_association[:type]}"
             else
               Rails.logger.info "ModelAssociationAnalyzer: No associations found"
+            end
+
+            # If no associations found but we have models, generate a placeholder
+            if associations.empty? && models.any?
+              Rails.logger.info "ModelAssociationAnalyzer: Creating placeholder associations " \
+                                "for #{models.length} models"
+              associations = generate_placeholder_associations
             end
 
             associations
@@ -64,11 +90,41 @@ module Dbwatcher
 
         attr_reader :session, :session_tables, :models
 
+        # Generate placeholder associations for models without associations
+        #
+        # @return [Array<Hash>] placeholder associations
+        def generate_placeholder_associations
+          # Create nodes for each model
+          result = models.map do |model|
+            {
+              type: "node_only",
+              source_model: model.name,
+              source_table: model.table_name,
+              target_model: nil,
+              target_table: nil,
+              association_name: nil
+            }
+          end
+
+          Rails.logger.info "ModelAssociationAnalyzer: Generated #{result.size} placeholder nodes"
+          result
+        end
+
         # Check if model analysis is available
         #
         # @return [Boolean] true if models can be analyzed
         def models_available?
-          defined?(ActiveRecord::Base) && models.any?
+          unless defined?(ActiveRecord::Base)
+            Rails.logger.warn "ModelAssociationAnalyzer: ActiveRecord not available"
+            return false
+          end
+
+          if models.empty?
+            Rails.logger.warn "ModelAssociationAnalyzer: No models available for analysis"
+            return false
+          end
+
+          true
         end
 
         # Extract tables that were involved in the session
@@ -89,16 +145,66 @@ module Dbwatcher
           return [] unless defined?(ActiveRecord::Base)
 
           # Get all ActiveRecord models
-          all_models = ActiveRecord::Base.descendants.select do |model|
-            model_has_table?(model)
+          begin
+            all_models = ActiveRecord::Base.descendants.select do |model|
+              model_has_table?(model)
+            end
+
+            # If no models found (e.g., in test environment), try to load them explicitly
+            if all_models.empty? && session_tables.any?
+              Rails.logger.debug "ModelAssociationAnalyzer: No models found via descendants, " \
+                                 "attempting explicit loading"
+              all_models = attempt_explicit_model_loading
+            end
+
+            Rails.logger.debug "ModelAssociationAnalyzer: Found #{all_models.size} total ActiveRecord models"
+
+            # Filter to models whose tables are in session (if session provided)
+            if session_tables.any?
+              filtered_models = all_models.select { |model| session_tables.include?(model.table_name) }
+              Rails.logger.debug "ModelAssociationAnalyzer: Filtered to #{filtered_models.size} " \
+                                 "models matching session tables"
+              filtered_models
+            else
+              all_models
+            end
+          rescue StandardError => e
+            Rails.logger.error "ModelAssociationAnalyzer: Error discovering models: #{e.message}"
+            []
+          end
+        end
+
+        # Attempt to explicitly load models based on table names
+        #
+        # @return [Array<Class>] ActiveRecord model classes
+        def attempt_explicit_model_loading
+          models = []
+
+          session_tables.each do |table_name|
+            # Try common model naming conventions
+            model_candidates = [
+              table_name.singularize.camelize,           # users -> User
+              table_name.classify,                       # user_profiles -> UserProfile
+              table_name.singularize.camelize.pluralize  # people -> People
+            ].uniq
+
+            model_candidates.each do |model_name|
+              model_class = model_name.constantize
+              if model_class < ActiveRecord::Base && model_has_table?(model_class)
+                models << model_class
+                Rails.logger.debug "ModelAssociationAnalyzer: Successfully loaded model " \
+                                   "#{model_name} for table #{table_name}"
+                break # Found a valid model for this table
+              end
+            rescue NameError
+              # Model doesn't exist, try next candidate
+              Rails.logger.debug "ModelAssociationAnalyzer: Model #{model_name} not found for table #{table_name}"
+            rescue StandardError => e
+              Rails.logger.debug "ModelAssociationAnalyzer: Error loading model #{model_name}: #{e.message}"
+            end
           end
 
-          # Filter to models whose tables are in session (if session provided)
-          if session_tables.any?
-            all_models.select { |model| session_tables.include?(model.table_name) }
-          else
-            all_models
-          end
+          models.uniq
         end
 
         # Check if model has a valid table
@@ -107,7 +213,8 @@ module Dbwatcher
         # @return [Boolean] true if model has table
         def model_has_table?(model)
           model.table_exists?
-        rescue StandardError
+        rescue StandardError => e
+          Rails.logger.debug "ModelAssociationAnalyzer: Model #{model.name} has no table: #{e.message}"
           false
         end
 
@@ -124,6 +231,9 @@ module Dbwatcher
               Rails.logger.debug "ModelAssociationAnalyzer: Processing model: #{model.name}"
               model_associations = get_model_associations(model)
 
+              Rails.logger.debug "ModelAssociationAnalyzer: Found #{model_associations.size} " \
+                                 "associations for #{model.name}"
+
               model_associations.each do |association|
                 # Only include associations where target is also in scope
                 if target_model_in_scope?(association)
@@ -131,7 +241,8 @@ module Dbwatcher
                   associations << relationship if relationship
                 end
               rescue StandardError => e
-                Rails.logger.warn "ModelAssociationAnalyzer: Error processing association in #{model.name}: #{e.message}"
+                Rails.logger.warn "ModelAssociationAnalyzer: Error processing association " \
+                                  "in #{model.name}: #{e.message}"
                 # Continue with next association
               end
             rescue StandardError => e
@@ -153,7 +264,8 @@ module Dbwatcher
         # @return [Array] association reflection objects
         def get_model_associations(model)
           model.reflect_on_all_associations
-        rescue StandardError
+        rescue StandardError => e
+          Rails.logger.warn "ModelAssociationAnalyzer: Error getting associations for #{model.name}: #{e.message}"
           []
         end
 
@@ -166,7 +278,8 @@ module Dbwatcher
           # If analyzing session, target table must be in session
           # If analyzing globally, include all
           session_tables.empty? || session_tables.include?(target_table)
-        rescue StandardError
+        rescue StandardError => e
+          Rails.logger.debug "ModelAssociationAnalyzer: Error checking target scope for association: #{e.message}"
           false
         end
 
@@ -192,6 +305,11 @@ module Dbwatcher
           when :has_one_attached, :has_many_attached
             build_active_storage_relationship(model, association)
           end
+        rescue StandardError => e
+          message = "ModelAssociationAnalyzer: Error building relationship for " \
+                    "#{model.name}##{association.name}: #{e.message}"
+          Rails.logger.warn message
+          nil
         end
 
         # Build belongs_to relationship data
