@@ -34,9 +34,11 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
         generator = described_class.new("invalid-session")
         result = generator.call
 
-        # The error response structure is { error: message }
-        expect(result[:error]).to eq("Session not found")
-        expect(result).to have_key(:generated_at)
+        expect(result[:success]).to eq(false)
+        expect(result[:error]).to eq(true)
+        expect(result[:message]).to be_present
+        expect(result[:error_code]).to be_present
+        expect(result).to have_key(:timestamp)
       end
     end
 
@@ -45,9 +47,11 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
         generator = described_class.new(session.id, "invalid_type")
         result = generator.call
 
-        # The error response structure is { error: message }
-        expect(result[:error]).to eq("Invalid diagram type")
-        expect(result).to have_key(:generated_at)
+        expect(result[:success]).to eq(false)
+        expect(result[:error]).to eq(true)
+        expect(result[:message]).to be_present
+        expect(result[:error_code]).to be_present
+        expect(result).to have_key(:timestamp)
       end
     end
 
@@ -57,8 +61,8 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
       it "generates ER diagram content" do
         result = generator.call
 
-        # The success response doesn't have an error key
-        expect(result[:error]).to be_nil
+        # The success response structure
+        expect(result[:success]).to eq(true)
         expect(result[:content]).to include("erDiagram")
         expect(result[:type]).to eq("erDiagram")
         expect(result).to have_key(:generated_at)
@@ -71,8 +75,8 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
       it "generates model graph content" do
         result = generator.call
 
-        # The success response doesn't have an error key
-        expect(result[:error]).to be_nil
+        # The success response structure
+        expect(result[:success]).to eq(true)
         expect(result[:content]).to include("flowchart LR")
         expect(result[:type]).to eq("flowchart")
         expect(result).to have_key(:generated_at)
@@ -98,7 +102,7 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
         expect(content).to include("-->") # Basic relationship arrows
 
         # Should include style definitions
-        expect(content).to include("style") # Node styling
+        expect(content).to include("classDef") # Node styling
       end
     end
   end
