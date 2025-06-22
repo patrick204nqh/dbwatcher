@@ -376,56 +376,7 @@ const MermaidHelper = {
     }
   },
 
-  /**
-   * Export diagram as SVG
-   *
-   * @param {HTMLElement} container - Container element with the diagram
-   * @param {string} filename - Filename for the downloaded SVG
-   * @returns {boolean} Success status
-   */
-  exportDiagram: function(container, filename) {
-    const svg = container.querySelector('svg');
-    if (!svg) {
-      console.error('No SVG found in container');
-      return false;
-    }
 
-    try {
-      // Clone the SVG to avoid modifying the displayed one
-      const svgClone = svg.cloneNode(true);
-
-      // Reset any viewBox transform on the clone to export original view
-      const originalViewBox = svg.getAttribute('data-original-viewbox');
-      if (originalViewBox) {
-        svgClone.setAttribute('viewBox', originalViewBox);
-      }
-
-      // Ensure SVG has proper dimensions
-      if (!svgClone.hasAttribute('width') || !svgClone.hasAttribute('height')) {
-        const bbox = svg.getBBox();
-        svgClone.setAttribute('width', bbox.width);
-        svgClone.setAttribute('height', bbox.height);
-        if (!originalViewBox) {
-          svgClone.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
-        }
-      }
-
-      const svgData = new XMLSerializer().serializeToString(svgClone);
-      const blob = new Blob([svgData], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename || 'diagram.svg';
-      a.click();
-
-      URL.revokeObjectURL(url);
-      return true;
-    } catch (error) {
-      console.error('Error exporting diagram:', error);
-      return false;
-    }
-  },
 
   /**
    * Get current zoom level from native interactions

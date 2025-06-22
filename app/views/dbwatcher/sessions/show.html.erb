@@ -85,33 +85,7 @@ function sessionView() {
       });
     },
 
-    exportData() {
-      const data = [];
-      <% @tables_summary.each do |table_name, summary| %>
-        <% summary[:changes].each do |change| %>
-          data.push({
-            table: '<%= table_name %>',
-            operation: '<%= change['operation'] || change[:operation] || 'UNKNOWN' %>',
-            timestamp: '<%= change['timestamp'] || change[:timestamp] %>',
-            record_id: '<%= change['record_id'] || change[:record_id] %>',
-            changes: '<%= change['changes'].to_json if change['changes'] %>'
-          });
-        <% end %>
-      <% end %>
 
-      const csv = [
-        ['Table', 'Operation', 'Timestamp', 'Record ID', 'Changes'],
-        ...data.map(row => [row.table, row.operation, row.timestamp, row.record_id, row.changes])
-      ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `session-<%= @session.id %>-changes.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    },
 
     async loadDiagram(refresh = false) {
       // Don't reload if already loading
@@ -197,22 +171,7 @@ function sessionView() {
       }
     },
 
-    exportDiagram() {
-      if (!this.diagramContent) return;
 
-      if (window.MermaidHelper) {
-        // Use MermaidHelper for export
-        const container = document.getElementById('diagram-container');
-        const filename = `session-<%= @session.id %>-${this.selectedDiagramType}.svg`;
-        const success = window.MermaidHelper.exportDiagram(container, filename);
-
-        if (!success) {
-          alert('Failed to export diagram. Please try again.');
-        }
-      } else {
-        alert('Mermaid helper not available. Please try again.');
-      }
-    }
   }
 }
 </script>

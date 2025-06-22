@@ -5,7 +5,6 @@
   x-init="activeTab === 'diagrams' && !diagramContent && loadDiagram()"
   x-data="{
     viewMode: 'preview',
-    exporting: false,
     toggleViewMode() {
       this.viewMode = this.viewMode === 'preview' ? 'code' : 'preview';
     },
@@ -63,21 +62,7 @@
             <span x-text="viewMode === 'preview' ? 'View Code' : 'View Preview'"></span>
           </button>
 
-          <!-- Export Button -->
-          <button
-            x-show="diagramContent"
-            @click="exportDiagram(); exporting = true; setTimeout(() => exporting = false, 1000)"
-            class="<%= diagram_button_classes(:secondary) %>"
-            title="Export as SVG"
-          >
-            <svg x-show="!exporting" class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-            </svg>
-            <svg x-show="exporting" class="w-4 h-4 mr-1 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-            Export SVG
-          </button>
+
 
           <!-- Reset View Button -->
           <button

@@ -91,28 +91,5 @@ module Dbwatcher
         concat(content_tag(:span, "x-text": "viewMode === 'preview' ? 'View Code' : 'View Preview'"))
       end
     end
-
-    # Generate export button
-    def export_diagram_button
-      button_tag(
-        type: "button",
-        class: diagram_button_classes(:secondary),
-        "x-on:click": "exportDiagram()",
-        "x-show": "diagramContent",
-        title: "Export as SVG"
-      ) do
-        concat(content_tag(:svg, class: "w-4 h-4 mr-1", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24",
-                                 "x-show": "!exporting") do
-          tag.path(stroke_linecap: "round", stroke_linejoin: "round", stroke_width: "2",
-                   d: "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4")
-        end)
-        concat(content_tag(:svg, class: "w-4 h-4 mr-1 animate-spin", fill: "none", stroke: "currentColor",
-                                 viewBox: "0 0 24 24", "x-show": "exporting") do
-          tag.path(stroke_linecap: "round", stroke_linejoin: "round", stroke_width: "2",
-                   d: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15")
-        end)
-        concat("Export SVG")
-      end
-    end
   end
 end

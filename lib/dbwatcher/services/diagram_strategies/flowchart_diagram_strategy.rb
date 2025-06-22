@@ -125,12 +125,11 @@ module Dbwatcher
         # @return [Hash] generation options for flowchart
         def flowchart_generation_options
           {
-            layout_direction: @config[:layout_direction] || "TB",
+            layout_direction: @config[:layout_direction] || "LR",
             show_methods: @config[:show_methods] || false,
             max_models: @config[:max_models] || 30,
             apply_styling: @config[:apply_styling] != false,
-            include_isolated_nodes: @config[:include_isolated_nodes] != false,
-            show_legend: @config[:show_legend] == true
+            include_isolated_nodes: @config[:include_isolated_nodes] != false
           }
         end
 
@@ -220,11 +219,6 @@ module Dbwatcher
               type: "boolean",
               default: true,
               description: "Include models that have no associations with other models"
-            },
-            show_legend: {
-              type: "boolean",
-              default: false,
-              description: "Include a legend in the diagram"
             }
           }
         end
