@@ -72,16 +72,21 @@ module Dbwatcher
         @logger.debug "Building flowchart diagram with #{associations.size} associations"
 
         validate_associations!(associations)
-        config = @config.merge(options)
 
-        direction = config[:layout_direction] || "TD"
+        direction = options[:layout_direction] || "TD"
         content = ["flowchart #{direction}"]
-        content += build_node_definitions(associations, config)
-        content += build_edge_definitions(associations, config)
-        content += build_styling_definitions(config) if config[:apply_styling]
+
+        # Add node definitions
+        content.concat(build_node_definitions(associations, options))
+
+        # Add edge definitions
+        content.concat(build_edge_definitions(associations, options))
+
+        # Add styling if enabled
+        content.concat(build_styling_definitions(options)) if options[:apply_styling] != false
 
         result = content.join("\n")
-        validate_syntax!(result, "flowchart")
+        validate_syntax!(result, "flowchart") if @config[:validate_syntax]
         result
       end
 
@@ -164,11 +169,9 @@ module Dbwatcher
       def build_flowchart_diagram_from_dataset(dataset, options = {})
         @logger.debug "Building flowchart diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
 
-        legacy_associations = []
-
         # Add node-only entries for isolated entities
-        dataset.isolated_entities.each do |entity|
-          legacy_associations << {
+        legacy_associations = dataset.isolated_entities.map do |entity|
+          {
             type: "node_only",
             source_model: entity.name,
             source_table: entity.metadata[:table_name] || entity.id,
@@ -201,7 +204,7 @@ module Dbwatcher
       # @param entities [Array<BaseEntity>] isolated table entities
       # @param options [Hash] generation options
       # @return [String] Mermaid ERD syntax
-      def build_erd_diagram_with_tables(entities, options = {})
+      def build_erd_diagram_with_tables(entities, _options = {})
         @logger.debug "Building ERD diagram with #{entities.size} isolated tables"
 
         content = ["erDiagram"]
@@ -392,7 +395,7 @@ module Dbwatcher
       # @param relationships [Array<Hash>] database relationships
       # @param config [Hash] generation configuration
       # @return [Array<String>] relationship definition lines
-      def build_relationship_definitions(relationships, config)
+      def build_relationship_definitions(relationships, _config)
         lines = []
 
         relationships.each do |rel|
@@ -417,14 +420,40 @@ module Dbwatcher
       def build_node_definitions(associations, config)
         lines = []
         added_nodes = Set.new
+        models_with_associations = Set.new
 
+        # First pass: identify models with associations
+        associations.each do |assoc|
+          next unless valid_association?(assoc)
+
+          if assoc[:type] != "node_only" && assoc[:target_model]
+            models_with_associations << assoc[:source_model]
+            models_with_associations << assoc[:target_model]
+          end
+        end
+
+        # Second pass: add nodes with appropriate styling
         associations.each do |assoc|
           next unless valid_association?(assoc)
 
           # Add source node
           source_id = generate_node_id(assoc[:source_model])
           unless added_nodes.include?(source_id)
-            lines << "    #{source_id}[\"#{assoc[:source_model]}\"]"
+            # Use a more visually appealing node style
+            if config[:apply_styling] == false
+              lines << "    #{source_id}[\"#{assoc[:source_model]}\"]"
+            else
+              # Use different shapes based on model characteristics
+              lines << if models_with_associations.include?(assoc[:source_model])
+                         "    #{source_id}[\"#{assoc[:source_model]}\"]"
+                       else
+                         # Isolated models (no associations)
+                         "    #{source_id}((\"#{assoc[:source_model]}\"))"
+                       end
+
+              # Add custom styling for the node
+              lines << "    style #{source_id} fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1,font-weight:bold"
+            end
             added_nodes << source_id
           end
 
@@ -432,10 +461,15 @@ module Dbwatcher
           next unless assoc[:target_model] && assoc[:type] != "node_only"
 
           target_id = generate_node_id(assoc[:target_model])
-          unless added_nodes.include?(target_id)
+          next if added_nodes.include?(target_id)
+
+          if config[:apply_styling] == false
             lines << "    #{target_id}[\"#{assoc[:target_model]}\"]"
-            added_nodes << target_id
+          else
+            lines << "    #{target_id}[\"#{assoc[:target_model]}\"]"
+            lines << "    style #{target_id} fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1,font-weight:bold"
           end
+          added_nodes << target_id
         end
 
         lines
@@ -448,6 +482,7 @@ module Dbwatcher
       # @return [Array<String>] edge definition lines
       def build_edge_definitions(associations, config)
         lines = []
+        link_index = 0
 
         associations.each do |assoc|
           next unless should_add_edge?(assoc)
@@ -455,12 +490,52 @@ module Dbwatcher
           source_id = generate_node_id(assoc[:source_model])
           target_id = generate_node_id(assoc[:target_model])
           association_name = assoc[:association_name]
+          association_type = assoc[:type] || "unknown"
 
-          lines << if association_name
-                     "    #{source_id} -->|#{association_name}| #{target_id}"
-                   else
-                     "    #{source_id} --> #{target_id}"
-                   end
+          # Create a more descriptive label based on association type
+          label = if association_name
+                    case association_type
+                    when "has_many"
+                      "#{association_name} (has_many)"
+                    when "belongs_to"
+                      "#{association_name} (belongs_to)"
+                    when "has_one"
+                      "#{association_name} (has_one)"
+                    when "has_and_belongs_to_many"
+                      "#{association_name} (habtm)"
+                    when "has_many_through"
+                      "#{association_name} (through)"
+                    else
+                      association_name
+                    end
+                  else
+                    association_type
+                  end
+
+          # Add the edge with the improved label
+          lines << "    #{source_id} -->|\"#{label}\"| #{target_id}"
+
+          # Add styling for different association types
+          next unless config[:apply_styling] != false
+
+          edge_style = case association_type
+                       when "has_many"
+                         "stroke:#1e88e5,stroke-width:2px"
+                       when "belongs_to"
+                         "stroke:#43a047,stroke-width:1.5px,stroke-dasharray:5"
+                       when "has_one"
+                         "stroke:#7b1fa2,stroke-width:1.5px"
+                       when "has_and_belongs_to_many"
+                         "stroke:#ff9800,stroke-width:2px,stroke-dasharray:3"
+                       when "has_many_through"
+                         "stroke:#d81b60,stroke-width:2px,stroke-dasharray:5 2"
+                       else
+                         "stroke:#78909c,stroke-width:1px"
+                       end
+
+          # Use the current link_index and increment it for the next edge
+          lines << "    linkStyle #{link_index} #{edge_style}"
+          link_index += 1
         end
 
         lines
@@ -471,9 +546,58 @@ module Dbwatcher
       # @param config [Hash] generation configuration
       # @return [Array<String>] styling definition lines
       def build_styling_definitions(config)
-        [
-          "    classDef default fill:lightblue,stroke:blue,stroke-width:1px"
-        ]
+        lines = []
+
+        # Add basic styling
+        lines << "    classDef default fill:lightblue,stroke:blue,stroke-width:1px"
+
+        # Add legend if styling is enabled
+        if config[:apply_styling] != false && config[:show_legend] == true
+          # Create the legend as simple nodes without a subgraph
+          lines << "    %% Relationship Legend"
+          lines << "    legend_header[\"Relationship Types\"]"
+          lines << "    legend_has_many[\"has_many\"]"
+          lines << "    legend_belongs_to[\"belongs_to\"]"
+          lines << "    legend_has_one[\"has_one\"]"
+          lines << "    legend_habtm[\"has_and_belongs_to_many\"]"
+          lines << "    legend_through[\"has_many through\"]"
+
+          # Style the legend items directly without connections
+          lines << "    style legend_header fill:white,stroke:#ccc,stroke-width:1px,color:#666,font-weight:bold"
+          lines << "    style legend_has_many fill:white,stroke:#1e88e5,stroke-width:2px,color:#1565c0"
+          lines << "    style legend_belongs_to fill:white,stroke:#43a047,stroke-width:1.5px,stroke-dasharray:5,color:#2e7d32"
+          lines << "    style legend_has_one fill:white,stroke:#7b1fa2,stroke-width:1.5px,color:#4a148c"
+          lines << "    style legend_habtm fill:white,stroke:#ff9800,stroke-width:2px,stroke-dasharray:3,color:#e65100"
+          lines << "    style legend_through fill:white,stroke:#d81b60,stroke-width:2px,stroke-dasharray:5 2,color:#880e4f"
+
+          # Position the legend items in a vertical layout
+          lines << "    %% Legend positioning (vertical layout)"
+          lines << "    subgraph legend [\" \"]"
+          lines << "      direction TB"
+          lines << "      legend_header"
+          lines << "      legend_has_many"
+          lines << "      legend_belongs_to"
+          lines << "      legend_has_one"
+          lines << "      legend_habtm"
+          lines << "      legend_through"
+          lines << "    end"
+          lines << "    style legend fill:none,stroke:none"
+        end
+
+        lines
+      end
+
+      # Count the number of edges defined in the lines
+      #
+      # @param lines [Array<String>] content lines
+      # @return [Integer] number of edges
+      def count_edges_in_lines(lines)
+        edge_count = 0
+        lines.each do |line|
+          # Count lines that define edges (contain --- or -->)
+          edge_count += 1 if line.match?(/\s*\w+\s*(-+>|---)\s*\w+/)
+        end
+        edge_count
       end
 
       # Extract unique table names from relationships
@@ -538,7 +662,7 @@ module Dbwatcher
       #
       # @param relationship [Hash] relationship data
       # @return [String] Mermaid cardinality notation
-      def infer_erd_cardinality(relationship)
+      def infer_erd_cardinality(_relationship)
         # Default to one-to-many for foreign keys
         # Could be enhanced with more sophisticated detection
         "||--o{"
