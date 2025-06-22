@@ -2,7 +2,7 @@
 <div
   x-show="activeTab === 'diagrams'"
   class="h-full"
-  x-init="activeTab === 'diagrams' && !diagramContent && loadDiagram()"
+  x-init="$nextTick(() => { if (activeTab === 'diagrams' && !diagramContent && !loading) { setTimeout(() => loadDiagram(), 250); } })"
   x-data="{
     viewMode: 'preview',
     toggleViewMode() {
@@ -17,7 +17,7 @@
         .then(() => {
           const notification = document.createElement('div');
           notification.textContent = 'Copied to clipboard!';
-          notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg';
+          notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50';
           document.body.appendChild(notification);
           setTimeout(() => notification.remove(), 2000);
         })
@@ -25,6 +25,33 @@
     }
   }"
 >
+  <!-- Add responsive diagram styles -->
+  <style>
+    .mermaid-responsive-container {
+      width: 100% !important;
+      height: 100% !important;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mermaid-responsive-container svg {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+      max-height: none !important;
+      object-fit: contain;
+    }
+
+    .mermaid-responsive-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+  </style>
+
   <!-- Diagram Container with full-height layout -->
   <div class="flex flex-col h-full" style="<%= diagram_container_css_variables %>">
     <!-- Diagram Controls -->
@@ -61,8 +88,6 @@
             </svg>
             <span x-text="viewMode === 'preview' ? 'View Code' : 'View Preview'"></span>
           </button>
-
-
 
           <!-- Reset View Button -->
           <button
@@ -147,9 +172,14 @@
         <div class="p-4 text-red-600 bg-red-50 border border-red-200 rounded m-4 max-w-lg">
           <p class="font-medium mb-2">Error rendering diagram</p>
           <p class="text-sm mb-2" x-text="diagramError"></p>
-          <button @click="diagramError = null; loadDiagram()" class="<%= diagram_button_classes(:primary) %> bg-red-600 hover:bg-red-700">
-            Try Again
-          </button>
+          <div class="flex gap-2">
+            <button @click="diagramError = null; loadDiagram(true)" class="<%= diagram_button_classes(:primary) %> bg-red-600 hover:bg-red-700">
+              Try Again
+            </button>
+            <button @click="diagramError = null; selectedDiagramType = selectedDiagramType === 'database_tables' ? 'model_associations' : 'database_tables'; loadDiagram()" class="<%= diagram_button_classes(:secondary) %>">
+              Try Different Type
+            </button>
+          </div>
         </div>
       </div>
     </div>

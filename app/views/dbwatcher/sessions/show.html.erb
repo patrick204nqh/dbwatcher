@@ -47,9 +47,16 @@ function sessionView() {
       this.activeTab = tab;
       this.updateURL(tab);
 
-      // Auto-generate diagram when switching to diagrams tab
+      // Auto-generate diagram when switching to diagrams tab with improved timing
       if (tab === 'diagrams' && !this.diagramContent && !this.loading) {
-        this.loadDiagram();
+        // Use nextTick and timeout to ensure DOM is ready
+        this.$nextTick(() => {
+          setTimeout(() => {
+            if (this.activeTab === 'diagrams' && !this.diagramContent && !this.loading) {
+              this.loadDiagram();
+            }
+          }, 100);
+        });
       }
     },
 
@@ -84,8 +91,6 @@ function sessionView() {
         this.tableColumns[tableName][column] = false;
       });
     },
-
-
 
     async loadDiagram(refresh = false) {
       // Don't reload if already loading
@@ -143,10 +148,18 @@ function sessionView() {
     async renderMermaid() {
       if (!this.diagramContent) return;
 
+      // Wait for container to be available
+      await this.waitForContainer();
+
       const container = document.getElementById('diagram-container');
-      if (!container) return;
+      if (!container) {
+        throw new Error('Diagram container not found');
+      }
 
       try {
+        // Ensure MermaidHelper is available with retry logic
+        await this.ensureMermaidHelper();
+
         // Use MermaidHelper if available
         if (window.MermaidHelper) {
           await window.MermaidHelper.renderDiagram(
@@ -155,12 +168,50 @@ function sessionView() {
             this.selectedDiagramType
           );
         } else {
-          throw new Error('Mermaid helper not available');
+          throw new Error('Mermaid helper not available after initialization');
         }
       } catch (error) {
         console.error('Mermaid rendering error:', error);
         this.diagramError = error.message || 'Could not render diagram';
+
+        // Try recovery on first load failure
+        if (!refresh && error.message.includes('Mermaid')) {
+          console.log('Attempting diagram recovery after Mermaid error...');
+          setTimeout(() => {
+            this.diagramError = null;
+            this.loadDiagram(true);
+          }, 1000);
+        }
       }
+    },
+
+    // Wait for diagram container to be available in DOM
+    async waitForContainer(maxWait = 5000) {
+      const startTime = Date.now();
+
+      while (Date.now() - startTime < maxWait) {
+        const container = document.getElementById('diagram-container');
+        if (container && container.offsetParent !== null) {
+          return container;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      throw new Error('Diagram container not available after waiting');
+    },
+
+    // Ensure MermaidHelper is loaded and available
+    async ensureMermaidHelper(maxRetries = 3) {
+      for (let i = 0; i < maxRetries; i++) {
+        if (window.MermaidHelper && typeof window.MermaidHelper.renderDiagram === 'function') {
+          return true;
+        }
+
+        console.log(`Waiting for MermaidHelper (attempt ${i + 1}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
+      }
+
+      throw new Error('MermaidHelper not available after retries');
     },
 
     resetView() {
@@ -170,8 +221,6 @@ function sessionView() {
         window.MermaidHelper.resetView(container);
       }
     },
-
-
   }
 }
 </script>

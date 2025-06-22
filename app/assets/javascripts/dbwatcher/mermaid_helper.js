@@ -6,6 +6,8 @@
  */
 
 const MermaidHelper = {
+  initialized: false,
+
   /**
    * Initialize Mermaid with default configuration
    *
@@ -13,14 +15,24 @@ const MermaidHelper = {
    */
   initialize: function() {
     return new Promise((resolve, reject) => {
+      // If already initialized, resolve immediately
+      if (this.initialized) {
+        resolve();
+        return;
+      }
+
       if (window.mermaid) {
         try {
-          // Configure mermaid globally with baseline settings
+          // Configure mermaid globally with responsive settings
           window.mermaid.initialize({
             startOnLoad: false, // We'll manually trigger rendering
             theme: 'neutral',
             securityLevel: 'loose',
             logLevel: 'warn',
+
+            // Global responsive settings
+            useMaxWidth: true,
+            htmlLabels: true,
 
             // Configure flowchart for model associations
             flowchart: {
@@ -32,16 +44,19 @@ const MermaidHelper = {
               rankSpacing: 80
             },
 
-            // Configure ER diagrams for database tables
+            // Configure ER diagrams for database tables with responsive sizing
             er: {
               useMaxWidth: true,
               layoutDirection: 'LR',
               entityPadding: 15,
-              minEntityWidth: 100
+              minEntityWidth: 100,
+              fontSize: 14,
+              diagramPadding: 20
             }
           });
 
-          console.log('Mermaid initialized successfully');
+          this.initialized = true;
+          console.log('Mermaid initialized successfully with responsive settings');
           resolve();
         } catch (e) {
           console.error('Failed to initialize Mermaid:', e);
@@ -100,98 +115,68 @@ const MermaidHelper = {
       }
 
       try {
-        // Ensure mermaid is initialized
-        await this.initialize();
+        // Ensure mermaid is initialized with timeout
+        const initPromise = this.initialize();
+        const timeoutPromise = new Promise((_, timeoutReject) => {
+          setTimeout(() => timeoutReject(new Error('Mermaid initialization timeout')), 10000);
+        });
+
+        await Promise.race([initPromise, timeoutPromise]);
 
         // Clear the container
         container.innerHTML = '';
 
-        // Create a wrapper with unique ID
-        const wrapperId = `diagram-wrapper-${Date.now()}`;
+        // Create a responsive wrapper
         const wrapper = document.createElement('div');
-        wrapper.id = wrapperId;
-        wrapper.className = 'mermaid-wrapper';
+        wrapper.className = 'mermaid-responsive-wrapper';
+        wrapper.style.cssText = 'width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;';
         container.appendChild(wrapper);
 
-        // Create a fresh mermaid element
+        // Create mermaid element with responsive configuration
         const diagramDiv = document.createElement('div');
         diagramDiv.className = 'mermaid';
+        diagramDiv.style.cssText = 'width: 100%; height: 100%; max-width: none;';
 
-        // Special handling for model association diagrams
-        const isModelAssociationDiagram = diagramType === 'model_associations';
-
-        if (isModelAssociationDiagram) {
-          // For model associations, ensure we're using flowchart syntax
-          if (!content.includes('flowchart')) {
-            // If not already containing flowchart, modify it
-            diagramDiv.textContent = content.replace(/^graph LR/, 'flowchart LR');
-          } else {
-            diagramDiv.textContent = content;
-          }
-        } else {
-          diagramDiv.textContent = content;
-        }
-
+        // Clean content for better rendering
+        const cleanContent = this.prepareContent(content, diagramType);
+        diagramDiv.textContent = cleanContent;
         wrapper.appendChild(diagramDiv);
 
-        // Reset Mermaid to avoid any state issues
-        if (typeof window.mermaid.reset === 'function') {
-          window.mermaid.reset();
-        }
-
-        // Configure specific settings based on diagram type
-        const settings = this.getSettingsForDiagramType(diagramType);
-
-        // Initialize with our settings
-        window.mermaid.initialize(settings);
+        // Configure responsive settings for this specific diagram
+        const responsiveSettings = this.getResponsiveSettings(diagramType);
+        window.mermaid.initialize(responsiveSettings);
 
         try {
-          // Try modern API approach first
-          const result = await window.mermaid.run({
+          // Use modern API with responsive configuration
+          await window.mermaid.run({
             querySelector: '.mermaid',
             nodes: [diagramDiv]
           });
 
-          // Enable native SVG interactions after rendering
-          this.enableInteractions(container);
+          // Apply responsive styling after rendering
+          this.applyResponsiveStyling(container);
 
-          console.log('Diagram rendered successfully using modern API');
-          resolve({ success: true, method: 'modern-api' });
+          console.log('Diagram rendered successfully with responsive sizing');
+          resolve({ success: true, method: 'responsive-modern-api' });
         } catch (modernError) {
-          console.warn('Modern API rendering failed, trying alternative methods:', modernError);
+          console.warn('Modern API rendering failed, trying fallback:', modernError);
 
           try {
-            // Try ID-based rendering
+            // Fallback to render method
             const id = `mermaid-${Date.now()}`;
             diagramDiv.id = id;
 
             const { svg } = await window.mermaid.render(id, diagramDiv.textContent);
             wrapper.innerHTML = svg;
 
-            // Enable native SVG interactions after rendering
-            this.enableInteractions(container);
+            // Apply responsive styling after rendering
+            this.applyResponsiveStyling(container);
 
-            console.log('Diagram rendered successfully using ID-based rendering');
-            resolve({ success: true, method: 'id-based' });
-          } catch (idError) {
-            console.error('ID-based rendering also failed:', idError);
-
-            // One last attempt with direct parsing - simplest approach
-            try {
-              window.mermaid.parse(diagramDiv.textContent);
-              console.log('Parsing successful, letting mermaid handle rendering');
-
-              // If parsing succeeds but rendering fails, we'll try the manual approach
-              wrapper.innerHTML = '<div class="mermaid">' + diagramDiv.textContent + '</div>';
-              window.mermaid.init(undefined, wrapper.querySelectorAll('.mermaid'));
-
-              // Enable native SVG interactions after rendering
-              setTimeout(() => this.enableInteractions(container), 100);
-
-              resolve({ success: true, method: 'init' });
-            } catch (parseError) {
-              reject(new Error(`Cannot parse diagram: ${parseError.message}`));
-            }
+            console.log('Diagram rendered successfully using fallback method');
+            resolve({ success: true, method: 'responsive-fallback' });
+          } catch (fallbackError) {
+            console.error('All rendering methods failed:', fallbackError);
+            reject(new Error(`Diagram rendering failed: ${fallbackError.message}`));
           }
         }
       } catch (error) {
@@ -202,179 +187,106 @@ const MermaidHelper = {
   },
 
   /**
-   * Enable native SVG interactions on the rendered diagram
+   * Prepare content for optimal rendering
    *
-   * @param {HTMLElement} container - Container element with the diagram
-   * @returns {Object|null} Interaction controller or null if failed
+   * @param {string} content - Raw diagram content
+   * @param {string} diagramType - Type of diagram
+   * @returns {string} Cleaned content
    */
-  enableInteractions: function(container) {
-    if (!window.SvgInteractions) {
-      console.warn('SvgInteractions not available, interactions will be limited');
-      return null;
-    }
+  prepareContent: function(content, diagramType) {
+    // Remove any existing init configurations that might conflict
+    let cleanContent = content.replace(/%%\{init:.*?\}%%\n?/g, '');
 
-    try {
-      const controller = window.SvgInteractions.enable(container, {
-        enableZoom: true,
-        enablePan: true,
-        enableKeyboard: true,
-        enableTouch: true,
-        minZoom: 0.1,
-        maxZoom: 5,
-        zoomStep: 0.1
-      });
-
-      if (controller) {
-        // Store controller on container for external access
-        container._svgController = controller;
-
-        // Add visual feedback for interactions
-        this.addInteractionFeedback(container);
-
-        console.log('Native SVG interactions enabled');
+    // Special handling for model association diagrams
+    if (diagramType === 'model_associations') {
+      if (!cleanContent.includes('flowchart') && !cleanContent.includes('graph')) {
+        cleanContent = 'flowchart LR\n' + cleanContent;
       }
-
-      return controller;
-    } catch (error) {
-      console.error('Failed to enable SVG interactions:', error);
-      return null;
+      // Replace graph with flowchart for better responsive behavior
+      cleanContent = cleanContent.replace(/^graph\s+/, 'flowchart ');
     }
+
+    return cleanContent.trim();
   },
 
   /**
-   * Add visual feedback for interactions
-   *
-   * @param {HTMLElement} container - Container element
-   */
-  addInteractionFeedback: function(container) {
-    // Add zoom level indicator
-    const indicator = document.createElement('div');
-    indicator.className = 'zoom-indicator';
-    indicator.style.cssText = `
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-family: monospace;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s;
-      z-index: 1000;
-    `;
-    indicator.textContent = '100%';
-
-    // Make container relative if not already
-    if (getComputedStyle(container).position === 'static') {
-      container.style.position = 'relative';
-    }
-
-    container.appendChild(indicator);
-
-    // Listen for transform changes to update indicator
-    container.addEventListener('svgTransformChanged', (e) => {
-      const { zoom } = e.detail;
-      indicator.textContent = `${Math.round(zoom * 100)}%`;
-
-      // Show indicator briefly
-      indicator.style.opacity = '1';
-      clearTimeout(indicator._hideTimeout);
-      indicator._hideTimeout = setTimeout(() => {
-        indicator.style.opacity = '0';
-      }, 1500);
-    });
-
-    // Add keyboard hint
-    const hint = document.createElement('div');
-    hint.className = 'interaction-hint';
-    hint.style.cssText = `
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-family: sans-serif;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s;
-      z-index: 1000;
-      max-width: 200px;
-      line-height: 1.3;
-    `;
-    hint.innerHTML = `
-      <div><strong>Mouse:</strong> Wheel=zoom, Drag=pan</div>
-      <div><strong>Keys:</strong> +/- zoom, 0 reset, arrows pan</div>
-      <div><strong>Touch:</strong> Pinch zoom, drag pan</div>
-    `;
-
-    container.appendChild(hint);
-
-    // Show hint on focus/hover
-    const svg = container.querySelector('svg');
-    if (svg) {
-      const showHint = () => {
-        hint.style.opacity = '1';
-      };
-      const hideHint = () => {
-        hint.style.opacity = '0';
-      };
-
-      svg.addEventListener('focus', showHint);
-      svg.addEventListener('blur', hideHint);
-      container.addEventListener('mouseenter', showHint);
-      container.addEventListener('mouseleave', hideHint);
-    }
-  },
-
-  /**
-   * Get Mermaid settings for a specific diagram type
+   * Get responsive settings for specific diagram type
    *
    * @param {string} diagramType - Type of diagram
-   * @returns {Object} Mermaid configuration settings
+   * @returns {Object} Mermaid configuration
    */
-  getSettingsForDiagramType: function(diagramType) {
+  getResponsiveSettings: function(diagramType) {
     const baseSettings = {
       startOnLoad: false,
       theme: 'neutral',
       securityLevel: 'loose',
       logLevel: 'warn',
-      themeVariables: {
-        fontSize: '14px',
-        fontFamily: 'Consolas, Monaco, Lucida Console, monospace'
-      }
+      useMaxWidth: true,
+      htmlLabels: true,
+      maxTextSize: 90000,
+      maxEdges: 1000
     };
 
-    // Add type-specific settings
     if (diagramType === 'model_associations') {
       return {
         ...baseSettings,
         flowchart: {
-          htmlLabels: true,
           useMaxWidth: true,
+          htmlLabels: true,
           curve: 'linear',
-          nodeSpacing: 50,
-          rankSpacing: 100
+          diagramPadding: 20,
+          nodeSpacing: 60,
+          rankSpacing: 100,
+          padding: 20
         }
       };
     } else {
-      // Default to ER diagram settings
+      // Database tables (ER diagram)
       return {
         ...baseSettings,
         er: {
           useMaxWidth: true,
           layoutDirection: 'LR',
-          minEntityWidth: 100,
-          minEntityHeight: 75
+          entityPadding: 20,
+          minEntityWidth: 120,
+          fontSize: 14,
+          diagramPadding: 30
         }
       };
     }
   },
+
+  /**
+   * Apply responsive styling to rendered SVG
+   *
+   * @param {HTMLElement} container - Container element
+   */
+  applyResponsiveStyling: function(container) {
+    const svg = container.querySelector('svg');
+    if (!svg) return;
+
+    // Remove fixed dimensions and apply responsive styling
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    svg.style.cssText = `
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+      max-height: none !important;
+      display: block;
+    `;
+
+    // Ensure proper viewBox for scaling
+    if (!svg.getAttribute('viewBox')) {
+      const bbox = svg.getBBox();
+      svg.setAttribute('viewBox', `${bbox.x - 20} ${bbox.y - 20} ${bbox.width + 40} ${bbox.height + 40}`);
+    }
+
+    // Add responsive container class
+    container.classList.add('mermaid-responsive-container');
+  },
+
+
 
 
 
@@ -385,10 +297,7 @@ const MermaidHelper = {
    * @returns {number} Current zoom level (1.0 = 100%)
    */
   getCurrentZoom: function(container) {
-    const controller = container._svgController;
-    if (controller) {
-      return controller.getState().zoom;
-    }
+    // With native Mermaid responsive, zoom is handled by browser
     return 1.0;
   },
 
@@ -399,10 +308,8 @@ const MermaidHelper = {
    * @param {number} zoomLevel - Zoom level (1.0 = 100%)
    */
   setZoom: function(container, zoomLevel) {
-    const controller = container._svgController;
-    if (controller) {
-      controller.zoomTo(zoomLevel);
-    }
+    // With native Mermaid responsive, zoom is handled by browser
+    console.log('Zoom is handled natively by Mermaid responsive settings');
   },
 
   /**
@@ -411,10 +318,8 @@ const MermaidHelper = {
    * @param {HTMLElement} container - Container element with the diagram
    */
   resetView: function(container) {
-    const controller = container._svgController;
-    if (controller) {
-      controller.reset();
-    }
+    // With native Mermaid responsive, reset means reloading
+    console.log('View reset is handled by diagram reload');
   },
 
   /**
