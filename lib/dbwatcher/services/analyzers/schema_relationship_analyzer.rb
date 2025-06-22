@@ -27,7 +27,7 @@ module Dbwatcher
         #
         # @param context [Hash] analysis context
         # @return [Array<Hash>] array of relationship data
-        def analyze(context)
+        def analyze(_context)
           return [] unless schema_available?
 
           Rails.logger.debug "SchemaRelationshipAnalyzer: Starting analysis with #{tables_to_analyze.length} tables"
@@ -140,7 +140,6 @@ module Dbwatcher
         # @return [Boolean] true if schema can be analyzed
         def schema_available?
           defined?(ActiveRecord::Base) &&
-            connection &&
             connection.respond_to?(:foreign_keys) &&
             connection.respond_to?(:tables)
         end

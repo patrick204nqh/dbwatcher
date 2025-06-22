@@ -46,7 +46,7 @@ module Dbwatcher
         #
         # @param context [Hash] analysis context
         # @return [Array<Hash>] array of association data
-        def analyze(context)
+        def analyze(_context)
           return [] unless models_available?
 
           Rails.logger.debug "ModelAssociationAnalyzer: Starting analysis with #{models.length} models"
@@ -117,10 +117,8 @@ module Dbwatcher
             )
             dataset.add_entity(entity)
             model_entities[association[:target_model]] = entity
-          end
 
-          # Create relationships
-          raw_data.each do |association|
+            # Create relationships
             next if association[:type] == "node_only" || !association[:target_model]
 
             source_id = association[:source_table] || association[:source_model].downcase
@@ -518,8 +516,6 @@ module Dbwatcher
             analyzing_scope: session_tables.any? ? "session" : "global"
           }
         end
-
-        private
 
         # Implement required abstract methods from BaseAnalyzer
 

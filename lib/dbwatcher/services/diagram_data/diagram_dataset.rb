@@ -235,7 +235,7 @@ module Dbwatcher
 
           # Load entities
           entities_data = hash[:entities] || hash["entities"] || {}
-          entities_data.each do |_id, entity_data|
+          entities_data.each_value do |entity_data|
             entity = BaseEntity.from_h(entity_data)
             dataset.add_entity(entity)
           end

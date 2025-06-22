@@ -85,7 +85,7 @@ module Dbwatcher
         #
         # @param context [Hash] analysis context
         # @return [Boolean] true if analyzer can handle context
-        def can_handle?(context)
+        def can_handle?(_context)
           # Default implementation - subclasses should override
           true
         end

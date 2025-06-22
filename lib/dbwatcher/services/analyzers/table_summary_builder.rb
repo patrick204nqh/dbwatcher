@@ -44,7 +44,7 @@ module Dbwatcher
           tables.reject! { |_, data| data[:total_operations].zero? }
 
           # Convert operation counts to string keys for view compatibility
-          tables.each do |_, data|
+          tables.each_value do |data|
             data[:operations] = {
               "INSERT" => data[:operations][:insert] || 0,
               "UPDATE" => data[:operations][:update] || 0,
@@ -117,7 +117,7 @@ module Dbwatcher
           end
 
           # Track all columns seen in this table
-          sample_data.keys.each { |key| table_data[:columns].add(key.to_s) }
+          sample_data.each_key { |key| table_data[:columns].add(key.to_s) }
         end
 
         # Extract operation type from change data
