@@ -17,4 +17,4 @@ gem "sqlite3", "~> 1.4"
 
 gem "brakeman", "~> 6.0"
 gem "bundler-audit", "~> 0.9"
-gem "rubocop", "~> 1.21"
+gem "rubocop", "~> 1.77"
