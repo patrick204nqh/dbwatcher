@@ -14,7 +14,7 @@ module Dbwatcher
       @mount_path = "/dbwatcher"
 
       # SQL Query tracking
-      @track_queries = true
+      @track_queries = false
       @slow_query_threshold = 100.0 # milliseconds
       @max_query_logs_per_day = 10_000
     end

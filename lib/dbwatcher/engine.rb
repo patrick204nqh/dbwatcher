@@ -30,6 +30,10 @@ module Dbwatcher
     initializer "dbwatcher.assets" do |app|
       app.config.assets.paths << root.join("app", "assets", "stylesheets")
       app.config.assets.paths << root.join("app", "assets", "javascripts")
+      app.config.assets.precompile += %w[
+        dbwatcher/svg_interactions.js
+        dbwatcher/mermaid_helper.js
+      ]
     end
   end
 end
