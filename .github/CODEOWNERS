@@ -1,0 +1,39 @@
+# Global ownership - All files default to the main maintainer
+* @patrick204nqh
+
+# Documentation
+/README.md @patrick204nqh
+/CHANGELOG.md @patrick204nqh
+/LICENSE.txt @patrick204nqh
+/docs/ @patrick204nqh
+
+# Gem specification and build files
+/dbwatcher.gemspec @patrick204nqh
+/Gemfile @patrick204nqh
+/Gemfile.lock @patrick204nqh
+/Rakefile @patrick204nqh
+
+# Application code
+/app/ @patrick204nqh
+
+# Core library code
+/lib/ @patrick204nqh
+
+# Type definitions (RBS)
+/sig/ @patrick204nqh
+
+# Tests
+/spec/ @patrick204nqh
+
+# Configuration files
+/config/ @patrick204nqh
+
+# CI/CD and automation
+/.github/ @patrick204nqh
+
+# Scripts and tooling
+/bin/ @patrick204nqh
+/scripts/ @patrick204nqh
+
+# Examples
+/examples/ @patrick204nqh

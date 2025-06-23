@@ -9,8 +9,6 @@ updates:
       time: "04:00"
       timezone: "America/New_York"
     open-pull-requests-limit: 10
-    reviewers:
-      - "patrick204nqh"
     assignees:
       - "patrick204nqh"
     commit-message:
