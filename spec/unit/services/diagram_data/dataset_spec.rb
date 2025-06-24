@@ -2,9 +2,9 @@
 
 require "rails_helper"
 
-RSpec.describe Dbwatcher::Services::DiagramData::DiagramDataset do
+RSpec.describe Dbwatcher::Services::DiagramData::Dataset do
   let(:user_entity) do
-    Dbwatcher::Services::DiagramData::BaseEntity.new(
+    Dbwatcher::Services::DiagramData::Entity.new(
       id: "users",
       name: "User",
       type: "table"
@@ -12,7 +12,7 @@ RSpec.describe Dbwatcher::Services::DiagramData::DiagramDataset do
   end
 
   let(:order_entity) do
-    Dbwatcher::Services::DiagramData::BaseEntity.new(
+    Dbwatcher::Services::DiagramData::Entity.new(
       id: "orders",
       name: "Order",
       type: "table"
@@ -63,11 +63,11 @@ RSpec.describe Dbwatcher::Services::DiagramData::DiagramDataset do
     it "raises error for non-entity object" do
       expect do
         dataset.add_entity("not an entity")
-      end.to raise_error(ArgumentError, "Entity must be a BaseEntity instance")
+      end.to raise_error(ArgumentError, "Entity must be an Entity instance")
     end
 
     it "raises error for invalid entity" do
-      invalid_entity = Dbwatcher::Services::DiagramData::BaseEntity.new(
+      invalid_entity = Dbwatcher::Services::DiagramData::Entity.new(
         id: "",
         name: "Invalid"
       )
@@ -80,7 +80,7 @@ RSpec.describe Dbwatcher::Services::DiagramData::DiagramDataset do
     it "overwrites entity with same ID" do
       dataset.add_entity(user_entity)
 
-      updated_entity = Dbwatcher::Services::DiagramData::BaseEntity.new(
+      updated_entity = Dbwatcher::Services::DiagramData::Entity.new(
         id: "users",
         name: "Updated User",
         type: "table"
@@ -228,7 +228,7 @@ RSpec.describe Dbwatcher::Services::DiagramData::DiagramDataset do
   describe "#relationships_for" do
     let(:dataset) { described_class.new }
     let(:product_entity) do
-      Dbwatcher::Services::DiagramData::BaseEntity.new(
+      Dbwatcher::Services::DiagramData::Entity.new(
         id: "products",
         name: "Product",
         type: "table"
@@ -290,7 +290,7 @@ RSpec.describe Dbwatcher::Services::DiagramData::DiagramDataset do
     end
 
     it "returns false when entity is invalid" do
-      invalid_entity = Dbwatcher::Services::DiagramData::BaseEntity.new(
+      invalid_entity = Dbwatcher::Services::DiagramData::Entity.new(
         id: "",
         name: "Invalid"
       )
@@ -319,7 +319,7 @@ RSpec.describe Dbwatcher::Services::DiagramData::DiagramDataset do
     end
 
     it "returns errors for invalid entities" do
-      invalid_entity = Dbwatcher::Services::DiagramData::BaseEntity.new(
+      invalid_entity = Dbwatcher::Services::DiagramData::Entity.new(
         id: "",
         name: "Invalid"
       )
@@ -362,7 +362,7 @@ RSpec.describe Dbwatcher::Services::DiagramData::DiagramDataset do
   describe "#isolated_entities" do
     let(:dataset) { described_class.new }
     let(:isolated_entity) do
-      Dbwatcher::Services::DiagramData::BaseEntity.new(
+      Dbwatcher::Services::DiagramData::Entity.new(
         id: "isolated",
         name: "Isolated",
         type: "table"
@@ -388,7 +388,7 @@ RSpec.describe Dbwatcher::Services::DiagramData::DiagramDataset do
   describe "#connected_entities" do
     let(:dataset) { described_class.new }
     let(:isolated_entity) do
-      Dbwatcher::Services::DiagramData::BaseEntity.new(
+      Dbwatcher::Services::DiagramData::Entity.new(
         id: "isolated",
         name: "Isolated",
         type: "table"

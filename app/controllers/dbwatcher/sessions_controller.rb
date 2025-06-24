@@ -40,27 +40,14 @@ module Dbwatcher
         diagram_data = Rails.cache.fetch(cache_key, expires_in: 1.hour) do
           Rails.logger.info "SessionsController#diagram: Cache miss, generating fresh diagram for type: #{diagram_type}"
 
-          # For model associations, add extra debugging
-          if diagram_type == "model_associations"
-            Rails.logger.info "SessionsController#diagram: Generating model associations diagram"
-
-            # Check if we can get model associations directly
-            dataset = Storage.sessions.model_associations(params[:id])
-            if dataset.respond_to?(:entities) && dataset.respond_to?(:relationships)
-              Rails.logger.info "SessionsController#diagram: Found dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
-            else
-              Rails.logger.info "SessionsController#diagram: Found dataset: #{dataset.class.name}"
-            end
-          end
-
-          # Generate fresh diagram
+          # Generate diagram using the diagram system
           result = Storage.sessions.diagram_data(params[:id], diagram_type)
 
           # Log the result for debugging
           if result[:error]
             Rails.logger.error "SessionsController#diagram: Error in diagram generation: #{result[:error]}"
           else
-            Rails.logger.info "SessionsController#diagram: Successfully generated #{diagram_type} diagram with #{result[:content]&.lines&.count || 0} lines"
+            Rails.logger.info "SessionsController#diagram: Successfully generated #{diagram_type} diagram"
           end
 
           result
@@ -70,7 +57,7 @@ module Dbwatcher
           Rails.logger.error "SessionsController#diagram: Error generating diagram: #{diagram_data[:error]}"
           render json: { error: diagram_data[:error] }, status: :unprocessable_entity
         else
-          Rails.logger.info "SessionsController#diagram: Successfully generated diagram with #{diagram_data[:content]&.lines&.count || 0} lines"
+          Rails.logger.info "SessionsController#diagram: Successfully generated diagram"
           render json: diagram_data
         end
       rescue StandardError => e

@@ -2,17 +2,16 @@
 
 module Dbwatcher
   module Services
-    module Analyzers
+    module DiagramAnalyzers
       # Analyzes relationships based on database schema foreign keys
       #
       # This service examines the actual database schema to detect foreign key
       # relationships between tables that were involved in a session.
       #
       # @example
-      #   analyzer = SchemaRelationshipAnalyzer.new(session)
-      #   relationships = analyzer.call
-      #   # => [{ from_table: "orders", to_table: "users", constraint_name: "fk_orders_user_id" }]
-      class SchemaRelationshipAnalyzer < BaseAnalyzer
+      #   analyzer = ForeignKeyAnalyzer.new(session)
+      #   dataset = analyzer.call
+      class ForeignKeyAnalyzer < BaseAnalyzer
         # Initialize with session
         #
         # @param session [Session] session to analyze (optional for global analysis)
@@ -23,38 +22,37 @@ module Dbwatcher
           super()
         end
 
-        # New standardized interface: analyze schema relationships
+        # Analyze schema relationships
         #
         # @param context [Hash] analysis context
         # @return [Array<Hash>] array of relationship data
         def analyze(_context)
           return [] unless schema_available?
 
-          Rails.logger.debug "SchemaRelationshipAnalyzer: Starting analysis with #{tables_to_analyze.length} tables"
+          Rails.logger.debug "ForeignKeyAnalyzer: Starting analysis with #{tables_to_analyze.length} tables"
           relationships = extract_foreign_key_relationships
 
           # Log some sample data to help with debugging
           if relationships.any?
             sample_relationship = relationships.first
-            Rails.logger.debug "SchemaRelationshipAnalyzer: Sample relationship - " \
+            Rails.logger.debug "ForeignKeyAnalyzer: Sample relationship - " \
                                "from_table: #{sample_relationship[:from_table]}, " \
                                "to_table: #{sample_relationship[:to_table]}, " \
                                "type: #{sample_relationship[:type]}"
           else
-            Rails.logger.info "SchemaRelationshipAnalyzer: No relationships found"
+            Rails.logger.info "ForeignKeyAnalyzer: No relationships found"
           end
 
           relationships
         end
 
-        # Transform raw relationship data to DiagramDataset
+        # Transform raw relationship data to Dataset
         #
         # @param raw_data [Array<Hash>] raw relationship data
-        # @return [DiagramData::DiagramDataset] standardized dataset
+        # @return [DiagramData::Dataset] standardized dataset
         def transform_to_dataset(raw_data)
           dataset = create_empty_dataset
           dataset.metadata.merge!({
-                                    analyzer_type: "schema_relationships",
                                     total_relationships: raw_data.length,
                                     tables_analyzed: tables_to_analyze.length
                                   })
@@ -99,7 +97,7 @@ module Dbwatcher
 
             # Skip self-referential relationships (source and target are the same)
             if relationship[:from_table] == relationship[:to_table]
-              Rails.logger.info "SchemaRelationshipAnalyzer: Skipping self-referential relationship for #{relationship[:from_table]}"
+              Rails.logger.info "ForeignKeyAnalyzer: Skipping self-referential relationship for #{relationship[:from_table]}"
               next
             end
 
@@ -124,11 +122,24 @@ module Dbwatcher
           dataset
         end
 
-        # Analyzer capabilities
+        # Get analyzer type
         #
-        # @return [Array<Symbol>] capabilities
-        def capabilities
-          %i[schema_relationships foreign_keys database_constraints]
+        # @return [String] analyzer type identifier
+        def analyzer_type
+          "foreign_key"
+        end
+
+        protected
+
+        # Build analysis context for this analyzer
+        #
+        # @return [Hash] analysis context
+        def analysis_context
+          {
+            session: session,
+            session_tables: session_tables,
+            tables_to_analyze: tables_to_analyze
+          }
         end
 
         private
@@ -198,64 +209,37 @@ module Dbwatcher
         # @return [Array] foreign key objects
         def get_foreign_keys(table_name)
           connection.foreign_keys(table_name)
-        rescue StandardError
+        rescue StandardError => e
+          Rails.logger.warn "ForeignKeyAnalyzer: Could not get foreign keys for #{table_name}: #{e.message}"
           []
         end
 
         # Check if target table is in analysis scope
         #
         # @param target_table [String] target table name
-        # @return [Boolean] true if target should be included
+        # @return [Boolean] true if target table should be included
         def target_table_in_scope?(target_table)
           # If analyzing session, both tables must be in session
           # If analyzing globally, include all
           session_tables.empty? || session_tables.include?(target_table)
         end
 
-        # Build relationship data from foreign key
+        # Build relationship hash from foreign key
         #
         # @param table_name [String] source table name
         # @param foreign_key [Object] foreign key object
         # @return [Hash] relationship data
         def build_schema_relationship(table_name, foreign_key)
           {
-            type: "schema_foreign_key",
             from_table: table_name,
             to_table: foreign_key.to_table,
-            from_column: foreign_key.column,
-            to_column: foreign_key.primary_key || "id",
+            type: "foreign_key",
             constraint_name: foreign_key.name,
+            from_column: foreign_key.column,
+            to_column: foreign_key.primary_key,
             on_delete: foreign_key.on_delete,
             on_update: foreign_key.on_update
           }
-        end
-
-        # Build context for logging
-        #
-        # @return [Hash] analysis context
-        def analysis_context
-          {
-            session_id: session&.id,
-            session_tables_count: session_tables.length,
-            total_db_tables: connection&.tables&.length || 0,
-            analyzing_scope: session_tables.any? ? "session" : "global"
-          }
-        end
-
-        # Abstract method implementations for BaseAnalyzer
-
-        # Get analyzer name
-        #
-        # @return [String] human-readable analyzer name
-        def analyzer_name
-          "Schema Relationship Analyzer"
-        end
-
-        # Get analyzer description
-        #
-        # @return [String] analyzer description
-        def analyzer_description
-          "Analyzes database schema to detect foreign key relationships between tables"
         end
       end
     end

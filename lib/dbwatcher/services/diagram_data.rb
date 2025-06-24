@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "diagram_data/base_entity"
+require_relative "diagram_data/entity"
 require_relative "diagram_data/relationship"
-require_relative "diagram_data/diagram_dataset"
+require_relative "diagram_data/dataset"
 
 module Dbwatcher
   module Services
@@ -14,10 +14,10 @@ module Dbwatcher
     #
     # @example
     #   # Create entities
-    #   user_entity = Dbwatcher::Services::DiagramData::BaseEntity.new(
+    #   user_entity = Dbwatcher::Services::DiagramData::Entity.new(
     #     id: "users", name: "User", type: "table"
     #   )
-    #   order_entity = Dbwatcher::Services::DiagramData::BaseEntity.new(
+    #   order_entity = Dbwatcher::Services::DiagramData::Entity.new(
     #     id: "orders", name: "Order", type: "table"
     #   )
     #
@@ -27,7 +27,7 @@ module Dbwatcher
     #   )
     #
     #   # Create dataset
-    #   dataset = Dbwatcher::Services::DiagramData::DiagramDataset.new
+    #   dataset = Dbwatcher::Services::DiagramData::Dataset.new
     #   dataset.add_entity(user_entity)
     #   dataset.add_entity(order_entity)
     #   dataset.add_relationship(relationship)
@@ -37,12 +37,12 @@ module Dbwatcher
     #     puts dataset.stats
     #   end
     module DiagramData
-      # Convenience method to create a new BaseEntity
+      # Convenience method to create a new Entity
       #
       # @param args [Hash] entity arguments
-      # @return [BaseEntity] new entity instance
+      # @return [Entity] new entity instance
       def self.entity(**args)
-        BaseEntity.new(**args)
+        Entity.new(**args)
       end
 
       # Convenience method to create a new Relationship
@@ -53,12 +53,12 @@ module Dbwatcher
         Relationship.new(**args)
       end
 
-      # Convenience method to create a new DiagramDataset
+      # Convenience method to create a new Dataset
       #
       # @param args [Hash] dataset arguments
-      # @return [DiagramDataset] new dataset instance
+      # @return [Dataset] new dataset instance
       def self.dataset(**args)
-        DiagramDataset.new(**args)
+        Dataset.new(**args)
       end
     end
   end

@@ -5,25 +5,37 @@ require "fileutils"
 require "securerandom"
 require "singleton"
 require "logger"
+
+# Core components
 require_relative "dbwatcher/version"
 require_relative "dbwatcher/configuration"
 require_relative "dbwatcher/logging"
-require_relative "dbwatcher/tracker"
+
+# Storage layer
 require_relative "dbwatcher/storage"
+
+# Tracking and SQL monitoring
+require_relative "dbwatcher/tracker"
 require_relative "dbwatcher/sql_logger"
 require_relative "dbwatcher/model_extension"
 require_relative "dbwatcher/middleware"
+
+# Base services
+require_relative "dbwatcher/services/base_service"
+
+# Core services
 require_relative "dbwatcher/services/table_statistics_collector"
 require_relative "dbwatcher/services/dashboard_data_aggregator"
 require_relative "dbwatcher/services/query_filter_processor"
-require_relative "dbwatcher/services/base_service"
-require_relative "dbwatcher/services/diagram_data"
-require_relative "dbwatcher/services/diagram_generator"
-require_relative "dbwatcher/services/analyzers/base_analyzer"
+
+# General analyzers (non-diagram)
 require_relative "dbwatcher/services/analyzers/session_data_processor"
 require_relative "dbwatcher/services/analyzers/table_summary_builder"
-require_relative "dbwatcher/services/analyzers/schema_relationship_analyzer"
-require_relative "dbwatcher/services/analyzers/model_association_analyzer"
+
+# Diagram system
+require_relative "dbwatcher/services/diagram_system"
+
+# Rails engine
 require_relative "dbwatcher/engine" if defined?(Rails)
 
 module Dbwatcher

@@ -3,13 +3,13 @@
 module Dbwatcher
   module Services
     module DiagramData
-      # Base entity representing a node in any diagram
+      # Entity representing a node in any diagram
       #
       # This class provides a standardized representation for all diagram entities
       # (nodes, tables, models, etc.) with consistent validation and serialization.
       #
       # @example
-      #   entity = BaseEntity.new(
+      #   entity = Entity.new(
       #     id: "users",
       #     name: "User",
       #     type: "table",
@@ -17,7 +17,7 @@ module Dbwatcher
       #   )
       #   entity.valid? # => true
       #   entity.to_h   # => { id: "users", name: "User", ... }
-      class BaseEntity
+      class Entity
         attr_accessor :id, :name, :type, :metadata
 
         # Initialize entity
@@ -74,7 +74,7 @@ module Dbwatcher
         # Create entity from hash
         #
         # @param hash [Hash] entity data
-        # @return [BaseEntity] new entity instance
+        # @return [Entity] new entity instance
         def self.from_h(hash)
           new(
             id: hash[:id] || hash["id"],
@@ -87,17 +87,17 @@ module Dbwatcher
         # Create entity from JSON
         #
         # @param json [String] JSON string
-        # @return [BaseEntity] new entity instance
+        # @return [Entity] new entity instance
         def self.from_json(json)
           from_h(JSON.parse(json))
         end
 
         # Check equality with another entity
         #
-        # @param other [BaseEntity] other entity to compare
+        # @param other [Entity] other entity to compare
         # @return [Boolean] true if entities are equal
         def ==(other)
-          return false unless other.is_a?(BaseEntity)
+          return false unless other.is_a?(Entity)
 
           id == other.id &&
             name == other.name &&

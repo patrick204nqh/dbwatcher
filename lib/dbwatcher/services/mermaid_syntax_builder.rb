@@ -25,64 +25,48 @@ module Dbwatcher
       # Maximum content length to prevent memory issues
       MAX_CONTENT_LENGTH = 100_000
 
-      # Initialize builder with configuration
+      # Initialize builder
       #
-      # @param config [Hash] builder configuration
-      # @option config [Boolean] :validate_syntax enable syntax validation
-      # @option config [Boolean] :sanitize_content sanitize input content
-      # @option config [Boolean] :apply_styling apply default styling
-      # @option config [Integer] :max_nodes maximum number of nodes
-      # @option config [Integer] :max_edges maximum number of edges
+      # @param config [Hash] builder configuration (optional)
       # @option config [Logger] :logger logger instance
       def initialize(config = {})
-        @config = default_config.merge(config)
-        @logger = @config[:logger] || Rails.logger
+        @logger = config[:logger] || Rails.logger
       end
 
       # Build ERD diagram from relationships
       #
       # @param relationships [Array<Hash>] database relationships
-      # @param options [Hash] generation options
+      # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid ERD syntax
       # @raise [ArgumentError] if relationships invalid
-      # @raise [SyntaxValidationError] if generated syntax invalid
       def build_erd_diagram(relationships, options = {})
         @logger.debug "Building ERD diagram with #{relationships.size} relationships"
 
         validate_relationships!(relationships)
-        config = @config.merge(options)
 
         content = ["erDiagram"]
-        content += build_table_definitions(relationships, config)
-        content += build_relationship_definitions(relationships, config)
+        content += build_table_definitions(relationships)
+        content += build_relationship_definitions(relationships)
 
-        result = content.join("\n")
-        validate_syntax!(result, "erDiagram")
-        result
+        content.join("\n")
       end
 
       # Build flowchart diagram from associations
       #
       # @param associations [Array<Hash>] model associations
-      # @param options [Hash] generation options
+      # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid flowchart syntax
       # @raise [ArgumentError] if associations invalid
-      # @raise [SyntaxValidationError] if generated syntax invalid
       def build_flowchart_diagram(associations, options = {})
         @logger.debug "Building flowchart diagram with #{associations.size} associations"
 
         validate_associations!(associations)
-        config = @config.merge(options)
 
-        direction = config[:layout_direction] || "TD"
-        content = ["flowchart #{direction}"]
-        content += build_node_definitions(associations, config)
-        content += build_edge_definitions(associations, config)
-        content += build_styling_definitions(config) if config[:apply_styling]
+        content = ["flowchart TD"]
+        content += build_node_definitions(associations)
+        content += build_edge_definitions(associations)
 
-        result = content.join("\n")
-        validate_syntax!(result, "flowchart")
-        result
+        content.join("\n")
       end
 
       # Build empty ERD diagram with message
@@ -133,8 +117,8 @@ module Dbwatcher
 
       # Build ERD diagram from standardized dataset
       #
-      # @param dataset [DiagramData::DiagramDataset] standardized dataset
-      # @param options [Hash] generation options
+      # @param dataset [Dataset] standardized dataset
+      # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid ERD syntax
       def build_erd_diagram_from_dataset(dataset, options = {})
         @logger.debug "Building ERD diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
@@ -153,13 +137,13 @@ module Dbwatcher
           }
         end
 
-        build_erd_diagram(legacy_relationships, options)
+        build_erd_diagram(legacy_relationships)
       end
 
       # Build flowchart diagram from standardized dataset
       #
-      # @param dataset [DiagramData::DiagramDataset] standardized dataset
-      # @param options [Hash] generation options
+      # @param dataset [Dataset] standardized dataset
+      # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid flowchart syntax
       def build_flowchart_diagram_from_dataset(dataset, options = {})
         @logger.debug "Building flowchart diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
@@ -191,15 +175,15 @@ module Dbwatcher
           }
         end
 
-        build_flowchart_diagram(legacy_associations, options)
+        build_flowchart_diagram(legacy_associations)
       end
 
       # Build ERD diagram with isolated tables
       #
-      # @param entities [Array<BaseEntity>] isolated table entities
-      # @param options [Hash] generation options
+      # @param entities [Array<Entity>] isolated table entities
+      # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid ERD syntax
-      def build_erd_diagram_with_tables(entities, _options = {})
+      def build_erd_diagram_with_tables(entities, options = {})
         @logger.debug "Building ERD diagram with #{entities.size} isolated tables"
 
         content = ["erDiagram"]
@@ -209,21 +193,18 @@ module Dbwatcher
           content << "    #{table_name} {}"
         end
 
-        result = content.join("\n")
-        validate_syntax!(result, "erDiagram") if @config[:validate_syntax]
-        result
+        content.join("\n")
       end
 
       # Build flowchart diagram with isolated nodes
       #
-      # @param entities [Array<BaseEntity>] isolated node entities
-      # @param options [Hash] generation options
+      # @param entities [Array<Entity>] isolated node entities
+      # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid flowchart syntax
       def build_flowchart_with_nodes(entities, options = {})
         @logger.debug "Building flowchart diagram with #{entities.size} isolated nodes"
 
-        direction = options[:layout_direction] || "TD"
-        content = ["flowchart #{direction}"]
+        content = ["flowchart TD"]
 
         entities.each do |entity|
           node_id = generate_node_id(entity.name)
@@ -231,26 +212,10 @@ module Dbwatcher
           content << "    #{node_id}[\"#{node_label}\"]"
         end
 
-        result = content.join("\n")
-        validate_syntax!(result, "flowchart") if @config[:validate_syntax]
-        result
+        content.join("\n")
       end
 
       private
-
-      # Default configuration
-      #
-      # @return [Hash] default configuration
-      def default_config
-        {
-          max_nodes: 100,
-          max_edges: 200,
-          apply_styling: true,
-          sanitize_content: true,
-          validate_syntax: true,
-          layout_direction: "TD"
-        }
-      end
 
       # Validate relationships array
       #
@@ -259,10 +224,6 @@ module Dbwatcher
       def validate_relationships!(relationships)
         raise ArgumentError, "Relationships cannot be nil" if relationships.nil?
         raise ArgumentError, "Relationships must be an array" unless relationships.is_a?(Array)
-
-        return unless relationships.size > @config[:max_edges]
-
-        raise ArgumentError, "Too many relationships (max: #{@config[:max_edges]})"
       end
 
       # Validate associations array
@@ -272,10 +233,6 @@ module Dbwatcher
       def validate_associations!(associations)
         raise ArgumentError, "Associations cannot be nil" if associations.nil?
         raise ArgumentError, "Associations must be an array" unless associations.is_a?(Array)
-
-        return unless associations.size > @config[:max_edges]
-
-        raise ArgumentError, "Too many associations (max: #{@config[:max_edges]})"
       end
 
       # Validate generated Mermaid syntax
@@ -284,8 +241,6 @@ module Dbwatcher
       # @param expected_type [String] expected diagram type
       # @raise [SyntaxValidationError] if validation fails
       def validate_syntax!(mermaid_content, expected_type)
-        return unless @config[:validate_syntax]
-
         raise SyntaxValidationError, "Generated Mermaid content is empty" if mermaid_content.blank?
 
         if mermaid_content.length > MAX_CONTENT_LENGTH
@@ -358,7 +313,6 @@ module Dbwatcher
       # @return [String] sanitized text
       def sanitize_text(text)
         return "" if text.blank?
-        return text unless @config[:sanitize_content]
 
         # Remove or escape characters that could break Mermaid syntax
         text.gsub(/["\\]/, "").gsub("\n", " ").strip
@@ -367,19 +321,14 @@ module Dbwatcher
       # Build table definitions for ERD
       #
       # @param relationships [Array<Hash>] database relationships
-      # @param config [Hash] generation configuration
       # @return [Array<String>] table definition lines
-      def build_table_definitions(relationships, config)
+      def build_table_definitions(relationships)
         tables = extract_unique_tables(relationships)
         lines = []
 
         tables.each do |table|
           safe_name = sanitize_table_name(table)
-          lines << "    #{safe_name} {"
-
-          lines << "        string id PK" if config[:show_columns]
-
-          lines << "    }"
+          lines << "    #{safe_name} {}"
         end
 
         lines
@@ -388,9 +337,8 @@ module Dbwatcher
       # Build relationship definitions for ERD
       #
       # @param relationships [Array<Hash>] database relationships
-      # @param config [Hash] generation configuration
       # @return [Array<String>] relationship definition lines
-      def build_relationship_definitions(relationships, _config)
+      def build_relationship_definitions(relationships)
         lines = []
 
         relationships.each do |rel|
@@ -410,9 +358,8 @@ module Dbwatcher
       # Build node definitions for flowchart
       #
       # @param associations [Array<Hash>] model associations
-      # @param config [Hash] generation configuration
       # @return [Array<String>] node definition lines
-      def build_node_definitions(associations, _config)
+      def build_node_definitions(associations)
         lines = []
         added_nodes = Set.new
 
@@ -442,9 +389,8 @@ module Dbwatcher
       # Build edge definitions for flowchart
       #
       # @param associations [Array<Hash>] model associations
-      # @param config [Hash] generation configuration
       # @return [Array<String>] edge definition lines
-      def build_edge_definitions(associations, _config)
+      def build_edge_definitions(associations)
         lines = []
 
         associations.each do |assoc|
@@ -462,16 +408,6 @@ module Dbwatcher
         end
 
         lines
-      end
-
-      # Build styling definitions
-      #
-      # @param config [Hash] generation configuration
-      # @return [Array<String>] styling definition lines
-      def build_styling_definitions(_config)
-        [
-          "    classDef default fill:lightblue,stroke:blue,stroke-width:1px"
-        ]
       end
 
       # Extract unique table names from relationships

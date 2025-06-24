@@ -4,10 +4,10 @@ require "rails_helper"
 
 RSpec.describe Dbwatcher::Services::DiagramData do
   describe ".entity" do
-    it "creates a new BaseEntity instance" do
+    it "creates a new Entity instance" do
       entity = described_class.entity(id: "users", name: "User", type: "table")
 
-      expect(entity).to be_a(Dbwatcher::Services::DiagramData::BaseEntity)
+      expect(entity).to be_a(Dbwatcher::Services::DiagramData::Entity)
       expect(entity.id).to eq("users")
       expect(entity.name).to eq("User")
       expect(entity.type).to eq("table")
@@ -30,17 +30,17 @@ RSpec.describe Dbwatcher::Services::DiagramData do
   end
 
   describe ".dataset" do
-    it "creates a new DiagramDataset instance" do
+    it "creates a new Dataset instance" do
       dataset = described_class.dataset(metadata: { created_by: "test" })
 
-      expect(dataset).to be_a(Dbwatcher::Services::DiagramData::DiagramDataset)
+      expect(dataset).to be_a(Dbwatcher::Services::DiagramData::Dataset)
       expect(dataset.metadata).to eq({ created_by: "test" })
     end
 
     it "creates empty dataset when no arguments provided" do
       dataset = described_class.dataset
 
-      expect(dataset).to be_a(Dbwatcher::Services::DiagramData::DiagramDataset)
+      expect(dataset).to be_a(Dbwatcher::Services::DiagramData::Dataset)
       expect(dataset.entities).to be_empty
       expect(dataset.relationships).to be_empty
       expect(dataset.metadata).to eq({})

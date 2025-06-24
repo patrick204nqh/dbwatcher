@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Dbwatcher::Services::DiagramData::BaseEntity do
+RSpec.describe Dbwatcher::Services::DiagramData::Entity do
   describe "#initialize" do
     it "creates entity with required parameters" do
       entity = described_class.new(id: "users", name: "User")

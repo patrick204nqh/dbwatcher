@@ -9,15 +9,15 @@ module Dbwatcher
       # and relationships, with validation and management capabilities.
       #
       # @example
-      #   dataset = DiagramDataset.new
-      #   dataset.add_entity(BaseEntity.new(id: "users", name: "User", type: "table"))
-      #   dataset.add_entity(BaseEntity.new(id: "orders", name: "Order", type: "table"))
+      #   dataset = Dataset.new
+      #   dataset.add_entity(Entity.new(id: "users", name: "User", type: "table"))
+      #   dataset.add_entity(Entity.new(id: "orders", name: "Order", type: "table"))
       #   dataset.add_relationship(Relationship.new(
       #     source_id: "users", target_id: "orders", type: "has_many"
       #   ))
       #   dataset.valid? # => true
       #   dataset.to_h   # => complete dataset hash
-      class DiagramDataset
+      class Dataset
         attr_reader :entities, :relationships, :metadata
 
         # Initialize empty dataset
@@ -31,11 +31,11 @@ module Dbwatcher
 
         # Add entity to dataset
         #
-        # @param entity [BaseEntity] entity to add
-        # @return [BaseEntity] the added entity
+        # @param entity [Entity] entity to add
+        # @return [Entity] the added entity
         # @raise [ArgumentError] if entity is invalid
         def add_entity(entity)
-          raise ArgumentError, "Entity must be a BaseEntity instance" unless entity.is_a?(BaseEntity)
+          raise ArgumentError, "Entity must be an Entity instance" unless entity.is_a?(Entity)
 
           raise ArgumentError, "Entity is invalid: #{entity.validation_errors.join(", ")}" unless entity.valid?
 
@@ -62,7 +62,7 @@ module Dbwatcher
         # Get entity by ID
         #
         # @param id [String] entity ID
-        # @return [BaseEntity, nil] entity or nil if not found
+        # @return [Entity, nil] entity or nil if not found
         def get_entity(id)
           @entities[id.to_s]
         end
@@ -78,7 +78,7 @@ module Dbwatcher
         # Remove entity by ID
         #
         # @param id [String] entity ID
-        # @return [BaseEntity, nil] removed entity or nil if not found
+        # @return [Entity, nil] removed entity or nil if not found
         def remove_entity(id)
           entity = @entities.delete(id.to_s)
 
@@ -176,7 +176,7 @@ module Dbwatcher
 
         # Get entities with no relationships
         #
-        # @return [Array<BaseEntity>] isolated entities
+        # @return [Array<Entity>] isolated entities
         def isolated_entities
           connected_ids = (@relationships.map(&:source_id) + @relationships.map(&:target_id)).uniq
           @entities.values.reject { |entity| connected_ids.include?(entity.id) }
@@ -184,7 +184,7 @@ module Dbwatcher
 
         # Get entities with at least one relationship
         #
-        # @return [Array<BaseEntity>] connected entities
+        # @return [Array<Entity>] connected entities
         def connected_entities
           connected_ids = (@relationships.map(&:source_id) + @relationships.map(&:target_id)).uniq
           @entities.values.select { |entity| connected_ids.include?(entity.id) }
@@ -229,14 +229,14 @@ module Dbwatcher
         # Create dataset from hash
         #
         # @param hash [Hash] dataset data
-        # @return [DiagramDataset] new dataset instance
+        # @return [Dataset] new dataset instance
         def self.from_h(hash)
           dataset = new(metadata: hash[:metadata] || hash["metadata"] || {})
 
           # Load entities
           entities_data = hash[:entities] || hash["entities"] || {}
           entities_data.each_value do |entity_data|
-            entity = BaseEntity.from_h(entity_data)
+            entity = Entity.from_h(entity_data)
             dataset.add_entity(entity)
           end
 
@@ -253,7 +253,7 @@ module Dbwatcher
         # Create dataset from JSON
         #
         # @param json [String] JSON string
-        # @return [DiagramDataset] new dataset instance
+        # @return [Dataset] new dataset instance
         def self.from_json(json)
           from_h(JSON.parse(json))
         end

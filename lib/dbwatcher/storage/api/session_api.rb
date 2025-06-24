@@ -114,31 +114,7 @@ module Dbwatcher
           session = find(session_id)
           return { error: "Session not found" } unless session
 
-          analyzer = Dbwatcher::Services::Analyzers::TableSummaryAnalyzer.new(session)
-          analyzer.call
-        end
-
-        # Get schema relationships for a session
-        #
-        # @param session_id [String] session identifier
-        # @return [DiagramData::DiagramDataset] standardized dataset
-        def schema_relationships(session_id)
-          session = find(session_id)
-          return { error: "Session not found" } unless session
-
-          analyzer = Dbwatcher::Services::Analyzers::SchemaRelationshipAnalyzer.new(session)
-          analyzer.call
-        end
-
-        # Get model associations for a session
-        #
-        # @param session_id [String] session identifier
-        # @return [DiagramData::DiagramDataset] standardized dataset
-        def model_associations(session_id)
-          session = find(session_id)
-          return { error: "Session not found" } unless session
-
-          analyzer = Dbwatcher::Services::Analyzers::ModelAssociationAnalyzer.new(session)
+          analyzer = Dbwatcher::Services::Analyzers::TableSummaryBuilder.new(session)
           analyzer.call
         end
 
@@ -148,7 +124,7 @@ module Dbwatcher
         # @param diagram_type [String] type of diagram to generate
         # @return [Hash] diagram data
         def diagram_data(session_id, diagram_type = "database_tables")
-          Dbwatcher::Services::DiagramGenerator.call(session_id, diagram_type)
+          Dbwatcher::Services::DiagramSystem.generate(session_id, diagram_type)
         end
 
         private

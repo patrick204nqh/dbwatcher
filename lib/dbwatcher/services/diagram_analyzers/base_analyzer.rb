@@ -2,11 +2,11 @@
 
 module Dbwatcher
   module Services
-    module Analyzers
-      # Abstract base class for all analyzers
+    module DiagramAnalyzers
+      # Abstract base class for diagram analyzers
       #
-      # This class provides a standard interface that all analyzers must implement
-      # to ensure consistent data flow and transformation to DiagramDataset format.
+      # This class provides a standard interface that all diagram analyzers must implement
+      # to ensure consistent data flow and transformation to Dataset format.
       #
       # @example
       #   class CustomAnalyzer < BaseAnalyzer
@@ -15,7 +15,11 @@ module Dbwatcher
       #     end
       #
       #     def transform_to_dataset(raw_data)
-      #       # Transform raw data to DiagramDataset
+      #       # Transform raw data to Dataset
+      #     end
+      #
+      #     def analyzer_type
+      #       "custom"
       #     end
       #   end
       class BaseAnalyzer < BaseService
@@ -28,25 +32,26 @@ module Dbwatcher
           raise NotImplementedError, "Subclasses must implement analyze method"
         end
 
-        # Transform raw data to standard DiagramDataset
+        # Transform raw data to standard Dataset
         #
         # @param raw_data [Object] raw data from analyze method
-        # @return [DiagramData::DiagramDataset] standardized dataset
+        # @return [DiagramData::Dataset] standardized dataset
         # @raise [NotImplementedError] if not implemented by subclass
         def transform_to_dataset(raw_data)
           raise NotImplementedError, "Subclasses must implement transform_to_dataset"
         end
 
-        # Analyzer capabilities declaration
+        # Get analyzer type classification
         #
-        # @return [Array<Symbol>] array of capabilities this analyzer provides
-        def capabilities
-          []
+        # @return [String] analyzer type identifier
+        # @raise [NotImplementedError] if not implemented by subclass
+        def analyzer_type
+          raise NotImplementedError, "Subclasses must implement analyzer_type"
         end
 
         # Main entry point - analyze and transform
         #
-        # @return [DiagramData::DiagramDataset] standardized dataset
+        # @return [DiagramData::Dataset] standardized dataset
         def call
           log_service_start "Starting #{self.class.name}", analysis_context
           start_time = Time.current
@@ -59,8 +64,8 @@ module Dbwatcher
             dataset = transform_to_dataset(raw_data)
 
             # Validate result
-            unless dataset.is_a?(Dbwatcher::Services::DiagramData::DiagramDataset)
-              raise StandardError, "transform_to_dataset must return a DiagramDataset instance"
+            unless dataset.is_a?(Dbwatcher::Services::DiagramData::Dataset)
+              raise StandardError, "transform_to_dataset must return a Dataset instance"
             end
 
             unless dataset.valid?
@@ -81,27 +86,6 @@ module Dbwatcher
           end
         end
 
-        # Check if analyzer can handle given context
-        #
-        # @param context [Hash] analysis context
-        # @return [Boolean] true if analyzer can handle context
-        def can_handle?(_context)
-          # Default implementation - subclasses should override
-          true
-        end
-
-        # Get analyzer metadata
-        #
-        # @return [Hash] analyzer metadata
-        def metadata
-          {
-            name: analyzer_name,
-            description: analyzer_description,
-            capabilities: capabilities,
-            supported_contexts: supported_contexts
-          }
-        end
-
         protected
 
         # Build analysis context for this analyzer
@@ -114,11 +98,12 @@ module Dbwatcher
 
         # Create empty dataset with metadata
         #
-        # @return [DiagramData::DiagramDataset] empty dataset
+        # @return [DiagramData::Dataset] empty dataset
         def create_empty_dataset
-          Dbwatcher::Services::DiagramData::DiagramDataset.new(
+          Dbwatcher::Services::DiagramData::Dataset.new(
             metadata: {
               analyzer: self.class.name,
+              analyzer_type: analyzer_type,
               empty_reason: "No data found or analysis failed",
               generated_at: Time.current.iso8601
             }
@@ -131,9 +116,9 @@ module Dbwatcher
         # @param name [String] entity name
         # @param type [String] entity type
         # @param metadata [Hash] entity metadata
-        # @return [DiagramData::BaseEntity] new entity
+        # @return [DiagramData::Entity] new entity
         def create_entity(id:, name:, type: "default", metadata: {})
-          Dbwatcher::Services::DiagramData::BaseEntity.new(
+          Dbwatcher::Services::DiagramData::Entity.new(
             id: id,
             name: name,
             type: type,
@@ -157,44 +142,6 @@ module Dbwatcher
             label: label,
             metadata: metadata
           )
-        end
-
-        # Apply data transformers to raw data
-        #
-        # @param raw_data [Object] raw data to transform
-        # @param transformers [Array<Proc>] array of transformer functions
-        # @return [Object] transformed data
-        def apply_transformers(raw_data, transformers = [])
-          transformers.reduce(raw_data) do |data, transformer|
-            transformer.call(data)
-          end
-        end
-
-        private
-
-        # Abstract methods that subclasses must implement
-
-        # Get analyzer name
-        #
-        # @return [String] human-readable analyzer name
-        # @raise [NotImplementedError] if not implemented by subclass
-        def analyzer_name
-          raise NotImplementedError, "Subclasses must implement analyzer_name"
-        end
-
-        # Get analyzer description
-        #
-        # @return [String] analyzer description
-        # @raise [NotImplementedError] if not implemented by subclass
-        def analyzer_description
-          raise NotImplementedError, "Subclasses must implement analyzer_description"
-        end
-
-        # Get supported context types
-        #
-        # @return [Array<Symbol>] supported context types
-        def supported_contexts
-          %i[session global]
         end
       end
     end
