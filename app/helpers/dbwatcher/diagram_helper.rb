@@ -12,12 +12,12 @@ module Dbwatcher
       }.to_json
     end
 
-    # Generate diagram type options
+    # Generate diagram type options dynamically from registry
     def diagram_type_options
-      options = [
-        ["Database Tables (Schema)", "database_tables"],
-        ["Model Associations", "model_associations"]
-      ]
+      registry = Dbwatcher::Services::DiagramTypeRegistry.new
+      options = registry.available_types_with_metadata.map do |type, metadata|
+        [metadata[:display_name], type]
+      end
 
       options_for_select(options)
     end
