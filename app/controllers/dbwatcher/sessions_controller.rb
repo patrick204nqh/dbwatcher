@@ -2,48 +2,65 @@
 
 module Dbwatcher
   class SessionsController < BaseController
+    before_action :find_session, except: [:index]
+
     def index
       @sessions = Storage.sessions.all
     end
 
     def show
-      Rails.logger.info "SessionsController#show: Loading session with ID: #{params[:id]}"
-      @session = Storage.sessions.find(params[:id])
-      Rails.logger.info "SessionsController#show: Loaded session: #{@session.inspect}"
+      redirect_to changes_session_path(@session.id)
+    end
 
-      return handle_not_found("Session", sessions_path) unless @session
-
-      @tables_summary = Storage.sessions.build_tables_summary(@session)
-      @active_tab = validate_tab_parameter(params[:tab])
-      Rails.logger.info "SessionsController#show: Tables summary: #{@tables_summary.inspect}"
+    def changes
+      Rails.logger.info "SessionsController#changes: Loading changes for session #{@session.id}"
+      @tables_summary = build_tables_summary
+      @active_filters = parse_filters
 
       respond_to do |format|
         format.html
-        format.json { render json: @session.to_h }
+        format.json { render json: changes_json_data }
       end
     end
 
-    # GET /sessions/:id/diagram
+    def summary
+      Rails.logger.info "SessionsController#summary: Loading summary for session #{@session.id}"
+      @tables_summary = build_tables_summary
+      @summary_data = build_summary_stats
+
+      respond_to do |format|
+        format.html
+        format.json { render json: @summary_data }
+      end
+    end
+
+    def diagrams
+      Rails.logger.info "SessionsController#diagrams: Loading diagrams for session #{@session.id}"
+      @tables_summary = build_tables_summary
+      @diagram_types = available_diagram_types
+
+      respond_to do |format|
+        format.html
+        format.json do
+          diagram_result = generate_diagram(params[:diagram_type])
+          render json: diagram_result
+        end
+      end
+    end
+
+    # Legacy endpoints - kept for backward compatibility
     def diagram
       Rails.logger.info "SessionsController#diagram: Generating diagram for session #{params[:id]} type: #{params[:diagram_type]}"
 
       begin
         diagram_type = params[:diagram_type] || "database_tables"
-
-        # Generate cache key based on session ID and diagram type
         cache_key = "diagram_#{params[:id]}_#{diagram_type}"
-
-        # Clear cache for this diagram if requested
         Rails.cache.delete(cache_key) if params[:refresh] == "true"
 
-        # Try to get from cache first
         diagram_data = Rails.cache.fetch(cache_key, expires_in: 1.hour) do
           Rails.logger.info "SessionsController#diagram: Cache miss, generating fresh diagram for type: #{diagram_type}"
-
-          # Generate diagram using the diagram system
           result = Storage.sessions.diagram_data(params[:id], diagram_type)
 
-          # Log the result for debugging
           if result[:error]
             Rails.logger.error "SessionsController#diagram: Error in diagram generation: #{result[:error]}"
           else
@@ -67,21 +84,6 @@ module Dbwatcher
       end
     end
 
-    # GET /sessions/:id/summary
-    def summary
-      Rails.logger.info "SessionsController#summary: Getting summary for session #{params[:id]}"
-
-      result = Storage.sessions.summary(params[:id])
-
-      if result[:error]
-        Rails.logger.error "SessionsController#summary: Error getting summary: #{result[:error]}"
-        render json: { error: result[:error] }, status: :not_found
-      else
-        Rails.logger.info "SessionsController#summary: Successfully retrieved summary"
-        render json: result
-      end
-    end
-
     def clear
       clear_storage_with_message(
         -> { Storage.session_storage.clear_all },
@@ -91,6 +93,58 @@ module Dbwatcher
     end
 
     private
+
+    def find_session
+      @session = Storage.sessions.find(params[:id])
+      handle_not_found("Session", sessions_path) unless @session
+    end
+
+    def build_tables_summary
+      Storage.sessions.build_tables_summary(@session)
+    end
+
+    def build_summary_stats
+      # Use the new service for consistency
+      service = Dbwatcher::Services::Api::SummaryDataService.new(@session)
+      result = service.call
+      result[:error] ? {} : result
+    end
+
+    def available_diagram_types
+      Dbwatcher::Services::Api::DiagramDataService.available_types
+    end
+
+    def generate_diagram(type)
+      service = Dbwatcher::Services::Api::DiagramDataService.new(@session, type, params)
+      service.call
+    end
+
+    def parse_filters
+      {
+        table: params[:table],
+        operation: params[:operation],
+        page: params[:page]&.to_i || 1,
+        per_page: params[:per_page]&.to_i || 50
+      }.compact
+    end
+
+    def changes_json_data
+      {
+        tables_summary: @tables_summary,
+        filters: @active_filters,
+        session_id: @session.id
+      }
+    end
+
+    def show_json_data
+      {
+        tables_summary: @tables_summary,
+        active_tab: @active_tab,
+        filters: @active_filters,
+        session_id: @session.id,
+        session: @session
+      }
+    end
 
     def validate_tab_parameter(tab)
       valid_tabs = %w[changes summary diagrams]

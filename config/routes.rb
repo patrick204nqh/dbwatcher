@@ -8,12 +8,32 @@ Dbwatcher::Engine.routes.draw do
 
   resources :sessions do
     member do
-      get :diagram
+      get :changes
       get :summary
+      get :diagrams
+      # Legacy endpoints - kept for backward compatibility
+      get :diagram
     end
 
     collection do
       delete :clear
+    end
+  end
+
+  # API namespace for JSON-only endpoints
+  namespace :api do
+    namespace :v1 do
+      resources :sessions, only: [] do
+        member do
+          get :changes
+          get :summary
+          get :diagrams
+          # Legacy endpoint names for backward compatibility
+          get :changes_data
+          get :summary_data
+          get :diagram_data
+        end
+      end
     end
   end
 

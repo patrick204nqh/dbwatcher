@@ -11,57 +11,21 @@
     <!-- Mermaid.js for database diagrams -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js" integrity="sha256-44mGIwgIumDPEgK7mKZGXKE//IrvVOIBO1CpUtbZXeA=" crossorigin="anonymous"></script>
 
+    <!-- SVG Pan Zoom Library -->
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+
     <!-- DBWatcher JavaScript -->
-    <%= javascript_include_tag "dbwatcher/svg_interactions" %>
-    <%= javascript_include_tag "dbwatcher/mermaid_helper" %>
+    <%= javascript_include_tag "dbwatcher/core/alpine_store" %>
+    <%= javascript_include_tag "dbwatcher/core/api_client" %>
+    <%= javascript_include_tag "dbwatcher/services/mermaid" %>
+    <%= javascript_include_tag "dbwatcher/components/changes_table" %>
+    <%= javascript_include_tag "dbwatcher/components/diagrams" %>
+    <%= javascript_include_tag "dbwatcher/components/summary" %>
 
     <script>
+      // Initialize DBWatcher when DOM is loaded
       document.addEventListener('DOMContentLoaded', function() {
-        // Initialize MermaidHelper when the DOM is loaded
-        if (window.MermaidHelper) {
-          MermaidHelper.initialize()
-            .then(() => console.log('MermaidHelper initialized successfully'))
-            .catch(error => console.error('Error initializing MermaidHelper:', error));
-        } else {
-          console.warn('MermaidHelper not available');
-
-          // Fallback to direct mermaid initialization
-          if (window.mermaid) {
-            try {
-              // Configure mermaid globally with baseline settings
-              window.mermaid.initialize({
-                startOnLoad: false, // We'll manually trigger rendering
-                theme: 'neutral',
-                securityLevel: 'loose',
-                logLevel: 'warn',
-
-                // Configure flowchart for model associations
-                flowchart: {
-                  useMaxWidth: true,
-                  htmlLabels: true,
-                  curve: 'linear',
-                  diagramPadding: 8,
-                  nodeSpacing: 50,
-                  rankSpacing: 80
-                },
-
-                // Configure ER diagrams for database tables
-                er: {
-                  useMaxWidth: true,
-                  layoutDirection: 'LR',
-                  entityPadding: 15,
-                  minEntityWidth: 100
-                }
-              });
-
-              console.log('Mermaid initialized successfully (fallback)');
-            } catch (e) {
-              console.error('Failed to initialize Mermaid:', e);
-            }
-          } else {
-            console.warn('Mermaid library not loaded on page load');
-          }
-        }
+        console.log('DBWatcher initialized with modern JavaScript architecture');
       });
     </script>
 

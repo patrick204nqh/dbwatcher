@@ -1,0 +1,44 @@
+<div class="flex flex-wrap items-center gap-4">
+  <div class="flex items-center gap-2">
+    <label for="table-filter" class="text-sm font-medium text-gray-700">Table:</label>
+    <select id="table-filter"
+            x-model="filters.table"
+            @change="applyFilters()"
+            class="compact-select">
+      <option value="">All Tables</option>
+      <% if defined?(tables_summary) && tables_summary %>
+        <% tables_summary.keys.each do |table_name| %>
+          <option value="<%= table_name %>" <%= 'selected' if filters && filters[:table] == table_name %>><%= table_name %></option>
+        <% end %>
+      <% end %>
+    </select>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <label for="operation-filter" class="text-sm font-medium text-gray-700">Operation:</label>
+    <select id="operation-filter"
+            x-model="filters.operation"
+            @change="applyFilters()"
+            class="compact-select">
+      <option value="">All Operations</option>
+      <option value="INSERT" <%= 'selected' if filters && filters[:operation] == 'INSERT' %>>INSERT</option>
+      <option value="UPDATE" <%= 'selected' if filters && filters[:operation] == 'UPDATE' %>>UPDATE</option>
+      <option value="DELETE" <%= 'selected' if filters && filters[:operation] == 'DELETE' %>>DELETE</option>
+    </select>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <button @click="clearFilters()"
+            class="text-sm text-gray-500 hover:text-gray-700 underline">
+      Clear Filters
+    </button>
+  </div>
+
+  <div class="ml-auto flex items-center gap-2" x-show="loading">
+    <svg class="animate-spin h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+    <span class="text-sm text-gray-500">Loading...</span>
+  </div>
+</div>

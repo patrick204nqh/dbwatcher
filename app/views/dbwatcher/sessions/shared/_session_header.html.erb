@@ -1,0 +1,25 @@
+<div class="bg-white border-b border-gray-200 px-4 py-3">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <h1 class="text-xl font-semibold text-gray-900">
+        Session <%= session.id %>
+      </h1>
+      <div class="text-sm text-gray-500">
+        <% if session.started_at %>
+          <% started_time = session.started_at.is_a?(String) ? session.started_at : session.started_at.strftime('%Y-%m-%d %H:%M:%S') %>
+          <span>Started: <%= started_time %></span>
+        <% else %>
+          <span>Started: Unknown</span>
+        <% end %>
+        <% if session.ended_at %>
+          <% ended_time = session.ended_at.is_a?(String) ? session.ended_at : session.ended_at.strftime('%Y-%m-%d %H:%M:%S') %>
+          <span class="ml-4">Ended: <%= ended_time %></span>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-3">
+      <%= link_to 'All Sessions', sessions_path, class: 'text-sm text-blue-600 hover:text-blue-800' %>
+    </div>
+  </div>
+</div>

@@ -63,12 +63,14 @@
             @change="loadDiagram()"
             class="compact-select"
           >
-            <%= diagram_type_options %>
+            <option value="database_tables">Database Tables</option>
+            <option value="model_associations">Model Associations</option>
+            <option value="foreign_keys">Foreign Keys</option>
           </select>
 
           <button
             @click="loadDiagram(true)"
-            class="<%= diagram_button_classes(:primary) %>"
+            class="compact-button bg-blue-600 text-white hover:bg-blue-700"
           >
             Generate Diagram
           </button>
@@ -76,24 +78,10 @@
 
         <!-- Right-aligned controls -->
         <div class="flex items-center gap-2 ml-auto">
-          <!-- Toggle View Button -->
-          <button
-            x-show="diagramContent"
-            @click="toggleViewMode()"
-            class="<%= diagram_button_classes(:toggle) %>"
-            title="Toggle between code and preview"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-            </svg>
-            <span x-text="viewMode === 'preview' ? 'View Code' : 'View Preview'"></span>
-          </button>
-
-          <!-- Reset View Button -->
           <button
             x-show="diagramContent && viewMode === 'preview'"
             @click="resetView()"
-            class="<%= diagram_button_classes(:secondary) %> text-xs"
+            class="compact-button bg-gray-600 text-white hover:bg-gray-700"
           >
             Reset View
           </button>
@@ -101,8 +89,8 @@
       </div>
     </div>
 
-    <!-- Diagram Content Area - Full Height -->
-    <div class="flex-1 overflow-hidden relative" style="height: var(--diagram-height, calc(100vh - 176px)); min-height: var(--diagram-min-height, 500px);">
+    <!-- Diagram Content Area -->
+    <div class="flex-1 overflow-hidden relative">
       <!-- Empty State -->
       <div
         x-show="!diagramContent && !loading"
@@ -122,7 +110,7 @@
       >
         <div class="animate-pulse flex flex-col items-center">
           <div class="w-12 h-12 bg-blue-100 rounded-full mb-2 flex items-center justify-center">
-            <svg class="w-6 h-6 text-blue-medium animate-spin" fill="none" viewBox="0 0 24 24">
+            <svg class="w-6 h-6 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -131,37 +119,13 @@
         </div>
       </div>
 
-      <!-- Preview Mode - Rendered Diagram -->
+      <!-- Rendered Diagram -->
       <div
         id="diagram-container"
-        x-show="diagramContent && viewMode === 'preview'"
+        x-show="diagramContent && !loading"
         class="absolute inset-0 p-4 overflow-hidden"
       >
-        <!-- Mermaid diagram will be rendered here with native interactions -->
-      </div>
-
-      <!-- Code Mode - Mermaid Code with Syntax Highlighting -->
-      <div
-        x-show="diagramContent && viewMode === 'code'"
-        class="absolute inset-0 p-4 overflow-auto"
-      >
-        <div class="relative">
-          <!-- Copy button -->
-          <button
-            @click="copyToClipboard('mermaid-code')"
-            class="absolute top-2 right-2 p-1 bg-gray-700 text-white rounded hover:bg-gray-600"
-            title="Copy to clipboard"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
-            </svg>
-          </button>
-
-          <!-- Code display -->
-          <pre id="mermaid-code" class="language-mermaid p-4 bg-gray-800 text-white rounded overflow-auto">
-            <code x-text="diagramContent"></code>
-          </pre>
-        </div>
+        <!-- Mermaid diagram will be rendered here -->
       </div>
 
       <!-- Error State -->
@@ -173,11 +137,8 @@
           <p class="font-medium mb-2">Error rendering diagram</p>
           <p class="text-sm mb-2" x-text="diagramError"></p>
           <div class="flex gap-2">
-            <button @click="diagramError = null; loadDiagram(true)" class="<%= diagram_button_classes(:primary) %> bg-red-600 hover:bg-red-700">
+            <button @click="diagramError = null; loadDiagram(true)" class="compact-button bg-red-600 text-white hover:bg-red-700">
               Try Again
-            </button>
-            <button @click="diagramError = null; selectedDiagramType = selectedDiagramType === 'database_tables' ? 'model_associations' : 'database_tables'; loadDiagram()" class="<%= diagram_button_classes(:secondary) %>">
-              Try Different Type
             </button>
           </div>
         </div>
@@ -185,3 +146,74 @@
     </div>
   </div>
 </div>
+
+<script>
+function diagramsView() {
+  return {
+    selectedDiagramType: 'database_tables',
+    diagramContent: null,
+    diagramError: null,
+    loading: false,
+    viewMode: 'preview',
+
+    init() {
+      // Auto-load diagram on page load
+      setTimeout(() => this.loadDiagram(), 500);
+    },
+
+    async loadDiagram(refresh = false) {
+      if (this.loading) return;
+
+      this.loading = true;
+      this.diagramError = null;
+
+      try {
+        const refreshParam = refresh ? '&refresh=true' : '';
+        const response = await fetch(`/dbwatcher/api/v1/sessions/<%= params[:id] %>/diagrams?diagram_type=${this.selectedDiagramType}${refreshParam}`);
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        this.diagramContent = data.content;
+        await this.renderMermaid();
+      } catch (error) {
+        console.error('Failed to load diagram:', error);
+        this.diagramError = error.message || 'Failed to load diagram';
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async renderMermaid() {
+      if (!this.diagramContent) return;
+
+      const container = document.getElementById('diagram-container');
+      if (!container) return;
+
+      try {
+        if (window.MermaidService) {
+          await window.MermaidService.render(this.diagramContent, container);
+        } else {
+          throw new Error('MermaidService not available');
+        }
+      } catch (error) {
+        console.error('Mermaid rendering error:', error);
+        this.diagramError = error.message || 'Could not render diagram';
+      }
+    },
+
+    resetView() {
+      if (window.MermaidService) {
+        window.MermaidService.resetView();
+      }
+    }
+  };
+}
+</script>

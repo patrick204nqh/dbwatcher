@@ -110,9 +110,9 @@ function sessionView() {
       }
 
       try {
-        // Add refresh parameter to force server-side cache refresh
+        // Use our new API endpoint
         const refreshParam = refresh ? '&refresh=true' : '';
-        const response = await fetch(`/dbwatcher/sessions/<%= @session.id %>/diagram?diagram_type=${this.selectedDiagramType}${refreshParam}`);
+        const response = await fetch(`/dbwatcher/api/v1/sessions/<%= @session.id %>/diagrams?diagram_type=${this.selectedDiagramType}${refreshParam}`);
 
         if (!response.ok) {
           throw new Error(`Server error: ${response.status} ${response.statusText}`);
@@ -157,18 +157,15 @@ function sessionView() {
       }
 
       try {
-        // Ensure MermaidHelper is available with retry logic
-        await this.ensureMermaidHelper();
-
-        // Use MermaidHelper if available
-        if (window.MermaidHelper) {
-          await window.MermaidHelper.renderDiagram(
+        // Use our new MermaidService
+        if (window.MermaidService) {
+          await window.MermaidService.renderDiagram(
             this.diagramContent,
             container,
             this.selectedDiagramType
           );
         } else {
-          throw new Error('Mermaid helper not available after initialization');
+          throw new Error('MermaidService not available');
         }
       } catch (error) {
         console.error('Mermaid rendering error:', error);
@@ -200,27 +197,18 @@ function sessionView() {
       throw new Error('Diagram container not available after waiting');
     },
 
-    // Ensure MermaidHelper is loaded and available
-    async ensureMermaidHelper(maxRetries = 3) {
-      for (let i = 0; i < maxRetries; i++) {
-        if (window.MermaidHelper && typeof window.MermaidHelper.renderDiagram === 'function') {
-          return true;
-        }
-
-        console.log(`Waiting for MermaidHelper (attempt ${i + 1}/${maxRetries})...`);
-        await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
-      }
-
-      throw new Error('MermaidHelper not available after retries');
-    },
-
+    // Additional methods for diagram interactions
     resetView() {
-      // Use native interaction system to reset view
-      const container = document.getElementById('diagram-container');
-      if (container && window.MermaidHelper) {
-        window.MermaidHelper.resetView(container);
+      if (window.MermaidService) {
+        window.MermaidService.resetView();
       }
     },
-  }
+
+    downloadDiagram() {
+      if (window.MermaidService && this.diagramContent) {
+        window.MermaidService.downloadDiagram(`session-${<%= @session.id %>}-${this.selectedDiagramType}`);
+      }
+    }
+  };
 }
 </script>

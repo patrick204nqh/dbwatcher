@@ -1,5 +1,5 @@
-<!-- Changes Tab -->
-<div x-show="activeTab === 'changes'" class="h-full">
+<!-- Changes Content -->
+<div class="h-full" x-data="changesTableView()">
   <% tables_summary.each do |table_name, summary| %>
     <div class="border-b border-gray-300" x-data="{ expanded: true }">
       <!-- Table Header with Column Controls -->
@@ -220,3 +220,40 @@
     </div>
   <% end %>
 </div>
+
+<script>
+function changesTableView() {
+  return {
+    showColumnSelector: null,
+    tableColumns: {},
+
+    init() {
+      // Initialize column visibility for each table
+      <% tables_summary.each do |table_name, summary| %>
+        this.tableColumns['<%= table_name %>'] = {};
+        <% if summary[:sample_record] %>
+          <% summary[:sample_record].keys.each do |column| %>
+            this.tableColumns['<%= table_name %>']['<%= column %>'] = true;
+          <% end %>
+        <% end %>
+      <% end %>
+    },
+
+    toggleColumnSelector(tableName) {
+      this.showColumnSelector = this.showColumnSelector === tableName ? null : tableName;
+    },
+
+    selectAllColumns(tableName) {
+      Object.keys(this.tableColumns[tableName]).forEach(column => {
+        this.tableColumns[tableName][column] = true;
+      });
+    },
+
+    selectNoneColumns(tableName) {
+      Object.keys(this.tableColumns[tableName]).forEach(column => {
+        this.tableColumns[tableName][column] = false;
+      });
+    }
+  };
+}
+</script>
