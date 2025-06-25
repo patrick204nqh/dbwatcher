@@ -40,7 +40,7 @@ document.addEventListener('alpine:init', () => {
       this.error = null;
 
       try {
-        const endpoint = `/sessions/${this.sessionId}/changes_data`;
+        const endpoint = `sessions/${this.sessionId}/changes_data`;
         const data = await Alpine.store('session').loadData(endpoint, this.filters);
 
         // Update tables data

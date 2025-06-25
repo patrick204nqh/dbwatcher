@@ -37,7 +37,7 @@ document.addEventListener('alpine:init', () => {
       this.error = null;
 
       try {
-        const endpoint = `/sessions/${this.sessionId}/summary_data`;
+        const endpoint = `sessions/${this.sessionId}/summary_data`;
         const data = await Alpine.store('session').loadData(endpoint);
 
         if (data.summary_data) {

@@ -1,146 +1,114 @@
-<!-- Diagrams Tab -->
-<div
-  x-show="activeTab === 'diagrams'"
-  class="h-full"
-  x-init="$nextTick(() => { if (activeTab === 'diagrams' && !diagramContent && !loading) { setTimeout(() => loadDiagram(), 250); } })"
-  x-data="{
-    viewMode: 'preview',
-    toggleViewMode() {
-      this.viewMode = this.viewMode === 'preview' ? 'code' : 'preview';
-    },
-    copyToClipboard(elementId) {
-      const element = document.getElementById(elementId);
-      if (!element) return;
+<!-- Diagrams Data -->
+<script type="application/json" id="diagrams-config">
+  {
+    "session_id": "<%= @session.id %>",
+    "available_types": <%= @diagram_types.to_json.html_safe %>
+  }
+</script>
 
-      const text = element.textContent;
-      navigator.clipboard.writeText(text)
-        .then(() => {
-          const notification = document.createElement('div');
-          notification.textContent = 'Copied to clipboard!';
-          notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50';
-          document.body.appendChild(notification);
-          setTimeout(() => notification.remove(), 2000);
-        })
-        .catch(err => console.error('Failed to copy:', err));
-    }
-  }"
->
-  <!-- Add responsive diagram styles -->
-  <style>
-    .mermaid-responsive-container {
-      width: 100% !important;
-      height: 100% !important;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .mermaid-responsive-container svg {
-      width: 100% !important;
-      height: 100% !important;
-      max-width: none !important;
-      max-height: none !important;
-      object-fit: contain;
-    }
-
-    .mermaid-responsive-wrapper {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-    }
-  </style>
-
-  <!-- Diagram Container with full-height layout -->
-  <div class="flex flex-col h-full" style="<%= diagram_container_css_variables %>">
-    <!-- Diagram Controls -->
-    <div class="p-4 border-b border-gray-200 bg-gray-50">
-      <div class="flex flex-wrap items-center gap-2">
+<!-- Diagrams Content -->
+<div class="h-full" x-data="diagrams(JSON.parse(document.getElementById('diagrams-config').textContent))">
+  <!-- Diagram Controls - consistent with other tabs -->
+  <div class="p-4 border-b border-gray-200 bg-gray-50">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
         <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Diagram Type:</label>
           <select
-            x-model="selectedDiagramType"
+            x-model="selectedType"
             @change="loadDiagram()"
-            class="compact-select"
+            class="text-sm border border-gray-300 rounded px-3 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="database_tables">Database Tables</option>
-            <option value="model_associations">Model Associations</option>
-            <option value="foreign_keys">Foreign Keys</option>
+            <template x-for="[type, metadata] in Object.entries(availableTypes)" :key="type">
+              <option :value="type" x-text="metadata.display_name"></option>
+            </template>
           </select>
-
-          <button
-            @click="loadDiagram(true)"
-            class="compact-button bg-blue-600 text-white hover:bg-blue-700"
-          >
-            Generate Diagram
-          </button>
         </div>
 
-        <!-- Right-aligned controls -->
-        <div class="flex items-center gap-2 ml-auto">
-          <button
-            x-show="diagramContent && viewMode === 'preview'"
-            @click="resetView()"
-            class="compact-button bg-gray-600 text-white hover:bg-gray-700"
-          >
-            Reset View
-          </button>
-        </div>
+        <button
+          @click="loadDiagram()"
+          :disabled="loading"
+          class="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span x-show="!loading">Generate Diagram</span>
+          <span x-show="loading">Generating...</span>
+        </button>
+      </div>
+
+      <!-- Right-aligned controls -->
+      <div class="flex items-center gap-2">
+        <button
+          x-show="diagramContent && !loading"
+          @click="resetView()"
+          class="text-sm bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+        >
+          Reset View
+        </button>
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Diagram Content Area -->
+  <div class="flex-1 overflow-hidden relative" style="min-height: 600px;">
+    <!-- Empty State -->
+    <div
+      x-show="!diagramContent && !loading && !error"
+      class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 p-8"
+    >
+      <svg class="w-12 h-12 mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+      <p class="text-lg font-medium mb-2">Database Diagram</p>
+      <p class="text-sm text-center">Select a diagram type and click Generate to visualize your database structure</p>
+    </div>
+
+    <!-- Loading State -->
+    <div
+      x-show="loading"
+      class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-75"
+      style="z-index: 10;"
+    >
+      <div class="flex flex-col items-center">
+        <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+        <div class="text-sm text-gray-600">Generating diagram...</div>
       </div>
     </div>
 
-    <!-- Diagram Content Area -->
-    <div class="flex-1 overflow-hidden relative">
-      <!-- Empty State -->
-      <div
-        x-show="!diagramContent && !loading"
-        class="absolute inset-0 flex flex-col items-center justify-center text-gray-500"
-      >
-        <svg class="w-12 h-12 mb-2 text-gray-400" fill="none" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-        </svg>
-        <p class="text-sm">Select a diagram type and click Generate</p>
+    <!-- Rendered Diagram -->
+    <div
+      x-ref="diagramContainer"
+      x-show="diagramContent && !loading && !error"
+      class="absolute inset-0 p-4 overflow-hidden bg-white"
+      style="display: flex; flex-direction: column;"
+    >
+      <!-- Mermaid diagram will be rendered here -->
+      <div class="flex-1" style="min-height: 500px;">
+        <!-- This div will contain the actual diagram -->
       </div>
+    </div>
 
-      <!-- Loading State -->
-      <div
-        x-show="loading"
-        class="absolute inset-0 flex flex-col items-center justify-center"
-      >
-        <div class="animate-pulse flex flex-col items-center">
-          <div class="w-12 h-12 bg-blue-100 rounded-full mb-2 flex items-center justify-center">
-            <svg class="w-6 h-6 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          </div>
-          <div class="text-sm text-gray-500">Generating diagram...</div>
-        </div>
-      </div>
-
-      <!-- Rendered Diagram -->
-      <div
-        id="diagram-container"
-        x-show="diagramContent && !loading"
-        class="absolute inset-0 p-4 overflow-hidden"
-      >
-        <!-- Mermaid diagram will be rendered here -->
-      </div>
-
-      <!-- Error State -->
-      <div
-        x-show="diagramError"
-        class="absolute inset-0 flex items-center justify-center"
-      >
-        <div class="p-4 text-red-600 bg-red-50 border border-red-200 rounded m-4 max-w-lg">
-          <p class="font-medium mb-2">Error rendering diagram</p>
-          <p class="text-sm mb-2" x-text="diagramError"></p>
-          <div class="flex gap-2">
-            <button @click="diagramError = null; loadDiagram(true)" class="compact-button bg-red-600 text-white hover:bg-red-700">
-              Try Again
-            </button>
-          </div>
+    <!-- Error State -->
+    <div
+      x-show="error"
+      class="absolute inset-0 flex items-center justify-center p-8"
+    >
+      <div class="max-w-md w-full text-center">
+        <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+          <svg class="w-12 h-12 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+          </svg>
+          <h3 class="text-lg font-medium text-red-800 mb-2">Error Generating Diagram</h3>
+          <p class="text-sm text-red-600 mb-4" x-text="error"></p>
+          <button
+            @click="error = null; loadDiagram()"
+            class="text-sm bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     </div>
@@ -148,72 +116,234 @@
 </div>
 
 <script>
-function diagramsView() {
-  return {
-    selectedDiagramType: 'database_tables',
-    diagramContent: null,
-    diagramError: null,
-    loading: false,
-    viewMode: 'preview',
+document.addEventListener('alpine:init', () => {
+  Alpine.data('diagrams', (config) => {
+    // Handle missing or invalid config
+    if (!config) {
+      console.error('Diagrams component: No config provided');
+      config = { session_id: null, available_types: {} };
+    }
 
-    init() {
-      // Auto-load diagram on page load
-      setTimeout(() => this.loadDiagram(), 500);
+    return {
+      // Initialize from config
+      sessionId: config.session_id,
+      availableTypes: config.available_types || {},
+
+      // State
+      selectedType: config.selected_type || 'database_tables',
+      loading: false,
+      error: null,
+      diagramContent: null,
+      panZoomInstance: null,
+
+          init() {
+      // Load initial diagram
+      setTimeout(() => this.loadDiagram(), 100);
+
+      // Setup resize handler
+      this.setupResizeHandler();
     },
 
-    async loadDiagram(refresh = false) {
-      if (this.loading) return;
+          // Load diagram data from API
+    async loadDiagram() {
+      if (!this.sessionId) {
+        console.error('No session ID provided');
+        return;
+      }
 
       this.loading = true;
-      this.diagramError = null;
+      this.error = null;
 
       try {
-        const refreshParam = refresh ? '&refresh=true' : '';
-        const response = await fetch(`/dbwatcher/api/v1/sessions/<%= params[:id] %>/diagrams?diagram_type=${this.selectedDiagramType}${refreshParam}`);
+        const endpoint = `sessions/${this.sessionId}/diagram_data`;
+        const params = {
+          type: this.selectedType,
+          refresh: false
+        };
 
-        if (!response.ok) {
-          throw new Error(`Server error: ${response.status}`);
+        const data = await window.ApiClient.get(endpoint, params);
+
+        if (data.content) {
+          this.diagramContent = data.content;
+          // Wait a moment for DOM to update
+          setTimeout(() => this.renderDiagram(), 100);
+        } else {
+          throw new Error('No diagram content received');
         }
-
-        const data = await response.json();
-
-        if (data.error) {
-          throw new Error(data.error);
-        }
-
-        this.diagramContent = data.content;
-        await this.renderMermaid();
       } catch (error) {
+        this.error = error.message;
         console.error('Failed to load diagram:', error);
-        this.diagramError = error.message || 'Failed to load diagram';
       } finally {
         this.loading = false;
       }
     },
 
-    async renderMermaid() {
-      if (!this.diagramContent) return;
+      // Refresh diagram with latest data
+      async refreshDiagram() {
+        if (!this.sessionId) return;
 
-      const container = document.getElementById('diagram-container');
-      if (!container) return;
+        await this.loadDiagram();
+      },
+
+      // Change diagram type
+      async changeType(newType) {
+        if (this.selectedType === newType) return;
+
+        this.selectedType = newType;
+        await this.loadDiagram();
+      },
+
+          // Render diagram using MermaidService
+    async renderDiagram() {
+      const outerContainer = this.$refs.diagramContainer;
+      // Use the inner flex-1 div as the actual diagram container
+      const container = outerContainer?.querySelector('.flex-1');
+
+
+
+      if (!container || !this.diagramContent) {
+        console.error('Missing container or diagram content');
+        return;
+      }
 
       try {
-        if (window.MermaidService) {
-          await window.MermaidService.render(this.diagramContent, container);
-        } else {
+        // Cleanup previous pan/zoom instance
+        if (this.panZoomInstance) {
+          this.panZoomInstance.destroy();
+          this.panZoomInstance = null;
+        }
+
+        if (!window.MermaidService) {
           throw new Error('MermaidService not available');
         }
+
+        // Render with MermaidService
+        const result = await window.MermaidService.render(
+          this.diagramContent,
+          container,
+          {
+            fit: true,
+            center: true,
+            zoomEnabled: true,
+            panEnabled: true
+          }
+        );
+
+        // Store pan/zoom instance if created
+        if (result.panZoom) {
+          this.panZoomInstance = result.panZoom;
+        }
+
+                // Force the SVG to fill the container
+        const svg = container.querySelector('svg');
+        if (svg) {
+          svg.style.width = '100%';
+          svg.style.height = '100%';
+          svg.style.maxWidth = 'none';
+          svg.style.maxHeight = 'none';
+          svg.setAttribute('viewBox', svg.getAttribute('viewBox') || '0 0 800 600');
+          svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        }
       } catch (error) {
-        console.error('Mermaid rendering error:', error);
-        this.diagramError = error.message || 'Could not render diagram';
+        this.error = `Failed to render diagram: ${error.message}`;
+        console.error('Diagram rendering error:', error);
       }
     },
 
-    resetView() {
-      if (window.MermaidService) {
-        window.MermaidService.resetView();
+      // Zoom controls
+      zoomIn() {
+        if (this.panZoomInstance) {
+          this.panZoomInstance.zoomIn();
+        }
+      },
+
+      zoomOut() {
+        if (this.panZoomInstance) {
+          this.panZoomInstance.zoomOut();
+        }
+      },
+
+      resetZoom() {
+        if (this.panZoomInstance) {
+          this.panZoomInstance.resetZoom();
+          this.panZoomInstance.center();
+        }
+      },
+
+      // Download diagram as SVG
+      downloadSVG() {
+        const svgElement = this.$refs.diagramContainer?.querySelector('svg');
+        if (!svgElement) return;
+
+        try {
+          const svgData = new XMLSerializer().serializeToString(svgElement);
+          const blob = new Blob([svgData], { type: 'image/svg+xml' });
+          const url = URL.createObjectURL(blob);
+
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `dbwatcher-${this.selectedType}-diagram.svg`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error('Failed to download SVG:', error);
+        }
+      },
+
+      // Setup window resize handler
+      setupResizeHandler() {
+        let resizeTimeout;
+
+        const handleResize = () => {
+          clearTimeout(resizeTimeout);
+          resizeTimeout = setTimeout(() => {
+            if (this.panZoomInstance) {
+              this.panZoomInstance.resize();
+              this.panZoomInstance.fit();
+              this.panZoomInstance.center();
+            }
+          }, 250);
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        // Cleanup on destroy
+        this.$cleanup = () => {
+          window.removeEventListener('resize', handleResize);
+          if (this.panZoomInstance) {
+            this.panZoomInstance.destroy();
+          }
+        };
+      },
+
+      // Format diagram type for display
+      formatType(type) {
+        const typeMap = {
+          'database_tables': 'Database Schema',
+          'model_associations': 'Model Associations'
+        };
+        return typeMap[type] || type.toUpperCase();
+      },
+
+      // Get type description
+      getTypeDescription(type) {
+        const descriptions = {
+          'database_tables': 'Shows database relationships and foreign keys',
+          'model_associations': 'Shows ActiveRecord model relationships'
+        };
+        return descriptions[type] || '';
+      },
+
+      // Cleanup when component is destroyed
+      destroy() {
+        if (this.$cleanup) {
+          this.$cleanup();
+        }
       }
-    }
-  };
-}
+    };
+  });
+});
 </script>

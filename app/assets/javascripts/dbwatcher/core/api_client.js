@@ -36,8 +36,11 @@ const ApiClient = {
       return endpoint;
     }
 
-    const base = endpoint.startsWith('/') ? '' : this.baseURL;
-    return `${base}${endpoint}`;
+    if (endpoint.startsWith('/')) {
+      return endpoint;
+    }
+
+    return `${this.baseURL}/${endpoint}`;
   },
 
   // Generic request method

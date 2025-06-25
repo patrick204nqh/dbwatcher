@@ -4,6 +4,11 @@ module Dbwatcher
   class Engine < ::Rails::Engine
     isolate_namespace Dbwatcher
 
+    # Configure autoload paths
+    config.autoload_paths += %W[
+      #{root}/lib
+    ]
+
     initializer "dbwatcher.setup" do |app|
       if Dbwatcher.configuration.enabled && !Rails.env.production?
         # Auto-include in all models

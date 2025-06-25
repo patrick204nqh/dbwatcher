@@ -4,7 +4,7 @@ module Dbwatcher
   module Api
     module V1
       class SessionsController < BaseController
-        before_action :find_session
+        before_action :find_session, except: [:diagram_types]
 
         def changes_data
           Rails.logger.info "API::V1::SessionsController#changes_data: Getting changes for session #{@session.id}"
@@ -36,25 +36,13 @@ module Dbwatcher
           end
         end
 
-        # New endpoint aliases for cleaner URLs
-        def changes
-          changes_data
-        end
+        def diagram_types
+          Rails.logger.info "API::V1::SessionsController#diagram_types: Getting available diagram types"
 
-        def summary
-          summary_data
-        end
-
-        def diagrams
-          # Use diagram_type parameter instead of type for consistency
-          service = Dbwatcher::Services::Api::DiagramDataService.new(@session, params[:diagram_type], params)
-          result = service.call
-
-          if result[:error]
-            render json: { error: result[:error] }, status: :unprocessable_entity
-          else
-            render json: result
-          end
+          render json: {
+            types: Dbwatcher::Services::Api::DiagramDataService.available_types_with_metadata,
+            default_type: "database_tables"
+          }
         end
 
         private

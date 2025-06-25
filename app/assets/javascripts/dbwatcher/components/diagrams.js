@@ -9,18 +9,20 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('diagrams', (config) => ({
     // Initialize from config
     sessionId: config.session_id,
-    availableTypes: config.available_types || ['erd', 'flowchart'],
+    availableTypes: config.available_types || {},
 
     // State
-    selectedType: config.selected_type || 'erd',
+    selectedType: config.selected_type || 'database_tables',
     loading: false,
     error: null,
     diagramContent: null,
     panZoomInstance: null,
 
     init() {
+      console.log('Diagrams component initialized', { sessionId: this.sessionId, availableTypes: this.availableTypes });
+
       // Load initial diagram
-      this.loadDiagram();
+      setTimeout(() => this.loadDiagram(), 100);
 
       // Setup resize handler
       this.setupResizeHandler();
@@ -28,24 +30,32 @@ document.addEventListener('alpine:init', () => {
 
     // Load diagram data from API
     async loadDiagram() {
-      if (!this.sessionId) return;
+      if (!this.sessionId) {
+        console.error('No session ID provided');
+        return;
+      }
+
+      console.log('Loading diagram:', { sessionId: this.sessionId, selectedType: this.selectedType });
 
       this.loading = true;
       this.error = null;
 
       try {
-        const endpoint = `/sessions/${this.sessionId}/diagram_data`;
+        const endpoint = `sessions/${this.sessionId}/diagram_data`;
         const params = {
           type: this.selectedType,
           refresh: false
         };
 
-        const data = await Alpine.store('session').loadData(endpoint, params);
+        console.log('Making API call:', { endpoint, params });
+        const data = await window.ApiClient.get(endpoint, params);
+        console.log('API response:', data);
 
-        if (data.diagram_content) {
-          this.diagramContent = data.diagram_content;
-          await this.$nextTick();
-          await this.renderDiagram();
+        if (data.content) {
+          this.diagramContent = data.content;
+          console.log('Diagram content loaded, rendering...');
+          // Wait a moment for DOM to update
+          setTimeout(() => this.renderDiagram(), 100);
         } else {
           throw new Error('No diagram content received');
         }
@@ -61,9 +71,6 @@ document.addEventListener('alpine:init', () => {
     async refreshDiagram() {
       if (!this.sessionId) return;
 
-      // Clear cache for this session's diagrams
-      Alpine.store('session').clearCache('diagram_data');
-
       await this.loadDiagram();
     },
 
@@ -78,13 +85,24 @@ document.addEventListener('alpine:init', () => {
     // Render diagram using MermaidService
     async renderDiagram() {
       const container = this.$refs.diagramContainer;
-      if (!container || !this.diagramContent) return;
+      console.log('Rendering diagram:', { container, diagramContent: this.diagramContent });
+
+      if (!container || !this.diagramContent) {
+        console.error('Missing container or diagram content:', { container, diagramContent: this.diagramContent });
+        return;
+      }
 
       try {
         // Cleanup previous pan/zoom instance
         if (this.panZoomInstance) {
           this.panZoomInstance.destroy();
           this.panZoomInstance = null;
+        }
+
+        console.log('Calling MermaidService.render...');
+
+        if (!window.MermaidService) {
+          throw new Error('MermaidService not available');
         }
 
         // Render with MermaidService

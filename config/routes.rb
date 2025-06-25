@@ -11,8 +11,6 @@ Dbwatcher::Engine.routes.draw do
       get :changes
       get :summary
       get :diagrams
-      # Legacy endpoints - kept for backward compatibility
-      get :diagram
     end
 
     collection do
@@ -25,13 +23,13 @@ Dbwatcher::Engine.routes.draw do
     namespace :v1 do
       resources :sessions, only: [] do
         member do
-          get :changes
-          get :summary
-          get :diagrams
-          # Legacy endpoint names for backward compatibility
           get :changes_data
           get :summary_data
           get :diagram_data
+        end
+
+        collection do
+          get :diagram_types
         end
       end
     end

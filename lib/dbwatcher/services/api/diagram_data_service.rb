@@ -8,13 +8,13 @@ module Dbwatcher
       # Provides diagram data for the sessions diagrams view and API endpoints
       # with caching, type validation, and comprehensive error handling.
       class DiagramDataService < BaseApiService
-        VALID_DIAGRAM_TYPES = %w[database_tables model_associations].freeze
         DEFAULT_DIAGRAM_TYPE = "database_tables"
 
-        attr_reader :diagram_type
+        attr_reader :diagram_type, :diagram_registry
 
         def initialize(session, diagram_type = nil, params = {})
           super(session, params)
+          @diagram_registry = Dbwatcher::Services::DiagramTypeRegistry.new
           @diagram_type = normalize_diagram_type(diagram_type)
         end
 
@@ -44,7 +44,14 @@ module Dbwatcher
         #
         # @return [Array<String>] available diagram types
         def self.available_types
-          VALID_DIAGRAM_TYPES
+          Dbwatcher::Services::DiagramTypeRegistry.new.available_types
+        end
+
+        # Get available diagram types with metadata
+        #
+        # @return [Hash] available diagram types with metadata
+        def self.available_types_with_metadata
+          Dbwatcher::Services::DiagramTypeRegistry.new.available_types_with_metadata
         end
 
         private
@@ -91,23 +98,24 @@ module Dbwatcher
 
         def normalize_diagram_type(type)
           normalized = type.to_s.strip.downcase
-          VALID_DIAGRAM_TYPES.include?(normalized) ? normalized : DEFAULT_DIAGRAM_TYPE
+          diagram_registry.type_exists?(normalized) ? normalized : DEFAULT_DIAGRAM_TYPE
         end
 
         def validate_diagram_type
-          return nil if VALID_DIAGRAM_TYPES.include?(diagram_type)
+          return nil if diagram_registry.type_exists?(diagram_type)
 
-          error_msg = "Invalid diagram type '#{diagram_type}'. Valid types: #{VALID_DIAGRAM_TYPES.join(", ")}"
+          available_types = diagram_registry.available_types
+          error_msg = "Invalid diagram type '#{diagram_type}'. Valid types: #{available_types.join(", ")}"
           log_error error_msg
           { error: error_msg }
         end
 
         def cache_duration
-          # Longer cache for complex diagrams
+          # Longer cache for complex diagrams based on type
           case diagram_type
           when "model_associations"
             2.hours
-          when "database_tables"
+          when "database_tables", "database_tables_inferred"
             1.hour
           else
             30.minutes

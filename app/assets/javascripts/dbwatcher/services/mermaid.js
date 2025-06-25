@@ -25,8 +25,8 @@ const MermaidService = {
       responsive: true,
       securityLevel: 'loose',
 
-      // Optimized for performance
-      logLevel: 'warn',
+      // Suppress warnings for better UX
+      logLevel: 'error',
 
       // ER diagram settings
       er: {
@@ -36,12 +36,19 @@ const MermaidService = {
         fontSize: 14
       },
 
-      // Flowchart settings
+      // Flowchart settings with better compatibility
       flowchart: {
         useMaxWidth: true,
         htmlLabels: true,
-        curve: 'linear'
-      }
+        curve: 'basis',
+        padding: 20,
+        nodeSpacing: 50,
+        rankSpacing: 50
+      },
+
+      // Suppress internal warnings
+      suppressErrorRendering: false,
+      suppressWarnings: true
     });
 
     this.initialized = true;
@@ -79,17 +86,27 @@ const MermaidService = {
       diagramDiv.style.cssText = 'width: 100%; height: 100%;';
       container.appendChild(diagramDiv);
 
-      // Render with modern API
-      const { svg } = await window.mermaid.render('diagram-' + Date.now(), content);
+      // Render with modern API and error handling
+      let renderResult;
+      try {
+        renderResult = await window.mermaid.render('diagram-' + Date.now(), content);
+      } catch (renderError) {
+        // Try to clean up content and retry once
+        const cleanContent = this.cleanDiagramContent(content);
+        renderResult = await window.mermaid.render('diagram-' + Date.now() + '-retry', cleanContent);
+      }
+
+      const { svg } = renderResult;
       diagramDiv.innerHTML = svg;
 
       // Enable pan/zoom if svg-pan-zoom is available
       const svgElement = diagramDiv.querySelector('svg');
+      let panZoom = null;
       if (svgElement && window.svgPanZoom) {
-        this.enableInteractions(svgElement, options);
+        panZoom = this.enableInteractions(svgElement, options);
       }
 
-      return { success: true, element: svgElement };
+      return { success: true, element: svgElement, panZoom };
     } catch (error) {
       console.error('Mermaid rendering failed:', error);
       this.showError(container, error.message);
@@ -122,6 +139,19 @@ const MermaidService = {
       console.warn('Failed to enable SVG interactions:', error);
       return null;
     }
+  },
+
+  // Clean diagram content to fix common issues
+  cleanDiagramContent(content) {
+    return content
+      // Remove any problematic characters
+      .replace(/[^\x00-\x7F]/g, '')
+      // Normalize whitespace
+      .replace(/\s+/g, ' ')
+      // Remove empty lines
+      .split('\n')
+      .filter(line => line.trim())
+      .join('\n');
   },
 
   // Add keyboard shortcuts for pan/zoom
