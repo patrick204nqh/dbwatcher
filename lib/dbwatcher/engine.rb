@@ -9,6 +9,23 @@ module Dbwatcher
       #{root}/lib
     ]
 
+    # Serve static assets
+    initializer "dbwatcher.assets", before: :add_to_load_path do |app|
+      # Define asset paths
+      app.config.assets.paths << root.join("app", "assets", "stylesheets")
+      app.config.assets.paths << root.join("app", "assets", "javascripts")
+
+      # Set up precompilation list
+      app.config.assets.precompile += %w[
+        dbwatcher/core/alpine_store.js
+        dbwatcher/core/api_client.js
+        dbwatcher/services/mermaid.js
+        dbwatcher/components/changes_table.js
+        dbwatcher/components/summary.js
+        dbwatcher/components/diagrams.js
+      ]
+    end
+
     initializer "dbwatcher.setup" do |app|
       if Dbwatcher.configuration.enabled && !Rails.env.production?
         # Auto-include in all models
@@ -29,20 +46,6 @@ module Dbwatcher
       app.routes.prepend do
         mount Dbwatcher::Engine => "/dbwatcher", as: :dbwatcher
       end
-    end
-
-    # Serve static assets
-    initializer "dbwatcher.assets" do |app|
-      app.config.assets.paths << root.join("app", "assets", "stylesheets")
-      app.config.assets.paths << root.join("app", "assets", "javascripts")
-      app.config.assets.precompile += %w[
-        dbwatcher/core/alpine_store.js
-        dbwatcher/core/api_client.js
-        dbwatcher/services/mermaid.js
-        dbwatcher/components/changes_table.js
-        dbwatcher/components/summary.js
-        dbwatcher/components/diagrams.js
-      ]
     end
   end
 end
