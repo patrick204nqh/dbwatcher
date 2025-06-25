@@ -9,15 +9,15 @@
 <!-- Diagrams Content -->
 <div class="h-full" x-data="diagrams(JSON.parse(document.getElementById('diagrams-config').textContent))">
   <!-- Diagram Controls - consistent with other tabs -->
-  <div class="p-4 border-b border-gray-200 bg-gray-50">
+  <div class="p-3 border-b border-gray-300 bg-gray-100">
     <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
         <div class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Diagram Type:</label>
+          <label class="text-xs font-medium text-gray-700">Diagram Type:</label>
           <select
             x-model="selectedType"
             @change="loadDiagram()"
-            class="text-sm border border-gray-300 rounded px-3 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="compact-select text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
           >
             <template x-for="[type, metadata] in Object.entries(availableTypes)" :key="type">
               <option :value="type" x-text="metadata.display_name"></option>
@@ -28,42 +28,46 @@
         <button
           @click="loadDiagram()"
           :disabled="loading"
-          class="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="compact-button text-xs bg-blue-medium text-white px-3 py-1 rounded hover:bg-navy-dark disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span x-show="!loading">Generate Diagram</span>
+          <span x-show="!loading">Generate</span>
           <span x-show="loading">Generating...</span>
         </button>
       </div>
 
       <!-- Right-aligned controls -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1">
         <button
           x-show="diagramContent && !loading"
           @click="resetView()"
-          class="text-sm bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+          class="compact-button text-xs bg-navy-dark text-white px-2 py-1 rounded hover:bg-blue-medium"
         >
           Reset View
         </button>
-
-
-
+        <button
+          x-show="diagramContent && !loading"
+          @click="downloadSVG()"
+          class="compact-button text-xs bg-blue-medium text-white px-2 py-1 rounded hover:bg-navy-dark"
+        >
+          Download
+        </button>
       </div>
     </div>
   </div>
 
   <!-- Diagram Content Area -->
-  <div class="flex-1 overflow-hidden relative" style="min-height: 600px;">
+  <div class="flex-1 overflow-hidden relative" style="min-height: 500px;">
     <!-- Empty State -->
     <div
       x-show="!diagramContent && !loading && !error"
-      class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 p-8"
+      class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 p-6"
     >
-      <svg class="w-12 h-12 mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
       </svg>
-      <p class="text-lg font-medium mb-2">Database Diagram</p>
-      <p class="text-sm text-center">Select a diagram type and click Generate to visualize your database structure</p>
+      <p class="text-sm font-medium mb-1">Database Diagram</p>
+      <p class="text-xs text-center text-gray-400">Select a diagram type and click Generate to visualize your database structure</p>
     </div>
 
     <!-- Loading State -->
@@ -73,8 +77,8 @@
       style="z-index: 10;"
     >
       <div class="flex flex-col items-center">
-        <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
-        <div class="text-sm text-gray-600">Generating diagram...</div>
+        <div class="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+        <div class="text-xs text-gray-600">Generating diagram...</div>
       </div>
     </div>
 
@@ -82,11 +86,11 @@
     <div
       x-ref="diagramContainer"
       x-show="diagramContent && !loading && !error"
-      class="absolute inset-0 p-4 overflow-hidden bg-white"
+      class="absolute inset-0 p-3 overflow-hidden bg-white"
       style="display: flex; flex-direction: column;"
     >
       <!-- Mermaid diagram will be rendered here -->
-      <div class="flex-1" style="min-height: 500px;">
+      <div class="flex-1" style="min-height: 400px;">
         <!-- This div will contain the actual diagram -->
       </div>
     </div>
@@ -94,18 +98,18 @@
     <!-- Error State -->
     <div
       x-show="error"
-      class="absolute inset-0 flex items-center justify-center p-8"
+      class="absolute inset-0 flex items-center justify-center p-6"
     >
       <div class="max-w-md w-full text-center">
-        <div class="bg-red-50 border border-red-200 rounded-lg p-6">
-          <svg class="w-12 h-12 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-red-50 border border-red-200 rounded p-4">
+          <svg class="w-10 h-10 text-red-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
           </svg>
-          <h3 class="text-lg font-medium text-red-800 mb-2">Error Generating Diagram</h3>
-          <p class="text-sm text-red-600 mb-4" x-text="error"></p>
+          <h3 class="text-sm font-medium text-red-800 mb-2">Error Generating Diagram</h3>
+          <p class="text-xs text-red-600 mb-3" x-text="error"></p>
           <button
             @click="error = null; loadDiagram()"
-            class="text-sm bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            class="compact-button text-xs bg-blue-medium text-white px-3 py-1 rounded hover:bg-navy-dark"
           >
             Try Again
           </button>
