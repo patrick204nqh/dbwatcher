@@ -1,0 +1,21 @@
+<div class="h-full flex flex-col">
+  <%= render partial: 'session_header', locals: { session: @session } %>
+
+  <!-- Tab Bar with URL-based navigation -->
+  <div class="tab-bar">
+    <%= link_to changes_session_path(@session.id), class: "tab-item" do %>
+      Changes
+    <% end %>
+    <%= link_to summary_session_path(@session.id), class: "tab-item active" do %>
+      Summary
+    <% end %>
+    <%= link_to diagrams_session_path(@session.id), class: "tab-item" do %>
+      Diagrams
+    <% end %>
+  </div>
+
+  <!-- Summary Content -->
+  <div class="flex-1 overflow-auto">
+    <%= render partial: 'summary_tab', locals: { tables_summary: @tables_summary } %>
+  </div>
+</div>

@@ -1,0 +1,8 @@
+<div class="h-full flex flex-col" x-data="sessionNavigation('<%= @session.id %>')">
+  <%= render 'dbwatcher/sessions/shared/session_header', session: @session %>
+  <%= render 'dbwatcher/sessions/shared/navigation' %>
+
+  <div class="flex-1 overflow-auto">
+    <%= yield %>
+  </div>
+</div>
