@@ -7,7 +7,7 @@ module Dbwatcher
       {
         auto_generate: active_tab == "diagrams",
         default_type: "database_tables",
-        endpoint: diagram_path(session),
+        endpoint: diagram_data_api_v1_session_path(session),
         container_id: "diagram-container"
       }.to_json
     end

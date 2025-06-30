@@ -1,59 +1,42 @@
 /**
- * Changes Table Alpine.js Component
- *
- * Handles table interactions, filtering, and column visibility
- * using centralized Alpine store and modern APIs
+ * Changes Table Component
+ * Simplified component using DBWatcher base architecture
  */
 
-document.addEventListener('alpine:init', () => {
-  Alpine.data('changesTable', (config) => ({
-    // Initialize from config
-    sessionId: config.session_id,
-    tablesData: config.tables_summary || {},
+// Register component with DBWatcher
+DBWatcher.registerComponent('changesTable', function(config) {
+  return Object.assign(DBWatcher.BaseComponent(config), {
+    // Component-specific state
+    sessionId: config.sessionId,
+    tableData: config.tableData || {},
+    filters: config.filters || {},
+    showColumnSelector: null,
+    tableColumns: {},
 
-    // Local state
-    filters: config.active_filters || {},
-    loading: false,
-    error: null,
-
-    // Debounced filter application
-    applyFilters: null,
-
-    init() {
-      // Initialize table columns in store
-      Alpine.store('session').initializeTableColumns(this.tablesData);
-
-      // Setup debounced filter application
-      this.applyFilters = this.debounce(async () => {
-        await this.loadFilteredData();
-      }, 300);
-
-      // Setup intersection observer for performance
-      this.setupIntersectionObserver();
+    // Component initialization
+    componentInit() {
+      this.initializeColumns();
+      this.setupFiltering();
     },
 
-    // Load filtered data via API
-    async loadFilteredData() {
-      if (!this.sessionId) return;
+    // Initialize column visibility tracking
+    initializeColumns() {
+      this.tableColumns = {};
+      Object.keys(this.tableData).forEach((tableName) => {
+        this.tableColumns[tableName] = {};
+        const columns = this.tableData[tableName].columns || [];
+        columns.forEach((col) => {
+          this.tableColumns[tableName][col] = true;
+        });
+      });
+    },
 
-      this.loading = true;
-      this.error = null;
-
-      try {
-        const endpoint = `sessions/${this.sessionId}/changes_data`;
-        const data = await Alpine.store('session').loadData(endpoint, this.filters);
-
-        // Update tables data
-        if (data.tables_summary) {
-          this.tablesData = data.tables_summary;
-          Alpine.store('session').initializeTableColumns(this.tablesData);
-        }
-      } catch (error) {
-        this.error = error.message;
-        console.error('Failed to load filtered data:', error);
-      } finally {
-        this.loading = false;
-      }
+    // Setup filtering with debouncing
+    setupFiltering() {
+      // Use library debouncing from BaseComponent
+      this.applyFilters = this.debounce(() => {
+        this.dispatchEvent("table-filtered", { filters: this.filters });
+      }, 300);
     },
 
     // Clear all filters
@@ -62,108 +45,113 @@ document.addEventListener('alpine:init', () => {
       this.applyFilters();
     },
 
-    // Scroll to specific table
-    scrollToTable(tableName) {
-      const element = document.getElementById(`table-${tableName}`);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    },
-
-    // Column visibility methods (delegated to store)
-    get showColumnSelector() {
-      return Alpine.store('session').showColumnSelector;
-    },
-
-    get tableColumns() {
-      return Alpine.store('session').tableColumns;
-    },
-
+    // Toggle column selector visibility
     toggleColumnSelector(tableName) {
-      Alpine.store('session').toggleColumnSelector(tableName);
+      this.showColumnSelector =
+        this.showColumnSelector === tableName ? null : tableName;
     },
 
+    // Select all columns for a table
     selectAllColumns(tableName) {
-      Alpine.store('session').selectAllColumns(tableName);
+      if (!this.tableColumns[tableName]) return;
+
+      Object.keys(this.tableColumns[tableName]).forEach((column) => {
+        this.tableColumns[tableName][column] = true;
+      });
     },
 
+    // Deselect all columns for a table
     selectNoneColumns(tableName) {
-      Alpine.store('session').selectNoneColumns(tableName);
-    },
+      if (!this.tableColumns[tableName]) return;
 
-    // Setup intersection observer for performance optimization
-    setupIntersectionObserver() {
-      if (!window.IntersectionObserver) return;
-
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          const tableElement = entry.target;
-          const tableName = tableElement.getAttribute('data-table-name');
-
-          if (entry.isIntersecting) {
-            // Table is visible - could load additional data if needed
-            tableElement.classList.add('table-visible');
-          } else {
-            tableElement.classList.remove('table-visible');
-          }
-        });
-      }, {
-        root: null,
-        rootMargin: '50px',
-        threshold: 0.1
-      });
-
-      // Observe table containers
-      this.$nextTick(() => {
-        const tables = this.$el.querySelectorAll('[data-table-name]');
-        tables.forEach(table => observer.observe(table));
+      Object.keys(this.tableColumns[tableName]).forEach((column) => {
+        this.tableColumns[tableName][column] = false;
       });
     },
 
-    // Utility: Debounce function
-    debounce(func, wait) {
-      let timeout;
-      return function executedFunction(...args) {
-        const later = () => {
-          clearTimeout(timeout);
-          func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-      };
+    // Check if column is visible
+    isColumnVisible(tableName, column) {
+      return this.tableColumns[tableName] &&
+             this.tableColumns[tableName][column] !== false;
     },
 
-    // Format helpers
+    // Get visible columns for a table
+    getVisibleColumns(tableName) {
+      if (!this.tableColumns[tableName]) return [];
+
+      return Object.keys(this.tableColumns[tableName])
+        .filter(col => this.tableColumns[tableName][col]);
+    },
+
+    // Format helpers using BaseComponent utilities
     formatTimestamp(timestamp) {
       if (!timestamp) return '--';
-
-      try {
-        const date = new Date(timestamp);
-        return date.toLocaleTimeString('en-US', {
-          hour12: false,
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        });
-      } catch (error) {
-        return timestamp;
-      }
+      return this.formatTime(timestamp);
     },
 
     // Get operation badge class
     getOperationClass(operation) {
       if (!operation) return 'badge';
-
       const op = operation.toLowerCase();
       return `badge badge-${op}`;
     },
 
-    // Check if column has changes
-    hasColumnChanges(change, column) {
-      const columnChanges = change.changes || [];
-      return columnChanges.some(c =>
-        (c.column || c.column) === column.toString()
-      );
+    // Check if there are any visible changes
+    hasVisibleChanges() {
+      return Object.keys(this.tableData).some(tableName => {
+        const data = this.tableData[tableName];
+        return data.changes && data.changes.length > 0;
+      });
+    },
+
+    // Get filtered table count
+    getFilteredTableCount() {
+      return Object.keys(this.tableData).filter(tableName => {
+        const data = this.tableData[tableName];
+        return data.changes && data.changes.length > 0;
+      }).length;
+    },
+
+    // JSON utility functions for better data display
+    isJsonValue(value) {
+      if (typeof value !== 'string') return false;
+      try {
+        const parsed = JSON.parse(value);
+        return typeof parsed === 'object' && parsed !== null;
+      } catch {
+        return false;
+      }
+    },
+
+    formatJsonValue(value) {
+      if (!value) return 'No value';
+      try {
+        if (typeof value === 'string') {
+          const parsed = JSON.parse(value);
+          return JSON.stringify(parsed, null, 2);
+        }
+        return JSON.stringify(value, null, 2);
+      } catch {
+        return value;
+      }
+    },
+
+    // Check if a column was changed in an UPDATE operation
+    isColumnChanged(change, column) {
+      return change.operation === 'UPDATE' &&
+             change.changes &&
+             change.changes.find(c => c.column === column);
+    },
+
+    // Get the value for a column (handles both changed and unchanged)
+    getColumnValue(change, column, type = 'current') {
+      if (change.operation === 'UPDATE' && change.changes) {
+        const columnChange = change.changes.find(c => c.column === column);
+        if (columnChange) {
+          return type === 'old' ? columnChange.old_value : columnChange.new_value;
+        }
+      }
+      return change.record_snapshot?.[column];
     }
-  }));
+  });
 });

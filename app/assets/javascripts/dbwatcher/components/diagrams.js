@@ -1,77 +1,53 @@
 /**
- * Diagrams Alpine.js Component
- *
- * Handles diagram rendering, type selection, and interactions
- * using simplified MermaidService and centralized state
+ * Diagrams Component
+ * Simplified component using DBWatcher base architecture
  */
 
-document.addEventListener('alpine:init', () => {
-  Alpine.data('diagrams', (config) => ({
-    // Initialize from config
-    sessionId: config.session_id,
-    availableTypes: config.available_types || {},
-
-    // State
-    selectedType: config.selected_type || 'database_tables',
-    loading: false,
-    error: null,
+// Register component with DBWatcher
+DBWatcher.registerComponent('diagrams', function(config) {
+  return Object.assign(DBWatcher.BaseComponent(config), {
+    // Component-specific state
+    sessionId: config.sessionId,
+    availableTypes: config.availableTypes || {},
+    selectedType: config.selectedType || 'database_tables',
     diagramContent: null,
     panZoomInstance: null,
 
-    init() {
-      console.log('Diagrams component initialized', { sessionId: this.sessionId, availableTypes: this.availableTypes });
-
+    // Component initialization
+    componentInit() {
       // Load initial diagram
-      setTimeout(() => this.loadDiagram(), 100);
+      this.loadDiagram();
+    },
 
-      // Setup resize handler
-      this.setupResizeHandler();
+    // Component cleanup
+    componentDestroy() {
+      if (this.panZoomInstance) {
+        this.panZoomInstance.destroy();
+        this.panZoomInstance = null;
+      }
     },
 
     // Load diagram data from API
     async loadDiagram() {
       if (!this.sessionId) {
-        console.error('No session ID provided');
+        this.handleError(new Error('No session ID provided'));
         return;
       }
 
-      console.log('Loading diagram:', { sessionId: this.sessionId, selectedType: this.selectedType });
-
-      this.loading = true;
-      this.error = null;
-
       try {
-        const endpoint = `sessions/${this.sessionId}/diagram_data`;
-        const params = {
-          type: this.selectedType,
-          refresh: false
-        };
-
-        console.log('Making API call:', { endpoint, params });
-        const data = await window.ApiClient.get(endpoint, params);
-        console.log('API response:', data);
+        const url = `/dbwatcher/api/v1/sessions/${this.sessionId}/diagram_data?type=${this.selectedType}`;
+        const data = await this.fetchData(url);
 
         if (data.content) {
           this.diagramContent = data.content;
-          console.log('Diagram content loaded, rendering...');
-          // Wait a moment for DOM to update
-          setTimeout(() => this.renderDiagram(), 100);
+          // Wait for DOM update
+          this.$nextTick(() => this.renderDiagram());
         } else {
           throw new Error('No diagram content received');
         }
       } catch (error) {
-        this.error = error.message;
-        console.error('Failed to load diagram:', error);
-      } finally {
-        this.loading = false;
+        // Error handling is done by fetchData
       }
-    },
-
-    // Refresh diagram with latest data
-    async refreshDiagram() {
-      if (!this.sessionId) return;
-
-      await this.loadDiagram();
     },
 
     // Change diagram type
@@ -85,10 +61,8 @@ document.addEventListener('alpine:init', () => {
     // Render diagram using MermaidService
     async renderDiagram() {
       const container = this.$refs.diagramContainer;
-      console.log('Rendering diagram:', { container, diagramContent: this.diagramContent });
 
       if (!container || !this.diagramContent) {
-        console.error('Missing container or diagram content:', { container, diagramContent: this.diagramContent });
         return;
       }
 
@@ -98,8 +72,6 @@ document.addEventListener('alpine:init', () => {
           this.panZoomInstance.destroy();
           this.panZoomInstance = null;
         }
-
-        console.log('Calling MermaidService.render...');
 
         if (!window.MermaidService) {
           throw new Error('MermaidService not available');
@@ -118,14 +90,11 @@ document.addEventListener('alpine:init', () => {
         );
 
         // Store pan/zoom instance if created
-        if (result.panZoom) {
+        if (result && result.panZoom) {
           this.panZoomInstance = result.panZoom;
         }
-
-        console.log('Diagram rendered successfully');
       } catch (error) {
-        this.error = `Failed to render diagram: ${error.message}`;
-        console.error('Diagram rendering error:', error);
+        this.handleError(error);
       }
     },
 
@@ -149,6 +118,11 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    // Reset view - alias for resetZoom for consistency with template
+    resetView() {
+      this.resetZoom();
+    },
+
     // Download diagram as SVG
     downloadSVG() {
       const svgElement = this.$refs.diagramContainer?.querySelector('svg');
@@ -168,59 +142,16 @@ document.addEventListener('alpine:init', () => {
 
         URL.revokeObjectURL(url);
       } catch (error) {
-        console.error('Failed to download SVG:', error);
+        this.handleError(new Error('Failed to download SVG'));
       }
     },
 
-    // Setup window resize handler
-    setupResizeHandler() {
-      let resizeTimeout;
-
-      const handleResize = () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-          if (this.panZoomInstance) {
-            this.panZoomInstance.resize();
-            this.panZoomInstance.fit();
-            this.panZoomInstance.center();
-          }
-        }, 250);
+    // Get diagram type metadata
+    getDiagramTypeInfo(type) {
+      return this.availableTypes[type] || {
+        display_name: type,
+        description: ''
       };
-
-      window.addEventListener('resize', handleResize);
-
-      // Cleanup on destroy
-      this.$cleanup = () => {
-        window.removeEventListener('resize', handleResize);
-        if (this.panZoomInstance) {
-          this.panZoomInstance.destroy();
-        }
-      };
-    },
-
-    // Format diagram type for display
-    formatType(type) {
-      const typeMap = {
-        'erd': 'Entity Relationship',
-        'flowchart': 'Flowchart'
-      };
-      return typeMap[type] || type.toUpperCase();
-    },
-
-    // Get type description
-    getTypeDescription(type) {
-      const descriptions = {
-        'erd': 'Shows database relationships and foreign keys',
-        'flowchart': 'Shows data flow and table dependencies'
-      };
-      return descriptions[type] || '';
-    },
-
-    // Cleanup when component is destroyed
-    destroy() {
-      if (this.$cleanup) {
-        this.$cleanup();
-      }
     }
-  }));
+  });
 });

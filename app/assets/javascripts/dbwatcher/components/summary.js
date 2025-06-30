@@ -1,25 +1,21 @@
 /**
- * Summary Alpine.js Component
- *
- * Handles summary statistics display, charts, and real-time updates
- * using centralized state management
+ * Summary Component
+ * Simplified component using DBWatcher base architecture
  */
 
-document.addEventListener('alpine:init', () => {
-  Alpine.data('summary', (config) => ({
-    // Initialize from config
-    sessionId: config.session_id,
-    summaryData: config.summary_data || {},
-
-    // State
-    loading: false,
-    error: null,
-    autoRefresh: false,
+// Register component with DBWatcher
+DBWatcher.registerComponent('summary', function(config) {
+  return Object.assign(DBWatcher.BaseComponent(config), {
+    // Component-specific state
+    sessionId: config.sessionId,
+    summaryData: config.summaryData || {},
+    autoRefresh: config.autoRefresh || false,
     refreshInterval: null,
 
-    init() {
+    // Component initialization
+    componentInit() {
       // Load initial data if not provided
-      if (!Object.keys(this.summaryData).length) {
+      if (this.isEmpty(this.summaryData)) {
         this.loadSummaryData();
       }
 
@@ -29,16 +25,18 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    // Component cleanup
+    componentDestroy() {
+      this.stopAutoRefresh();
+    },
+
     // Load summary data from API
     async loadSummaryData() {
       if (!this.sessionId) return;
 
-      this.loading = true;
-      this.error = null;
-
       try {
-        const endpoint = `sessions/${this.sessionId}/summary_data`;
-        const data = await Alpine.store('session').loadData(endpoint);
+        const url = `/dbwatcher/api/v1/sessions/${this.sessionId}/summary_data`;
+        const data = await this.fetchData(url);
 
         if (data.summary_data) {
           this.summaryData = data.summary_data;
@@ -46,18 +44,8 @@ document.addEventListener('alpine:init', () => {
           throw new Error('No summary data received');
         }
       } catch (error) {
-        this.error = error.message;
-        console.error('Failed to load summary data:', error);
-      } finally {
-        this.loading = false;
+        // Error handling is done by fetchData
       }
-    },
-
-    // Refresh summary data
-    async refreshData() {
-      // Clear cache for summary data
-      Alpine.store('session').clearCache('summary_data');
-      await this.loadSummaryData();
     },
 
     // Toggle auto-refresh
@@ -75,13 +63,8 @@ document.addEventListener('alpine:init', () => {
     startAutoRefresh() {
       if (this.refreshInterval) return;
 
-      this.refreshInterval = setInterval(async () => {
-        try {
-          await this.refreshData();
-        } catch (error) {
-          console.error('Auto-refresh failed:', error);
-          // Don't stop auto-refresh on single failure
-        }
+      this.refreshInterval = setInterval(() => {
+        this.loadSummaryData();
       }, 30000); // 30 seconds
     },
 
@@ -94,7 +77,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     // Get total changes count
-    get totalChanges() {
+    getTotalChanges() {
       if (!this.summaryData.table_breakdown) return 0;
 
       return Object.values(this.summaryData.table_breakdown)
@@ -105,12 +88,12 @@ document.addEventListener('alpine:init', () => {
     },
 
     // Get total tables count
-    get totalTables() {
+    getTotalTables() {
       return Object.keys(this.summaryData.table_breakdown || {}).length;
     },
 
     // Get operation breakdown for charts
-    get operationBreakdown() {
+    getOperationBreakdown() {
       if (!this.summaryData.table_breakdown) return {};
 
       const breakdown = { insert: 0, update: 0, delete: 0 };
@@ -126,7 +109,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     // Get table activity data for visualization
-    get tableActivity() {
+    getTableActivity() {
       if (!this.summaryData.table_breakdown) return [];
 
       return Object.entries(this.summaryData.table_breakdown)
@@ -143,12 +126,6 @@ document.addEventListener('alpine:init', () => {
           };
         })
         .sort((a, b) => b.total - a.total);
-    },
-
-    // Format numbers with commas
-    formatNumber(num) {
-      if (typeof num !== 'number') return '0';
-      return num.toLocaleString();
     },
 
     // Format percentage
@@ -196,11 +173,6 @@ document.addEventListener('alpine:init', () => {
       } catch (error) {
         return '--';
       }
-    },
-
-    // Cleanup when component is destroyed
-    destroy() {
-      this.stopAutoRefresh();
     }
-  }));
+  });
 });

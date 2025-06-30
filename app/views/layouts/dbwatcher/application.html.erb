@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
 
-    <!-- Alpine.js -->
+    <!-- Alpine.js - defer to ensure our components load first -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- Mermaid.js for database diagrams -->
@@ -14,18 +14,40 @@
     <!-- SVG Pan Zoom Library -->
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
 
-    <!-- DBWatcher JavaScript -->
-    <%= javascript_include_tag "dbwatcher/core/alpine_store" %>
-    <%= javascript_include_tag "dbwatcher/core/api_client" %>
-    <%= javascript_include_tag "dbwatcher/services/mermaid" %>
+    <!-- DBWatcher Core Architecture -->
+    <%= javascript_include_tag "dbwatcher/vendor/lodash.min" %>
+    <%= javascript_include_tag "dbwatcher/vendor/date-fns.min" %>
+    <%= javascript_include_tag "dbwatcher/dbwatcher" %>
+    <%= javascript_include_tag "dbwatcher/components/base" %>
     <%= javascript_include_tag "dbwatcher/components/changes_table" %>
     <%= javascript_include_tag "dbwatcher/components/diagrams" %>
     <%= javascript_include_tag "dbwatcher/components/summary" %>
 
+    <!-- DBWatcher Services -->
+    <%= javascript_include_tag "dbwatcher/core/alpine_store" %>
+    <%= javascript_include_tag "dbwatcher/core/api_client" %>
+    <%= javascript_include_tag "dbwatcher/services/mermaid" %>
+
     <script>
-      // Initialize DBWatcher when DOM is loaded
+      // Initialize DBWatcher before Alpine.js starts
+      document.addEventListener('alpine:init', () => {
+        if (window.DBWatcher) {
+          DBWatcher.init();
+          console.log('DBWatcher initialized with optimized architecture');
+        } else {
+          console.error('DBWatcher not loaded');
+        }
+      });
+
+      // Fallback initialization
       document.addEventListener('DOMContentLoaded', function() {
-        console.log('DBWatcher initialized with modern JavaScript architecture');
+        // Small delay to ensure Alpine is available
+        setTimeout(() => {
+          if (window.DBWatcher && !DBWatcher.initialized) {
+            DBWatcher.init();
+            console.log('DBWatcher initialized (fallback)');
+          }
+        }, 100);
       });
     </script>
 
@@ -53,6 +75,10 @@
         font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
         font-size: 12px;
         line-height: 1.2;
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 0;
       }
 
       .compact-table th {
@@ -66,16 +92,56 @@
         position: sticky;
         top: 0;
         z-index: 10;
+        text-align: left;
+      }
+
+      /* Sticky headers need higher z-index than regular headers */
+      .compact-table th.sticky {
+        z-index: 50;
+      }
+
+      /* Op header - sticky left and top with highest z-index */
+      .compact-table th.sticky-left-0 {
+        position: sticky;
+        left: 0;
+        z-index: 100;
+      }
+
+      /* Time header - sticky left and top */
+      .compact-table th.sticky-left-16 {
+        position: sticky;
+        left: 64px; /* Width of Op column */
+        z-index: 99;
+      }
+
+      .compact-table th[scope="col"] {
+        background: #f3f3f3;
       }
 
       .compact-table td {
         padding: 2px 8px;
         border-right: 1px solid #f0f0f0;
         border-bottom: 1px solid #f0f0f0;
-        max-width: 200px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        vertical-align: top;
+      }
+
+      /* Op column cells */
+      .compact-table td.sticky-left-0 {
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 50;
+      }
+
+      /* Time column cells */
+      .compact-table td.sticky-left-16 {
+        position: sticky;
+        left: 64px; /* Width of Op column */
+        background: white;
+        z-index: 49;
       }
 
       .compact-table tr:hover {

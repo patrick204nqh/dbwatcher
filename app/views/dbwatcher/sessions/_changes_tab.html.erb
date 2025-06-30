@@ -1,88 +1,92 @@
 <!-- Changes Content -->
-<div class="h-full" x-data="changesTableView()">
-  <% tables_summary.each do |table_name, summary| %>
+<%
+  # Prepare configuration for the component
+  config = changes_table_config(@session, tables_summary)
+%>
+<div class="h-full"
+     x-data="changesTable(JSON.parse($el.dataset.config))"
+     data-config='<%= config.to_json %>'
+     x-init="init()">
+
+  <!-- Alpine.js template iteration -->
+  <template x-for="[tableName, tableData] in Object.entries(tableData)" :key="tableName">
     <div class="border-b border-gray-300" x-data="{ expanded: true }">
       <!-- Table Header with Column Controls -->
       <div class="bg-gray-100 px-3 py-2 flex items-center cursor-pointer"
            @click="expanded = !expanded"
-           :id="`table-${table_name}`">
+           :id="`table-${tableName}`">
         <svg class="w-3 h-3 mr-2 transition-transform"
              :class="{ 'rotate-90': expanded }"
              fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
         </svg>
-        <h3 class="text-sm font-medium text-gray-900 flex-1"><%= table_name %></h3>
+        <h3 class="text-sm font-medium text-gray-900 flex-1" x-text="tableName"></h3>
         <div class="flex gap-2 mr-4">
-          <% summary[:operations].each do |op, count| %>
-            <% next if count == 0 %>
-            <span class="badge badge-<%= op.downcase %>"><%= count %></span>
-          <% end %>
+          <template x-for="[op, count] in Object.entries(tableData.operations || {})" :key="op">
+            <span x-show="count > 0" class="badge" :class="`badge-${op.toLowerCase()}`" x-text="count"></span>
+          </template>
         </div>
+
         <!-- Column Visibility Button -->
-        <button @click.stop="toggleColumnSelector('<%= table_name %>')"
+        <button @click.stop="toggleColumnSelector(tableName)"
                 class="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50 relative">
           Columns
         </button>
       </div>
 
       <!-- Column Selector Dropdown -->
-      <div x-show="showColumnSelector === '<%= table_name %>'"
+      <div x-show="showColumnSelector === tableName"
            x-transition
            @click.away="showColumnSelector = null"
            class="absolute z-50 bg-white border border-gray-300 rounded shadow-lg p-3 max-h-64 overflow-auto"
            style="right: 1rem; margin-top: -2px;">
         <div class="text-xs font-medium mb-2">Select Visible Columns:</div>
         <div class="space-y-1 min-w-48">
-          <% if summary[:sample_record] %>
-            <% summary[:sample_record].keys.each do |column| %>
-              <label class="flex items-center text-xs hover:bg-gray-50 p-1 rounded">
-                <input type="checkbox"
-                       x-model="tableColumns['<%= table_name %>']['<%= column %>']"
-                       class="mr-2">
-                <span class="flex-1"><%= column.to_s.humanize %></span>
-              </label>
-            <% end %>
-          <% end %>
+          <template x-for="column in tableData.columns" :key="column">
+            <label class="flex items-center text-xs hover:bg-gray-50 p-1 rounded">
+              <input type="checkbox"
+                     x-model="tableColumns[tableName][column]"
+                     class="mr-2">
+              <span class="flex-1" x-text="column"></span>
+            </label>
+          </template>
         </div>
         <div class="mt-2 pt-2 border-t border-gray-200 flex gap-1">
-          <button @click="selectAllColumns('<%= table_name %>')"
+          <button @click="selectAllColumns(tableName)"
                   class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">All</button>
-          <button @click="selectNoneColumns('<%= table_name %>')"
+          <button @click="selectNoneColumns(tableName)"
                   class="text-xs bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-700">None</button>
         </div>
       </div>
 
-      <!-- Table Content with Horizontal Scroll -->
-      <div x-show="expanded" x-collapse class="overflow-auto">
-        <div class="min-w-full">
-          <table class="compact-table w-full">
+      <!-- Table Content - For now keeping ERB structure but with Alpine column visibility -->
+      <div x-show="expanded" x-collapse>
+        <div class="overflow-x-auto">
+          <table class="compact-table w-full table-fixed">
             <thead>
-              <tr class="sticky top-0 bg-gray-100 z-10">
-                <th class="text-center w-16 sticky left-0 bg-gray-100 z-20 border-r border-gray-300">
+              <tr class="sticky top-0 bg-gray-100">
+                <th scope="col" class="text-center sticky left-0 bg-gray-100 border-r border-gray-300 px-2" style="width: 64px; min-width: 64px; max-width: 64px; z-index: 100;">
                   <span class="text-xs">Op</span>
                 </th>
-                <th class="text-left w-24 sticky bg-gray-100 z-20 border-r border-gray-300">Time</th>
-                <% if summary[:sample_record] %>
-                  <% summary[:sample_record].keys.each do |column| %>
-                    <th class="text-left min-w-32 px-2"
-                        x-show="tableColumns['<%= table_name %>']['<%= column %>']">
-                      <%= column.to_s.humanize %>
-                    </th>
-                  <% end %>
-                <% end %>
+                <th scope="col" class="text-left sticky bg-gray-100 border-r border-gray-300 px-2" style="width: 180px; min-width: 180px; max-width: 180px; left: 64px; z-index: 99;">
+                  <span class="text-xs">Time</span>
+                </th>
+                <template x-for="column in tableData.columns" :key="`header-${tableName}-${column}`">
+                  <th scope="col"
+                      class="text-left px-2 border-r border-gray-300 bg-gray-100"
+                      style="width: 200px; min-width: 200px; max-width: 200px; z-index: 10;"
+                      x-show="tableColumns[tableName] && tableColumns[tableName][column]"
+                      x-text="column">
+                  </th>
+                </template>
               </tr>
             </thead>
             <tbody>
-              <% summary[:changes].each_with_index do |change, index| %>
-                <% row_id = "#{table_name}_row_#{index}" %>
-                <% operation = change[:operation] %>
-                <% timestamp = change[:timestamp] %>
-                <% snapshot = change[:record_snapshot] || {} %>
-                <% column_changes = change[:changes] %>
-
+              <!-- Alpine.js table rows with expand functionality -->
+              <template x-for="(change, index) in tableData.changes" :key="index">
                 <tbody x-data="{ expanded: false }">
                   <tr class="hover:bg-blue-50">
-                    <td class="text-center sticky left-0 bg-white z-10 border-r border-gray-200 w-16">
+                    <td scope="row" class="text-center bg-white border-r border-gray-200 sticky left-0 px-2" style="width: 64px; min-width: 64px; max-width: 64px; z-index: 50;">
                       <div class="flex items-center justify-center gap-1">
                         <!-- Expand/Collapse Button -->
                         <button @click="expanded = !expanded"
@@ -94,166 +98,212 @@
                           </svg>
                         </button>
                         <!-- Operation Badge -->
-                        <% if operation %>
-                          <span class="badge badge-<%= operation.downcase %>">
-                            <%= operation[0] %>
-                          </span>
-                        <% else %>
-                          <span class="badge">?</span>
-                        <% end %>
+                        <span class="badge" :class="`badge-${change.operation?.toLowerCase()}`" x-text="change.operation?.[0] || '?'"></span>
                       </div>
                     </td>
-                    <td class="text-xs text-gray-600 sticky bg-white z-10 border-r border-gray-200 w-24">
-                      <% if timestamp %>
-                        <%= Time.parse(timestamp.to_s).strftime("%H:%M:%S") rescue timestamp %>
-                      <% else %>
-                        <span class="text-gray-400">--</span>
-                      <% end %>
+                    <td class="text-xs text-gray-600 bg-white border-r border-gray-200 sticky px-2" style="width: 180px; min-width: 180px; max-width: 180px; left: 64px; z-index: 49;" x-text="formatTime(change.timestamp)">
                     </td>
-
-                    <!-- Display all columns from sample_record in consistent order -->
-                    <% if summary[:sample_record] %>
-                      <% summary[:sample_record].keys.each do |column| %>
-                        <td x-show="tableColumns['<%= table_name %>']['<%= column %>']"
-                            class="relative px-2"
-                            @click.stop="">
-                          <%
-                            # Get value from snapshot for this specific column
-                            value = snapshot&.dig(column) || snapshot&.dig(column.to_s) || snapshot&.dig(column.to_sym)
-                            changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == column.to_s }
-                          %>
-                          <div class="min-w-32 max-w-48 truncate">
-                            <% if value.nil? %>
-                              <span class="text-gray-400 italic">--</span>
-                            <% elsif operation == 'UPDATE' && changed_column %>
-                              <div class="text-xs">
-                                <div class="text-red-600 line-through">
-                                  <%= truncate_cell_value(changed_column['old_value'] || changed_column[:old_value]) %>
+                    <template x-for="column in tableData.columns" :key="`row-${tableName}-${column}-${index}`">
+                      <td x-show="tableColumns[tableName] && tableColumns[tableName][column]"
+                          class="px-2 border-r border-gray-200 bg-white"
+                          style="width: 200px; min-width: 200px; max-width: 200px; z-index: 1;"
+                          @click.stop="">
+                        <div class="truncate"
+                             :title="getColumnValue(change, column)">
+                          <!-- UPDATE Operation: Show both changed and unchanged values -->
+                          <template x-if="change.operation === 'UPDATE'">
+                            <div class="text-xs">
+                              <!-- Changed columns: show old/new values -->
+                              <template x-if="change.changes && change.changes.find(c => c.column === column)">
+                                <div class="space-y-1">
+                                  <div class="text-red-600 line-through text-xs" x-text="change.changes.find(c => c.column === column)?.old_value || '--'"></div>
+                                  <div class="text-green-600 font-medium text-xs" x-text="change.changes.find(c => c.column === column)?.new_value || '--'"></div>
                                 </div>
-                                <div class="text-green-600 font-medium">
-                                  <%= truncate_cell_value(changed_column['new_value'] || changed_column[:new_value]) %>
-                                </div>
-                              </div>
-                            <% elsif operation == 'INSERT' %>
-                              <span class="text-green-600 font-medium">
-                                <%= truncate_cell_value(value) %>
-                              </span>
-                            <% elsif operation == 'DELETE' %>
-                              <span class="text-red-600 line-through">
-                                <%= truncate_cell_value(value) %>
-                              </span>
-                            <% else %>
-                              <span class="text-gray-700">
-                                <%= truncate_cell_value(value) %>
-                              </span>
-                            <% end %>
-                          </div>
-                        </td>
-                      <% end %>
-                    <% end %>
+                              </template>
+                              <!-- Unchanged columns: show current value with no special styling -->
+                              <template x-if="!change.changes || !change.changes.find(c => c.column === column)">
+                                <span class="text-gray-700 text-xs"
+                                      x-text="change.record_snapshot?.[column] || '--'"
+                                      title="Unchanged value"></span>
+                              </template>
+                            </div>
+                          </template>
+                          <!-- INSERT Operation -->
+                          <template x-if="change.operation === 'INSERT'">
+                            <span class="text-green-600 font-medium text-xs" x-text="change.record_snapshot?.[column] || '--'"></span>
+                          </template>
+                          <!-- DELETE Operation -->
+                          <template x-if="change.operation === 'DELETE'">
+                            <span class="text-red-600 line-through text-xs" x-text="change.record_snapshot?.[column] || '--'"></span>
+                          </template>
+                          <!-- Other Operations -->
+                          <template x-if="!['UPDATE', 'INSERT', 'DELETE'].includes(change.operation)">
+                            <span class="text-gray-700 text-xs" x-text="change.record_snapshot?.[column] || '--'"></span>
+                          </template>
+                        </div>
+                      </td>
+                    </template>
                   </tr>
 
                   <!-- Expanded Row Content -->
                   <tr x-show="expanded"
                       x-collapse
                       class="bg-gray-50 border-t border-gray-200">
-                  <td colspan="2" class="sticky left-0 bg-gray-50 z-10 border-r border-gray-200 p-3 w-40">
-                    <div class="text-xs font-medium text-gray-700 mb-2">Record Details</div>
-                    <div class="text-xs text-gray-600">
-                      Operation: <span class="badge badge-<%= operation&.downcase %>"><%= operation %></span>
-                      <% if timestamp %>
-                        <br>Time: <%= Time.parse(timestamp.to_s).strftime("%H:%M:%S.%L") rescue timestamp %>
-                      <% end %>
-                    </div>
-                  </td>
-                  <!-- Display expanded details for all columns in consistent order -->
-                  <% if summary[:sample_record] %>
-                    <% summary[:sample_record].keys.each do |column| %>
-                      <td x-show="tableColumns['<%= table_name %>']['<%= column %>']"
-                          class="p-3 border-r border-gray-200 align-top">
-                        <%
-                          # Get value from snapshot for this specific column
-                          value = snapshot&.dig(column) || snapshot&.dig(column.to_s) || snapshot&.dig(column.to_sym)
-                          changed_column = column_changes&.find { |c| (c['column'] || c[:column]) == column.to_s }
-                        %>
-                        <div class="text-xs font-medium text-gray-600 mb-1"><%= column.to_s.humanize %></div>
-                        <div class="max-w-md">
-                          <% if value.nil? %>
-                            <div class="text-gray-400 bg-gray-100 p-2 rounded italic">
-                              <span class="text-xs">No value</span>
-                            </div>
-                          <% elsif operation == 'UPDATE' && changed_column %>
-                            <div class="space-y-2">
-                              <div class="text-red-600 bg-red-50 p-2 rounded">
-                                <div class="text-xs font-medium mb-1">Old Value:</div>
-                                <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(changed_column['old_value'] || changed_column[:old_value]) %></pre>
-                              </div>
-                              <div class="text-green-600 bg-green-50 p-2 rounded">
-                                <div class="text-xs font-medium mb-1">New Value:</div>
-                                <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(changed_column['new_value'] || changed_column[:new_value]) %></pre>
-                              </div>
-                            </div>
-                          <% elsif operation == 'INSERT' %>
-                            <div class="text-green-600 bg-green-50 p-2 rounded">
-                              <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(value) %></pre>
-                            </div>
-                          <% elsif operation == 'DELETE' %>
-                            <div class="text-red-600 bg-red-50 p-2 rounded">
-                              <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(value) %></pre>
-                            </div>
-                          <% else %>
-                            <div class="text-gray-700 bg-gray-100 p-2 rounded">
-                              <pre class="text-xs whitespace-pre-wrap"><%= format_cell_value(value) %></pre>
-                            </div>
-                          <% end %>
+                    <td colspan="2" class="bg-gray-50 border-r border-gray-200 p-3 sticky left-0" style="width: 244px; min-width: 244px; max-width: 244px; z-index: 30;">
+                      <div class="text-xs font-medium text-gray-700 mb-2">Record Details</div>
+                      <div class="text-xs text-gray-600 space-y-1">
+                        <div>Operation: <span class="badge" :class="`badge-${change.operation?.toLowerCase()}`" x-text="change.operation"></span></div>
+                        <div x-show="change.timestamp">
+                          <span class="font-medium">Time:</span><br>
+                          <span x-text="formatDate(change.timestamp)"></span>
                         </div>
+                        <template x-if="change.operation === 'UPDATE' && change.changes">
+                          <div>
+                            <span class="font-medium">Changes:</span><br>
+                            <span x-text="`${change.changes?.length || 0} column(s) modified`"></span>
+                          </div>
+                        </template>
+                        <template x-if="change.record_snapshot && Object.keys(change.record_snapshot).length > 0">
+                          <div>
+                            <span class="font-medium">Record ID:</span><br>
+                            <span x-text="change.record_snapshot?.id || change.record_snapshot?.uuid || 'N/A'"></span>
+                          </div>
+                        </template>
+                      </div>
+                    </td>
+                    <!-- Display expanded details for all columns -->
+                    <template x-for="column in tableData.columns" :key="`expanded-${tableName}-${column}-${index}`">
+                      <td x-show="tableColumns[tableName] && tableColumns[tableName][column]"
+                          class="p-3 border-r border-gray-200 align-top"
+                          style="width: 200px; min-width: 200px; max-width: 200px;">
+                        <div class="text-xs font-medium text-gray-600 mb-2" x-text="column"></div>
+
+                        <!-- UPDATE Operation: Show both old and new values, plus unchanged values -->
+                        <template x-if="change.operation === 'UPDATE'">
+                          <div class="space-y-3">
+                            <!-- Check if this column was actually changed -->
+                            <template x-if="isColumnChanged(change, column)">
+                              <div class="space-y-2">
+                                <!-- Old Value -->
+                                <div class="bg-red-50 border border-red-200 rounded p-3">
+                                  <div class="text-xs font-medium text-red-800 mb-2 flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Previous Value:
+                                  </div>
+                                  <template x-if="isJsonValue(getColumnValue(change, column, 'old'))">
+                                    <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(getColumnValue(change, column, 'old'))"></pre>
+                                  </template>
+                                  <template x-if="!isJsonValue(getColumnValue(change, column, 'old'))">
+                                    <div class="text-xs bg-white p-3 rounded border text-gray-800 min-h-16 overflow-auto max-h-64 break-all whitespace-pre-wrap" x-text="getColumnValue(change, column, 'old') || 'No value'"></div>
+                                  </template>
+                                </div>
+
+                                <!-- Arrow indicating change -->
+                                <div class="flex justify-center">
+                                  <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                                    <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h10a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                                  </svg>
+                                </div>
+
+                                <!-- New Value -->
+                                <div class="bg-green-50 border border-green-200 rounded p-3">
+                                  <div class="text-xs font-medium text-green-800 mb-2 flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    New Value:
+                                  </div>
+                                  <template x-if="isJsonValue(getColumnValue(change, column, 'new'))">
+                                    <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(getColumnValue(change, column, 'new'))"></pre>
+                                  </template>
+                                  <template x-if="!isJsonValue(getColumnValue(change, column, 'new'))">
+                                    <div class="text-xs bg-white p-3 rounded border text-gray-800 min-h-16 overflow-auto max-h-64 break-all whitespace-pre-wrap" x-text="getColumnValue(change, column, 'new') || 'No value'"></div>
+                                  </template>
+                                </div>
+                              </div>
+                            </template>
+
+                            <!-- If column wasn't changed, show unchanged value with neutral styling -->
+                            <template x-if="!isColumnChanged(change, column)">
+                              <div class="bg-gray-50 border border-gray-200 rounded p-3">
+                                <div class="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
+                                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"/>
+                                  </svg>
+                                  Unchanged Value:
+                                </div>
+                                <template x-if="isJsonValue(getColumnValue(change, column))">
+                                  <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(getColumnValue(change, column))"></pre>
+                                </template>
+                                <template x-if="!isJsonValue(getColumnValue(change, column))">
+                                  <div class="text-xs bg-white p-3 rounded border text-gray-800 min-h-16 overflow-auto max-h-64 break-all whitespace-pre-wrap" x-text="getColumnValue(change, column) || 'No value'"></div>
+                                </template>
+                              </div>
+                            </template>
+                          </div>
+                        </template>
+
+                        <!-- INSERT Operation -->
+                        <template x-if="change.operation === 'INSERT'">
+                          <div class="bg-green-50 border border-green-200 rounded p-3">
+                            <div class="text-xs font-medium text-green-800 mb-2 flex items-center gap-1">
+                              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                              </svg>
+                              Inserted Value:
+                            </div>
+                            <template x-if="isJsonValue(change.record_snapshot?.[column])">
+                              <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(change.record_snapshot?.[column])"></pre>
+                            </template>
+                            <template x-if="!isJsonValue(change.record_snapshot?.[column])">
+                              <div class="text-xs bg-white p-3 rounded border text-gray-800 min-h-16 overflow-auto max-h-64 break-all whitespace-pre-wrap" x-text="change.record_snapshot?.[column] || 'No value'"></div>
+                            </template>
+                          </div>
+                        </template>
+
+                        <!-- DELETE Operation -->
+                        <template x-if="change.operation === 'DELETE'">
+                          <div class="bg-red-50 border border-red-200 rounded p-3">
+                            <div class="text-xs font-medium text-red-800 mb-2 flex items-center gap-1">
+                              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clip-rule="evenodd"/>
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 012 0v4a1 1 0 11-2 0V7zM12 7a1 1 0 012 0v4a1 1 0 11-2 0V7z" clip-rule="evenodd"/>
+                              </svg>
+                              Deleted Value:
+                            </div>
+                            <template x-if="isJsonValue(change.record_snapshot?.[column])">
+                              <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(change.record_snapshot?.[column])"></pre>
+                            </template>
+                            <template x-if="!isJsonValue(change.record_snapshot?.[column])">
+                              <div class="text-xs bg-white p-3 rounded border text-gray-800 min-h-16 overflow-auto max-h-64 break-all whitespace-pre-wrap" x-text="change.record_snapshot?.[column] || 'No value'"></div>
+                            </template>
+                          </div>
+                        </template>
+
+                        <!-- Other Operations -->
+                        <template x-if="!['UPDATE', 'INSERT', 'DELETE'].includes(change.operation)">
+                          <div class="bg-gray-100 border border-gray-200 rounded p-3">
+                            <div class="text-xs font-medium text-gray-600 mb-2">Value:</div>
+                            <template x-if="isJsonValue(change.record_snapshot?.[column])">
+                              <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(change.record_snapshot?.[column])"></pre>
+                            </template>
+                            <template x-if="!isJsonValue(change.record_snapshot?.[column])">
+                              <div class="text-xs bg-white p-3 rounded border text-gray-800 min-h-16 overflow-auto max-h-64 break-all whitespace-pre-wrap" x-text="change.record_snapshot?.[column] || 'No value'"></div>
+                            </template>
+                          </div>
+                        </template>
                       </td>
-                    <% end %>
-                  <% end %>
-                </tr>
+                    </template>
+                  </tr>
                 </tbody>
-              <% end %>
+              </template>
             </tbody>
           </table>
         </div>
       </div>
     </div>
-  <% end %>
+  </template>
 </div>
-
-<script>
-function changesTableView() {
-  return {
-    showColumnSelector: null,
-    tableColumns: {},
-
-    init() {
-      // Initialize column visibility for each table
-      <% tables_summary.each do |table_name, summary| %>
-        this.tableColumns['<%= table_name %>'] = {};
-        <% if summary[:sample_record] %>
-          <% summary[:sample_record].keys.each do |column| %>
-            this.tableColumns['<%= table_name %>']['<%= column %>'] = true;
-          <% end %>
-        <% end %>
-      <% end %>
-    },
-
-    toggleColumnSelector(tableName) {
-      this.showColumnSelector = this.showColumnSelector === tableName ? null : tableName;
-    },
-
-    selectAllColumns(tableName) {
-      Object.keys(this.tableColumns[tableName]).forEach(column => {
-        this.tableColumns[tableName][column] = true;
-      });
-    },
-
-    selectNoneColumns(tableName) {
-      Object.keys(this.tableColumns[tableName]).forEach(column => {
-        this.tableColumns[tableName][column] = false;
-      });
-    }
-  };
-}
-</script>
