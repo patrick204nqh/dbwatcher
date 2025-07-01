@@ -80,10 +80,37 @@ const MermaidService = {
       // Clear container
       container.innerHTML = '';
 
-      // Create diagram element
+      // Create diagram element - ensure full container size
       const diagramDiv = document.createElement('div');
       diagramDiv.className = 'mermaid-diagram';
-      diagramDiv.style.cssText = 'width: 100%; height: 100%;';
+
+      // Set explicit styles for better browser rendering
+      const styles = {
+        width: '100%',
+        height: '100%',
+        minHeight: '400px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden'
+      };
+
+      Object.assign(diagramDiv.style, styles);
+
+      // Get container dimensions before appending
+      const containerWidth = container.clientWidth || 800;
+      const containerHeight = container.clientHeight || 600;
+
+      console.log('Container dimensions in render:', containerWidth, containerHeight);
+
+      // Set container to fill its parent
+      container.style.width = '100%';
+      container.style.height = '100%';
+      container.style.minHeight = '500px';
+      container.style.position = 'relative';
+      container.style.overflow = 'hidden';
+
       container.appendChild(diagramDiv);
 
       // Render with modern API and error handling
@@ -99,11 +126,32 @@ const MermaidService = {
       const { svg } = renderResult;
       diagramDiv.innerHTML = svg;
 
-      // Enable pan/zoom if svg-pan-zoom is available
+      // Post-process the SVG to ensure it has proper dimensions
       const svgElement = diagramDiv.querySelector('svg');
+      if (svgElement) {
+        // Set CSS styles for SVG
+        Object.assign(svgElement.style, {
+          width: '100%',
+          height: '100%',
+          maxWidth: '100%',
+          maxHeight: '100%',
+          display: 'block'
+        });
+
+        // Make sure viewBox is set if not already
+        if (!svgElement.getAttribute('viewBox')) {
+          const width = svgElement.getAttribute('width') || diagramDiv.clientWidth;
+          const height = svgElement.getAttribute('height') || diagramDiv.clientHeight;
+          svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        }
+      }
+
+      // Enable pan/zoom if svg-pan-zoom is available
       let panZoom = null;
+
       if (svgElement && window.svgPanZoom) {
-        panZoom = this.enableInteractions(svgElement, options);
+        // enableInteractions now returns a Promise or null
+        panZoom = await Promise.resolve(this.enableInteractions(svgElement, options));
       }
 
       return { success: true, element: svgElement, panZoom };
@@ -116,6 +164,50 @@ const MermaidService = {
 
   // Enable SVG interactions using svg-pan-zoom library
   enableInteractions(svgElement, options = {}) {
+    // Safety checks and set default dimensions if needed
+    if (!svgElement) {
+      console.warn('SVG element is null, cannot initialize pan-zoom');
+      return null;
+    }
+
+    // Always ensure the SVG element has dimensions before initializing pan-zoom
+    // Get container dimensions for reference
+    const containerWidth = svgElement.parentElement?.clientWidth || 800;
+    const containerHeight = svgElement.parentElement?.clientHeight || 600;
+
+    console.log('Container dimensions:', containerWidth, containerHeight);
+
+    // Force set dimensions regardless of existing values to ensure they're always set correctly
+    svgElement.setAttribute('width', containerWidth.toString());
+    svgElement.setAttribute('height', containerHeight.toString());
+
+    // Also set CSS dimensions for better browser rendering
+    svgElement.style.width = '100%';
+    svgElement.style.height = '100%';
+    svgElement.style.maxWidth = '100%';
+    svgElement.style.maxHeight = '100%';
+
+    // Set viewBox attribute if it doesn't exist or is invalid
+    const viewBox = svgElement.getAttribute('viewBox');
+    if (!viewBox || viewBox.split(' ').length !== 4) {
+      svgElement.setAttribute('viewBox', `0 0 ${containerWidth} ${containerHeight}`);
+    }
+
+    // Set preserveAspectRatio for proper scaling
+    svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+    // Double-check dimensions are now set and valid
+    const width = parseFloat(svgElement.getAttribute('width'));
+    const height = parseFloat(svgElement.getAttribute('height'));
+
+    if (isNaN(width) || isNaN(height) || width <= 0 || height <= 0) {
+      console.warn('SVG element has invalid dimensions after setting defaults:', width, height);
+      // Set explicit fallback dimensions as a last resort
+      svgElement.setAttribute('width', '800');
+      svgElement.setAttribute('height', '600');
+      svgElement.setAttribute('viewBox', '0 0 800 600');
+    }
+
     const config = {
       zoomEnabled: true,
       panEnabled: true,
@@ -129,12 +221,27 @@ const MermaidService = {
     };
 
     try {
-      const panZoom = window.svgPanZoom(svgElement, config);
+      // Ensure SVG is properly rendered in DOM before initializing pan-zoom
+      // This forces a reflow which can help with dimension calculations
+      void svgElement.getBoundingClientRect();
 
-      // Add keyboard shortcuts
-      this.addKeyboardShortcuts(panZoom);
+      // Short delay to ensure SVG is fully rendered before initializing pan-zoom
+      return new Promise(resolve => {
+        setTimeout(() => {
+          try {
+            // Initialize pan-zoom with the configured options
+            const panZoom = window.svgPanZoom(svgElement, config);
 
-      return panZoom;
+            // Add keyboard shortcuts for better UX
+            this.addKeyboardShortcuts(panZoom);
+
+            resolve(panZoom);
+          } catch (initError) {
+            console.warn('Failed to initialize svg-pan-zoom:', initError);
+            resolve(null);
+          }
+        }, 100); // Small delay for SVG rendering
+      });
     } catch (error) {
       console.warn('Failed to enable SVG interactions:', error);
       return null;

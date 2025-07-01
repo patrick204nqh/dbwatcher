@@ -23,7 +23,7 @@ module Dbwatcher
     # Generate configuration for diagram component
     def diagram_config(session, diagram_types)
       {
-        sessionId: session.id,
+        sessionId: session&.id,
         availableTypes: diagram_types || {},
         selectedType: params[:diagram_type] || "database_tables"
       }
