@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
 
-    <!-- Alpine.js - defer to ensure our components load first -->
+    <!-- Alpine.js and Plugins - ensure plugins load BEFORE Alpine.js core -->
+    <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- Mermaid.js for database diagrams -->
@@ -16,7 +17,7 @@
 
     <!-- DBWatcher Core Architecture -->
     <%= javascript_include_tag "dbwatcher/vendor/lodash.min" %>
-    <%= javascript_include_tag "dbwatcher/vendor/date-fns.min" %>
+    <%= javascript_include_tag "dbwatcher/vendor/date-fns-browser" %>
     <%= javascript_include_tag "dbwatcher/dbwatcher" %>
     <%= javascript_include_tag "dbwatcher/components/base" %>
     <%= javascript_include_tag "dbwatcher/components/changes_table" %>
@@ -31,23 +32,40 @@
     <script>
       // Initialize DBWatcher before Alpine.js starts
       document.addEventListener('alpine:init', () => {
-        if (window.DBWatcher) {
-          DBWatcher.init();
-          console.log('DBWatcher initialized with optimized architecture');
-        } else {
-          console.error('DBWatcher not loaded');
+        try {
+          if (window.DBWatcher) {
+            DBWatcher.init();
+            console.log('✅ DBWatcher initialized with optimized architecture');
+          } else {
+            console.error('❌ DBWatcher not loaded');
+          }
+        } catch (error) {
+          console.error('❌ Error during DBWatcher initialization:', error);
         }
       });
 
-      // Fallback initialization
+      // Fallback initialization with better error handling
       document.addEventListener('DOMContentLoaded', function() {
         // Small delay to ensure Alpine is available
         setTimeout(() => {
-          if (window.DBWatcher && !DBWatcher.initialized) {
-            DBWatcher.init();
-            console.log('DBWatcher initialized (fallback)');
+          try {
+            if (window.DBWatcher && !DBWatcher.initialized) {
+              DBWatcher.init();
+              console.log('✅ DBWatcher initialized (fallback)');
+            }
+          } catch (error) {
+            console.error('❌ Error during DBWatcher fallback initialization:', error);
           }
         }, 100);
+        
+        // Plugin verification
+        setTimeout(() => {
+          if (window.Alpine && !window.Alpine.directive('collapse')) {
+            console.warn('⚠️ Alpine.js Collapse plugin may not be properly loaded');
+          } else if (window.Alpine && window.Alpine.directive('collapse')) {
+            console.log('✅ Alpine.js Collapse plugin verified');
+          }
+        }, 200);
       });
     </script>
 
