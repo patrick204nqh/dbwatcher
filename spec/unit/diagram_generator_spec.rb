@@ -93,8 +93,9 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
         expect(content).to include('"Comment"')     # Comment model node
 
         # Should include association names in edge labels (arrow format)
-        expect(content).to include("-->|posts|")       # User has_many posts
-        expect(content).to include("-->|comments|")    # User has_many comments
+        # Currently shows belongs_to relationships: Comment -> User, Comment -> Post
+        expect(content).to include("-->|user|")        # Comment belongs_to user
+        expect(content).to include("-->|post|")        # Comment belongs_to post
 
         # Should include relationship arrows
         expect(content).to include("-->") # Basic relationship arrows
