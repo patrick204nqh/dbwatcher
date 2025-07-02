@@ -40,7 +40,8 @@ module Dbwatcher
       respond_to do |format|
         format.html do
           flash[:error] = "An error occurred while processing your request."
-          redirect_to root_path
+          # Avoid infinite redirect by using main app root or request referer
+          redirect_to(request.referer || main_app.root_path)
         end
         format.json do
           render json: { error: "Internal server error" }, status: :internal_server_error
