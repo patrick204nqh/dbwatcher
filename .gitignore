@@ -85,10 +85,3 @@ tmp/dbwatcher_demo/
 *.orig
 *.tmp
 *.temp
-
-.aiguide
-.bmad-core
-.claude
-.cursor
-.github/instructions
-web-bundles
