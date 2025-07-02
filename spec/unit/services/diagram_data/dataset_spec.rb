@@ -151,7 +151,7 @@ RSpec.describe Dbwatcher::Services::DiagramData::Dataset do
     end
   end
 
-  describe "#has_entity?" do
+  describe "#entity?" do
     let(:dataset) { described_class.new }
 
     before do
@@ -159,11 +159,11 @@ RSpec.describe Dbwatcher::Services::DiagramData::Dataset do
     end
 
     it "returns true for existing entity" do
-      expect(dataset.has_entity?("users")).to be true
+      expect(dataset.entity?("users")).to be true
     end
 
     it "returns false for non-existent entity" do
-      expect(dataset.has_entity?("non_existent")).to be false
+      expect(dataset.entity?("non_existent")).to be false
     end
   end
 
@@ -180,7 +180,7 @@ RSpec.describe Dbwatcher::Services::DiagramData::Dataset do
       result = dataset.remove_entity("users")
 
       expect(result).to eq(user_entity)
-      expect(dataset.has_entity?("users")).to be false
+      expect(dataset.entity?("users")).to be false
     end
 
     it "removes relationships involving removed entity" do

@@ -41,8 +41,8 @@ module Dbwatcher
         # @param expires_in [ActiveSupport::Duration] cache expiration
         # @yield block to execute if cache miss
         # @return [Object] cached or fresh result
-        def with_cache(cache_suffix = nil, expires_in: 1.hour, &block)
-          key = cache_key(cache_suffix)
+        def with_cache(cache_suffix = nil, _expires_in: 1.hour)
+          cache_key(cache_suffix)
 
           # Rails.cache.fetch(key, expires_in: expires_in) do
           log_service_start("Cache miss, generating fresh data")

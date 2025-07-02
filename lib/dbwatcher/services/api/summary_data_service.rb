@@ -30,14 +30,14 @@ module Dbwatcher
         private
 
         def build_summary_response
-          base_summary = get_base_summary
+          summary_data = base_summary
 
-          return base_summary if base_summary[:error]
+          return summary_data if summary_data[:error]
 
-          enhance_summary_data(base_summary)
+          enhance_summary_data(summary_data)
         end
 
-        def get_base_summary
+        def base_summary
           result = Storage.sessions.summary(session.id)
 
           if result[:error]
@@ -97,7 +97,7 @@ module Dbwatcher
         def calculate_operations_breakdown(tables_summary)
           operations = { "INSERT" => 0, "UPDATE" => 0, "DELETE" => 0 }
 
-          tables_summary.each do |_, data|
+          tables_summary.each_value do |data|
             data[:operations]&.each do |op, count|
               normalized_op = op.to_s.upcase
               operations[normalized_op] += count if operations.key?(normalized_op)

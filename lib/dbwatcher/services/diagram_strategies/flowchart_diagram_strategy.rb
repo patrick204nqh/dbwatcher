@@ -15,7 +15,8 @@ module Dbwatcher
         # @param dataset [Dataset] standardized dataset
         # @return [Hash] diagram generation result
         def render_diagram(dataset)
-          @logger.debug "Rendering flowchart diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
+          @logger.debug "Rendering flowchart diagram from dataset with #{dataset.entities.size} entities and " \
+                        "#{dataset.relationships.size} relationships"
 
           # Generate diagram content directly from dataset
           content = if dataset.relationships.empty? && dataset.entities.empty?

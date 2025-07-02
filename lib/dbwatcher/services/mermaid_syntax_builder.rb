@@ -39,7 +39,7 @@ module Dbwatcher
       # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid ERD syntax
       # @raise [ArgumentError] if relationships invalid
-      def build_erd_diagram(relationships, options = {})
+      def build_erd_diagram(relationships, _options = {})
         @logger.debug "Building ERD diagram with #{relationships.size} relationships"
 
         validate_relationships!(relationships)
@@ -57,7 +57,7 @@ module Dbwatcher
       # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid flowchart syntax
       # @raise [ArgumentError] if associations invalid
-      def build_flowchart_diagram(associations, options = {})
+      def build_flowchart_diagram(associations, _options = {})
         @logger.debug "Building flowchart diagram with #{associations.size} associations"
 
         validate_associations!(associations)
@@ -120,7 +120,7 @@ module Dbwatcher
       # @param dataset [Dataset] standardized dataset
       # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid ERD syntax
-      def build_erd_diagram_from_dataset(dataset, options = {})
+      def build_erd_diagram_from_dataset(dataset, _options = {})
         @logger.debug "Building ERD diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
 
         # Convert dataset to legacy format for existing build methods
@@ -145,7 +145,7 @@ module Dbwatcher
       # @param dataset [Dataset] standardized dataset
       # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid flowchart syntax
-      def build_flowchart_diagram_from_dataset(dataset, options = {})
+      def build_flowchart_diagram_from_dataset(dataset, _options = {})
         @logger.debug "Building flowchart diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
 
         # Add node-only entries for isolated entities
@@ -183,7 +183,7 @@ module Dbwatcher
       # @param entities [Array<Entity>] isolated table entities
       # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid ERD syntax
-      def build_erd_diagram_with_tables(entities, options = {})
+      def build_erd_diagram_with_tables(entities, _options = {})
         @logger.debug "Building ERD diagram with #{entities.size} isolated tables"
 
         content = ["erDiagram"]
@@ -201,7 +201,7 @@ module Dbwatcher
       # @param entities [Array<Entity>] isolated node entities
       # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid flowchart syntax
-      def build_flowchart_with_nodes(entities, options = {})
+      def build_flowchart_with_nodes(entities, _options = {})
         @logger.debug "Building flowchart diagram with #{entities.size} isolated nodes"
 
         content = ["flowchart TD"]

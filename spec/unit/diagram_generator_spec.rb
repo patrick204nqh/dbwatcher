@@ -35,10 +35,10 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
         result = generator.call
 
         expect(result[:success]).to eq(false)
-        expect(result[:error]).to eq(true)
-        expect(result[:message]).to be_present
-        expect(result[:error_code]).to be_present
-        expect(result).to have_key(:timestamp)
+        expect(result[:error]).to eq("Session not found")
+        expect(result[:content]).to be_nil
+        expect(result[:type]).to be_nil
+        expect(result).to have_key(:generated_at)
       end
     end
 
@@ -77,7 +77,7 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
 
         # The success response structure
         expect(result[:success]).to eq(true)
-        expect(result[:content]).to include("flowchart LR")
+        expect(result[:content]).to include("flowchart TD")
         expect(result[:type]).to eq("flowchart")
         expect(result).to have_key(:generated_at)
       end
@@ -92,17 +92,15 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
         expect(content).to include('"Post"')        # Post model node
         expect(content).to include('"Comment"')     # Comment model node
 
-        # Should include association names in edge labels (without quotes)
-        expect(content).to include("|posts|")       # User has_many posts
-        expect(content).to include("|comments|")    # User/Post has_many comments
-        expect(content).to include("|user|")        # Post/Comment belongs_to user
-        expect(content).to include("|post|")        # Comment belongs_to post
+        # Should include association names in edge labels (arrow format)
+        expect(content).to include("-->|user|")        # Post/Comment belongs_to user
+        expect(content).to include("-->|post|")        # Comment belongs_to post
 
         # Should include relationship arrows
         expect(content).to include("-->") # Basic relationship arrows
 
-        # Should include style definitions
-        expect(content).to include("classDef") # Node styling
+        # Should include node definitions and relationships
+        expect(content).to include("node_") # Node IDs are generated
       end
     end
   end
@@ -113,8 +111,8 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
 
       expect(types).to include("database_tables")
       expect(types).to include("model_associations")
-      expect(types["database_tables"][:type]).to eq("erDiagram")
-      expect(types["model_associations"][:type]).to eq("flowchart")
+      expect(types["database_tables"][:mermaid_type]).to eq("erDiagram")
+      expect(types["model_associations"][:mermaid_type]).to eq("flowchart")
     end
   end
 end

@@ -89,10 +89,8 @@ module Dbwatcher
             )
             dataset.add_entity(entity)
             table_entities[relationship[:to_table]] = entity
-          end
 
-          # Create relationships
-          raw_data.each do |relationship|
+            # Create relationships
             next unless relationship[:from_table] && relationship[:to_table]
 
             # Skip self-referential relationships (source and target are the same)

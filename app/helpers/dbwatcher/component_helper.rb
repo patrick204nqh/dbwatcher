@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Dbwatcher
   module ComponentHelper
     # Removed as part of API-first migration (Story 6.8)

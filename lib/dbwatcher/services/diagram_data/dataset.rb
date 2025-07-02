@@ -71,7 +71,7 @@ module Dbwatcher
         #
         # @param id [String] entity ID
         # @return [Boolean] true if entity exists
-        def has_entity?(id)
+        def entity?(id)
           @entities.key?(id.to_s)
         end
 
@@ -145,11 +145,11 @@ module Dbwatcher
             end
 
             # Check that referenced entities exist
-            unless has_entity?(relationship.source_id)
+            unless entity?(relationship.source_id)
               errors << "Relationship #{index} references non-existent source entity: #{relationship.source_id}"
             end
 
-            unless has_entity?(relationship.target_id)
+            unless entity?(relationship.target_id)
               errors << "Relationship #{index} references non-existent target entity: #{relationship.target_id}"
             end
           end

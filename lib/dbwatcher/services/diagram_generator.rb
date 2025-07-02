@@ -83,7 +83,8 @@ module Dbwatcher
         analyzer = @registry.create_analyzer(@diagram_type, session)
         dataset = analyzer.call
 
-        @logger.debug("Generated dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships")
+        @logger.debug("Generated dataset with #{dataset.entities.size} entities and " \
+                      "#{dataset.relationships.size} relationships")
 
         # Create strategy and generate diagram from dataset
         strategy = @registry.create_strategy(@diagram_type)
@@ -132,7 +133,8 @@ module Dbwatcher
       def log_completion(start_time, result)
         duration = Time.current - start_time
         success = result[:success] || false
-        @logger.info("Diagram generation completed for session #{@session_id} type #{@diagram_type} in #{(duration * 1000).round(2)}ms - Success: #{success}")
+        @logger.info("Diagram generation completed for session #{@session_id} type #{@diagram_type} " \
+                     "in #{(duration * 1000).round(2)}ms - Success: #{success}")
       end
     end
   end

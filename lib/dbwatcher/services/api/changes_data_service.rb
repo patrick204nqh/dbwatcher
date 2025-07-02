@@ -63,7 +63,7 @@ module Dbwatcher
         def filter_by_operation(summary, filter_hash)
           operation = filter_hash[:operation].upcase
 
-          summary.each do |_table_name, data|
+          summary.each_value do |data|
             data[:changes] = data[:changes].select do |change|
               change[:operation] == operation
             end
@@ -74,7 +74,7 @@ module Dbwatcher
 
         def build_metadata
           # Make sure filter_params returns a hash even with nil params
-          has_filters = filter_params && filter_params.any?
+          has_filters = filter_params&.any?
 
           {
             generated_at: Time.current,

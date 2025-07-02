@@ -25,7 +25,8 @@ module Dbwatcher
         # @param dataset [Dataset] standardized dataset
         # @return [Hash] diagram generation result
         def generate_from_dataset(dataset)
-          @logger.info("Generating diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships")
+          @logger.info("Generating diagram from dataset with #{dataset.entities.size} entities and " \
+                       "#{dataset.relationships.size} relationships")
           start_time = Time.current
 
           begin
@@ -117,8 +118,9 @@ module Dbwatcher
         # @param operation [String] operation name
         # @param duration [Float] operation duration in seconds
         # @param context [Hash] additional context
-        def log_operation_completion(operation, duration, context = {})
-          @logger.info("Strategy operation completed: #{operation} by #{self.class.name} in #{(duration * 1000).round(2)}ms")
+        def log_operation_completion(operation, duration, _context = {})
+          @logger.info("Strategy operation completed: #{operation} by #{self.class.name} " \
+                       "in #{(duration * 1000).round(2)}ms")
         end
 
         # Create default syntax builder
