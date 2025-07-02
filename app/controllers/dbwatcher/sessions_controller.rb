@@ -14,20 +14,17 @@ module Dbwatcher
 
     def changes
       Rails.logger.info "SessionsController#changes: Loading changes for session #{@session.id}"
-      @tables_summary = build_tables_summary
-      @active_filters = parse_filters
+      # No server-side data processing - API-first architecture
     end
 
     def summary
       Rails.logger.info "SessionsController#summary: Loading summary for session #{@session.id}"
-      @tables_summary = build_tables_summary
-      @summary_data = build_summary_stats
+      # No server-side data processing - API-first architecture
     end
 
     def diagrams
       Rails.logger.info "SessionsController#diagrams: Loading diagrams for session #{@session.id}"
-      @tables_summary = build_tables_summary
-      @diagram_types = available_diagram_types
+      # No server-side data processing - API-first architecture
     end
 
     def clear
@@ -45,27 +42,7 @@ module Dbwatcher
       handle_not_found("Session", sessions_path) unless @session
     end
 
-    def build_tables_summary
-      Storage.sessions.build_tables_summary(@session)
-    end
-
-    def build_summary_stats
-      service = Dbwatcher::Services::Api::SummaryDataService.new(@session)
-      result = service.call
-      result[:error] ? {} : result
-    end
-
-    def available_diagram_types
-      Dbwatcher::Services::Api::DiagramDataService.available_types_with_metadata
-    end
-
-    def parse_filters
-      {
-        table: params[:table],
-        operation: params[:operation],
-        page: params[:page]&.to_i || 1,
-        per_page: params[:per_page]&.to_i || 50
-      }.compact
-    end
+    # No longer needed with API-first architecture
+    # All data processing happens in API services and is loaded via JavaScript
   end
 end

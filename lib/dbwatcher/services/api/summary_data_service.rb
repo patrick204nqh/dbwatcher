@@ -55,7 +55,8 @@ module Dbwatcher
             session_id: session.id,
             enhanced_stats: build_enhanced_stats(tables_summary),
             tables_breakdown: build_tables_breakdown(tables_summary),
-            metadata: build_metadata
+            metadata: build_metadata,
+            timing: build_timing_info
           )
         end
 
@@ -134,6 +135,21 @@ module Dbwatcher
           end
 
           distribution
+        end
+
+        def build_timing_info
+          {
+            started_at: session.started_at,
+            ended_at: session.ended_at,
+            duration: calculate_duration
+          }
+        end
+
+        def calculate_duration
+          return nil unless session.started_at
+
+          end_time = session.ended_at || Time.current
+          ((end_time.to_time - session.started_at.to_time) * 1000).round
         end
       end
     end

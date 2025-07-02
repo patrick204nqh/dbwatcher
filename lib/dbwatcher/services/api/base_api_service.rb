@@ -12,7 +12,7 @@ module Dbwatcher
 
         def initialize(session, params = {})
           @session = session
-          @params = params || {}
+          @params = params
           super()
         end
 
@@ -44,10 +44,10 @@ module Dbwatcher
         def with_cache(cache_suffix = nil, expires_in: 1.hour, &block)
           key = cache_key(cache_suffix)
 
-          Rails.cache.fetch(key, expires_in: expires_in) do
-            log_service_start("Cache miss, generating fresh data")
-            yield
-          end
+          # Rails.cache.fetch(key, expires_in: expires_in) do
+          log_service_start("Cache miss, generating fresh data")
+          yield
+          # end
         end
 
         # Handle service errors consistently
@@ -70,21 +70,23 @@ module Dbwatcher
           { error: error_msg }
         end
 
-        # Parse pagination parameters
-        #
-        # @return [Hash] pagination parameters
-        def pagination_params
-          {
-            page: params[:page]&.to_i || 1,
-            per_page: [params[:per_page]&.to_i || 50, 100].min # Cap at 100
-          }
-        end
+        # Previously had pagination parameters method here
+        # Now removed to show all data without pagination
 
         # Parse filter parameters (override in subclasses)
         #
         # @return [Hash] filter parameters
         def filter_params
-          params.slice(:table, :operation).compact
+          # Expect params to be a Hash from the controller
+          return {} if params.nil?
+
+          # Extract only the filter-related keys
+          # Make sure we handle the case when params doesn't respond to slice
+          if params.respond_to?(:slice)
+            params.slice(:table, :operation).compact
+          else
+            {}
+          end
         end
       end
     end

@@ -3,13 +3,17 @@
 module Dbwatcher
   module Services
     module Api
-      # Service for handling paginated and filtered changes data
+      # Service for handling filtered changes data
       #
       # Provides changes data for the sessions changes view and API endpoints
-      # with filtering, pagination, and caching support.
+      # with filtering and caching support.
       class ChangesDataService < BaseApiService
         def call
           start_time = Time.now
+
+          # Check for nil session first
+          return { error: "Session not found" } unless session
+
           log_service_start("Getting changes data for session #{session.id}")
 
           validation_error = validate_session
@@ -32,8 +36,7 @@ module Dbwatcher
         def build_changes_response
           {
             tables_summary: build_filtered_summary,
-            pagination: build_pagination_info,
-            filters: filter_params,
+            filters: filter_params || {},
             session_id: session.id,
             metadata: build_metadata
           }
@@ -42,20 +45,25 @@ module Dbwatcher
         def build_filtered_summary
           summary = Storage.sessions.build_tables_summary(session)
 
-          summary = filter_by_table(summary) if filter_params[:table]
-          summary = filter_by_operation(summary) if filter_params[:operation]
+          # Handle nil filter_params
+          filter_params_hash = filter_params || {}
+
+          # Apply filters only if they exist
+          summary = filter_by_table(summary, filter_params_hash) if filter_params_hash[:table]
+
+          summary = filter_by_operation(summary, filter_params_hash) if filter_params_hash[:operation]
 
           summary
         end
 
-        def filter_by_table(summary)
-          summary.select { |table_name, _| table_name == filter_params[:table] }
+        def filter_by_table(summary, filter_hash)
+          summary.select { |table_name, _| table_name == filter_hash[:table] }
         end
 
-        def filter_by_operation(summary)
-          operation = filter_params[:operation].upcase
+        def filter_by_operation(summary, filter_hash)
+          operation = filter_hash[:operation].upcase
 
-          summary.each do |table_name, data|
+          summary.each do |_table_name, data|
             data[:changes] = data[:changes].select do |change|
               change[:operation] == operation
             end
@@ -64,26 +72,17 @@ module Dbwatcher
           summary
         end
 
-        def build_pagination_info
-          pagination_params.merge(
-            total_pages: calculate_total_pages,
-            total_count: calculate_total_count
-          )
-        end
-
         def build_metadata
+          # Make sure filter_params returns a hash even with nil params
+          has_filters = filter_params && filter_params.any?
+
           {
             generated_at: Time.current,
-            has_filters: filter_params.any?,
+            has_filters: has_filters || false,
             available_tables: available_tables,
-            available_operations: %w[INSERT UPDATE DELETE]
+            available_operations: %w[INSERT UPDATE DELETE],
+            total_count: calculate_total_count
           }
-        end
-
-        def calculate_total_pages
-          total = calculate_total_count
-          per_page = pagination_params[:per_page]
-          (total.to_f / per_page).ceil
         end
 
         def calculate_total_count
@@ -98,9 +97,12 @@ module Dbwatcher
 
         def cache_suffix
           filter_parts = []
-          filter_parts << "table_#{filter_params[:table]}" if filter_params[:table]
-          filter_parts << "op_#{filter_params[:operation]}" if filter_params[:operation]
-          filter_parts << "page_#{pagination_params[:page]}" if pagination_params[:page] > 1
+
+          # Handle nil params safely
+          if params
+            filter_parts << "table_#{params[:table]}" if params[:table]
+            filter_parts << "op_#{params[:operation]}" if params[:operation]
+          end
 
           filter_parts.any? ? filter_parts.join("_") : nil
         end

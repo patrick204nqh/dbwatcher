@@ -10,7 +10,8 @@ module Dbwatcher
           Rails.logger.info "API::V1::SessionsController#changes_data: Getting changes for session #{@session.id}"
 
           # Paginated, filtered changes data
-          service = Dbwatcher::Services::Api::ChangesDataService.new(@session, filter_params)
+          # Convert ActionController::Parameters to a hash before passing to service
+          service = Dbwatcher::Services::Api::ChangesDataService.new(@session, filter_params.to_h)
           render json: service.call
         end
 
@@ -26,7 +27,9 @@ module Dbwatcher
           Rails.logger.info "API::V1::SessionsController#diagram_data: Getting diagram for session #{@session.id}"
 
           # Generated diagram content with caching
-          service = Dbwatcher::Services::Api::DiagramDataService.new(@session, params[:type], params)
+          # Convert ActionController::Parameters to a hash before passing to service
+          diagram_params = params.to_unsafe_h
+          service = Dbwatcher::Services::Api::DiagramDataService.new(@session, params[:type], diagram_params)
           result = service.call
 
           if result[:error]

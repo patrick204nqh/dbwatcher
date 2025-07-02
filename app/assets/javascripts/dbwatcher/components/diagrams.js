@@ -1,6 +1,6 @@
 /**
  * Diagrams Component
- * Simplified component using DBWatcher base architecture
+ * API-first implementation for DBWatcher diagrams tab
  */
 
 // Register component with DBWatcher
@@ -11,10 +11,11 @@ DBWatcher.registerComponent('diagrams', function(config) {
   return Object.assign(DBWatcher.BaseComponent(config), {
     // Component-specific state
     sessionId: sessionId,
-    availableTypes: config.availableTypes || {},
-    selectedType: config.selectedType || 'database_tables',
+    diagramTypes: {},
+    selectedType: 'database_tables',
     diagramContent: null,
     panZoomInstance: null,
+    generating: false,
 
     // Component initialization
     componentInit() {
@@ -25,13 +26,47 @@ DBWatcher.registerComponent('diagrams', function(config) {
         return;
       }
 
-      // Load initial diagram
-      this.loadDiagram();
+      // First load available diagram types from API
+      this.loadDiagramTypes().then(() => {
+        // Then load the actual diagram
+        this.loadDiagram();
+      });
     },
 
     // Component cleanup
     componentDestroy() {
       this.safelyDestroyPanZoom();
+    },
+
+    // Load available diagram types from API
+    async loadDiagramTypes() {
+      this.setLoading(true);
+      this.clearError();
+
+      try {
+        const url = `/dbwatcher/api/v1/sessions/diagram_types`;
+        const data = await this.fetchData(url);
+
+        if (data.types) {
+          this.diagramTypes = data.types;
+
+          // If URL has type parameter, use it, otherwise use default
+          const urlParams = new URLSearchParams(window.location.search);
+          const typeParam = urlParams.get('diagram_type');
+
+          if (typeParam && this.diagramTypes[typeParam]) {
+            this.selectedType = typeParam;
+          } else if (data.default_type) {
+            this.selectedType = data.default_type;
+          }
+        } else {
+          throw new Error('No diagram types received');
+        }
+      } catch (error) {
+        this.handleError(error);
+      } finally {
+        this.setLoading(false);
+      }
     },
 
     // Load diagram data from API
@@ -42,20 +77,39 @@ DBWatcher.registerComponent('diagrams', function(config) {
         return;
       }
 
+      this.generating = true;
+      this.clearError();
+
       try {
         const url = `/dbwatcher/api/v1/sessions/${this.sessionId}/diagram_data?type=${this.selectedType}`;
         const data = await this.fetchData(url);
 
         if (data.content) {
           this.diagramContent = data.content;
+          // Update URL to reflect current diagram type
+          this.updateURL();
           // Wait for DOM update
           this.$nextTick(() => this.renderDiagram());
         } else {
           throw new Error('No diagram content received');
         }
       } catch (error) {
-        // Error handling is done by fetchData
+        this.handleError(error);
+      } finally {
+        this.generating = false;
       }
+    },
+
+    // Update URL with current diagram type
+    updateURL() {
+      const url = new URL(window.location.href);
+      const params = new URLSearchParams(url.search);
+
+      params.set('diagram_type', this.selectedType);
+
+      // Update URL without full page reload
+      url.search = params.toString();
+      window.history.replaceState({}, '', url.toString());
     },
 
     // Change diagram type
@@ -63,6 +117,7 @@ DBWatcher.registerComponent('diagrams', function(config) {
       if (this.selectedType === newType) return;
 
       this.selectedType = newType;
+      this.updateURL();
       await this.loadDiagram();
     },
 

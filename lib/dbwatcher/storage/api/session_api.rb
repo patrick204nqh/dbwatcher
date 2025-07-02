@@ -172,10 +172,7 @@ module Dbwatcher
         def extract_session_metadata(session)
           {
             id: session.id,
-            created_at: session.created_at,
-            updated_at: session.updated_at,
-            changes_count: session.changes&.count || 0,
-            status: session.status
+            changes_count: session.changes&.count || 0
           }
         end
       end

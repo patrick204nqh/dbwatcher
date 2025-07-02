@@ -1,42 +1,13 @@
 module Dbwatcher
   module ComponentHelper
-    # Generate configuration for changes table component
-    def changes_table_config(session, tables_summary)
-      {
-        sessionId: session.id,
-        tableData: tables_summary.transform_values do |summary|
-          {
-            columns: summary[:sample_record]&.keys || [],
-            operations: summary[:operations] || {},
-            changes: summary[:changes] || [],
-            total_changes: summary[:total_changes] || 0
-          }
-        end,
-        filters: {
-          search: "",
-          operation: "",
-          table: ""
-        }
-      }
-    end
+    # Removed as part of API-first migration (Story 6.8)
+    # All data is now loaded directly from API endpoints
 
-    # Generate configuration for diagram component
-    def diagram_config(session, diagram_types)
-      {
-        sessionId: session&.id,
-        availableTypes: diagram_types || {},
-        selectedType: params[:diagram_type] || "database_tables"
-      }
-    end
+    # Removed as part of API-first migration (Story 6.8)
+    # All data is now loaded directly from API endpoints
 
-    # Generate configuration for summary component
-    def summary_config(session, summary_data)
-      {
-        sessionId: session.id,
-        summaryData: summary_data || {},
-        autoRefresh: false
-      }
-    end
+    # Removed as part of API-first migration (Story 6.8)
+    # All data is now loaded directly from API endpoints
 
     # Generate data attributes for component binding
     def dbwatcher_component(component_name, config)

@@ -1,15 +1,6 @@
-<!-- Diagrams Content -->
-<%
-  # Prepare configuration for the component - use component_helper method
-  config = {
-    sessionId: @session.id,
-    availableTypes: @diagram_types || {},
-    selectedType: params[:diagram_type] || "database_tables"
-  }
-%>
+<!-- Diagrams Content - API-First Implementation -->
 <div class="h-full"
-     x-data="diagrams(JSON.parse($el.dataset.config))"
-     data-config='<%= config.to_json %>'
+     x-data="diagrams({ sessionId: '<%= @session.id %>' })"
      x-init="init()">
   <!-- Diagram Controls - consistent with other tabs -->
   <div class="p-3 border-b border-gray-300 bg-gray-100">
@@ -22,7 +13,7 @@
             @change="loadDiagram()"
             class="compact-select text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
           >
-            <template x-for="[type, metadata] in Object.entries(availableTypes)" :key="type">
+            <template x-for="[type, metadata] in Object.entries(diagramTypes)" :key="type">
               <option :value="type" x-text="metadata.display_name"></option>
             </template>
           </select>
@@ -60,9 +51,34 @@
 
   <!-- Diagram Content Area -->
   <div class="flex-1 overflow-hidden relative mx-1 mb-1 mt-2 rounded-lg" style="min-height: 600px; height: calc(100vh - 150px);">
+    <!-- Loading Types State (Initial) -->
+    <div
+      x-show="loading && Object.keys(diagramTypes).length === 0"
+      class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-75 rounded-md border border-gray-200"
+      style="z-index: 10;"
+    >
+      <div class="flex flex-col items-center">
+        <div class="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+        <div class="text-xs text-gray-600">Loading diagram types...</div>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div
+      x-show="error"
+      class="absolute inset-0 flex flex-col items-center justify-center p-4 bg-red-50 border border-red-200 rounded-md"
+      style="z-index: 10;"
+    >
+      <svg class="w-10 h-10 mb-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <p class="text-sm font-medium mb-1 text-red-700" x-text="error"></p>
+      <button @click="loadDiagramTypes().then(() => loadDiagram())" class="mt-2 text-red-600 underline">Retry</button>
+    </div>
+
     <!-- Empty State -->
     <div
-      x-show="!diagramContent && !loading && !error"
+      x-show="!diagramContent && !loading && !generating && !error && Object.keys(diagramTypes).length > 0"
       class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 p-6 border border-gray-200 rounded-md bg-gray-50"
     >
       <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,9 +89,9 @@
       <p class="text-xs text-center text-gray-400">Select a diagram type and click Generate to visualize your database structure</p>
     </div>
 
-    <!-- Loading State -->
+    <!-- Generating Diagram State -->
     <div
-      x-show="loading"
+      x-show="generating"
       class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-75 rounded-md border border-gray-200"
       style="z-index: 10;"
     >

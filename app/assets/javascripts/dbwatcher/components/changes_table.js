@@ -1,6 +1,6 @@
 /**
  * Changes Table Component
- * Simplified component using DBWatcher base architecture
+ * API-first implementation for DBWatcher changes tab
  */
 
 // Register component with DBWatcher
@@ -13,21 +13,29 @@ DBWatcher.registerComponent('changesTable', function(config) {
 
     // Component-specific state
     sessionId: config.sessionId || null,
-    tableData: config.tableData || {},
-    filters: config.filters || {
+    tableData: {},
+    filters: {
       search: '',
       operation: '',
       table: ''
+      // No pagination - we want full dataset
     },
     showColumnSelector: null,
 
     // Alpine init hook (auto-called by Alpine.js)
     init() {
-      // Initialize columns
-      this.initializeColumns();
+      // Initialize empty state
+      this.tableColumns = {};
+      this.expandedRows = {};
 
       // Setup filtering
       this.setupFiltering();
+
+      // Load data from API
+      this.loadChangesData();
+
+      // Setup URL state sync
+      this.setupURLStateSync();
 
       // Call base init if it exists
       if (baseComponent.init) {
@@ -39,12 +47,7 @@ DBWatcher.registerComponent('changesTable', function(config) {
 
     // Component initialization
     componentInit() {
-      // Initialize columns and filters
-      this.initializeColumns();
-      this.setupFiltering();
-
-      console.log('Changes table component initialized with',
-        Object.keys(this.tableData).length, 'tables');
+      console.log('Changes table component initialized, loading data from API');
     },
 
     // Initialize column visibility tracking
@@ -63,13 +66,88 @@ DBWatcher.registerComponent('changesTable', function(config) {
     setupFiltering() {
       // Use library debouncing from BaseComponent
       this.applyFilters = this.debounce(() => {
-        this.dispatchEvent("table-filtered", { filters: this.filters });
+        this.loadChangesData();
+        this.updateURL();
       }, 300);
+    },
+
+    // Load data from API
+    async loadChangesData() {
+      if (!this.sessionId) {
+        console.error('No session ID provided to changes table component');
+        this.handleError(new Error('No session ID provided'));
+        return;
+      }
+
+      this.setLoading(true);
+      this.clearError();
+
+      try {
+        // Build query parameters from filters
+        const params = new URLSearchParams();
+        if (this.filters.table) params.append('table', this.filters.table);
+        if (this.filters.operation) params.append('operation', this.filters.operation);
+        if (this.filters.search) params.append('search', this.filters.search);
+
+        // Always request full dataset (no pagination)
+
+        const url = `/dbwatcher/api/v1/sessions/${this.sessionId}/changes_data?${params.toString()}`;
+        const data = await this.fetchData(url);
+
+        if (data.tables_summary) {
+          this.tableData = data.tables_summary;
+          this.initializeColumns();
+        } else {
+          throw new Error('No changes data received');
+        }
+      } catch (error) {
+        this.handleError(error);
+      } finally {
+        this.setLoading(false);
+      }
+    },
+
+    // Setup URL state synchronization
+    setupURLStateSync() {
+      // Read initial filters from URL if present
+      const urlParams = new URLSearchParams(window.location.search);
+      const tableParam = urlParams.get('table');
+      const operationParam = urlParams.get('operation');
+
+      if (tableParam) this.filters.table = tableParam;
+      if (operationParam) this.filters.operation = operationParam;
+    },
+
+    // Update URL with current filters
+    updateURL() {
+      const url = new URL(window.location.href);
+      const params = new URLSearchParams(url.search);
+
+      // Update or remove parameters based on filter state
+      if (this.filters.table) {
+        params.set('table', this.filters.table);
+      } else {
+        params.delete('table');
+      }
+
+      if (this.filters.operation) {
+        params.set('operation', this.filters.operation);
+      } else {
+        params.delete('operation');
+      }
+
+      // Update URL without full page reload
+      url.search = params.toString();
+      window.history.replaceState({}, '', url.toString());
     },
 
     // Clear all filters
     clearFilters() {
-      this.filters = {};
+      this.filters = {
+        search: '',
+        operation: '',
+        table: ''
+      };
       this.applyFilters();
     },
 
