@@ -121,7 +121,8 @@ module Dbwatcher
       # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid ERD syntax
       def build_erd_diagram_from_dataset(dataset, _options = {})
-        @logger.debug "Building ERD diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
+        @logger.debug "Building ERD diagram from dataset with #{dataset.entities.size} entities and " \
+                      "#{dataset.relationships.size} relationships"
 
         # Convert dataset to legacy format for existing build methods
         legacy_relationships = dataset.relationships.map do |relationship|
@@ -146,7 +147,8 @@ module Dbwatcher
       # @param options [Hash] generation options (ignored for now)
       # @return [String] Mermaid flowchart syntax
       def build_flowchart_diagram_from_dataset(dataset, _options = {})
-        @logger.debug "Building flowchart diagram from dataset with #{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
+        @logger.debug "Building flowchart diagram from dataset with #{dataset.entities.size} entities and " \
+                      "#{dataset.relationships.size} relationships"
 
         # Add node-only entries for isolated entities
         legacy_associations = dataset.isolated_entities.map do |entity|

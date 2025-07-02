@@ -31,36 +31,8 @@ module Dbwatcher
           log_service_start("session_id=#{session.id} changes_count=#{session.changes.length}")
 
           start_time = Time.now
-
-          tables = {}
-
-          processor.process_changes do |table_name, change, _tables|
-            initialize_table_data(tables, table_name)
-            update_table_data(tables[table_name], change)
-            update_sample_record(tables[table_name], change)
-          end
-
-          # Filter out tables with no operations
-          tables.reject! { |_, data| data[:total_operations].zero? }
-
-          # Convert operation counts to string keys for view compatibility
-          tables.each_value do |data|
-            data[:operations] = {
-              "INSERT" => data[:operations][:insert] || 0,
-              "UPDATE" => data[:operations][:update] || 0,
-              "DELETE" => data[:operations][:delete] || 0
-            }
-
-            # Remove operations with zero count
-            data[:operations].reject! { |_, count| count.zero? }
-          end
-
-          result_context = {
-            tables_analyzed: tables.keys.length,
-            total_operations: tables.values.sum { |t| t[:total_operations] }
-          }
-
-          log_service_completion(start_time, result_context)
+          tables = build_tables_data
+          log_service_completion(start_time, result_context(tables))
           tables
         end
 
@@ -179,6 +151,50 @@ module Dbwatcher
         # @return [String] service name
         def service_name
           "TableSummaryBuilder"
+        end
+
+        # Build tables data by processing all changes
+        def build_tables_data
+          tables = {}
+
+          processor.process_changes do |table_name, change, _tables|
+            initialize_table_data(tables, table_name)
+            update_table_data(tables[table_name], change)
+            update_sample_record(tables[table_name], change)
+          end
+
+          filter_and_format_tables(tables)
+        end
+
+        # Filter out empty tables and format operations for view compatibility
+        def filter_and_format_tables(tables)
+          # Filter out tables with no operations
+          tables.reject! { |_, data| data[:total_operations].zero? }
+
+          # Convert operation counts to string keys for view compatibility
+          tables.each_value do |data|
+            data[:operations] = format_operations(data[:operations])
+          end
+
+          tables
+        end
+
+        # Format operations hash with string keys and remove zero counts
+        def format_operations(operations)
+          formatted = {
+            "INSERT" => operations[:insert] || 0,
+            "UPDATE" => operations[:update] || 0,
+            "DELETE" => operations[:delete] || 0
+          }
+          formatted.reject { |_, count| count.zero? }
+        end
+
+        # Build result context for logging
+        def result_context(tables)
+          {
+            tables_analyzed: tables.keys.length,
+            total_operations: tables.values.sum { |t| t[:total_operations] }
+          }
         end
       end
     end

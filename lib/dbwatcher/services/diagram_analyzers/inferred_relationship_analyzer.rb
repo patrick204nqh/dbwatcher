@@ -95,7 +95,8 @@ module Dbwatcher
 
             # Skip self-referential relationships
             if relationship[:from_table] == relationship[:to_table]
-              Rails.logger.info "InferredRelationshipAnalyzer: Skipping self-referential relationship for #{relationship[:from_table]}"
+              Rails.logger.info "InferredRelationshipAnalyzer: Skipping self-referential relationship " \
+                                "for #{relationship[:from_table]}"
               next
             end
 

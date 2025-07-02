@@ -72,14 +72,15 @@ module Dbwatcher
         end
 
         def build_tables_breakdown(tables_summary)
-          tables_summary.map do |table_name, data|
+          tables_data = tables_summary.map do |table_name, data|
             {
               table_name: table_name,
               change_count: data[:changes]&.length || 0,
               operations: data[:operations] || {},
               sample_columns: data[:sample_record]&.keys || []
             }
-          end.sort_by { |table| -table[:change_count] }
+          end
+          tables_data.sort_by { |table| -table[:change_count] }
         end
 
         def build_metadata
