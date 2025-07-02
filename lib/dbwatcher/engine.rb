@@ -17,7 +17,7 @@ module Dbwatcher
     end
 
     initializer "dbwatcher.setup" do |app|
-      if Dbwatcher.configuration.enabled && !Rails.env.production?
+      if Dbwatcher.configuration.enabled
         # Auto-include in all models
         ActiveSupport.on_load(:active_record) do
           include Dbwatcher::ModelExtension

@@ -8,7 +8,6 @@ Rails.application.configure do
   # Configure DBWatcher settings
   Dbwatcher.configure do |config|
     config.enabled = true
-    config.track_queries = true
     config.auto_clean_after_days = 7
     config.max_sessions = 100
   end
