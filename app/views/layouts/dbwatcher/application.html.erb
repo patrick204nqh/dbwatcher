@@ -19,6 +19,8 @@
     <%= javascript_include_tag "dbwatcher/vendor/lodash.min" %>
     <%= javascript_include_tag "dbwatcher/vendor/date-fns-browser" %>
     <%= javascript_include_tag "dbwatcher/dbwatcher" %>
+    <%= javascript_include_tag "dbwatcher/core/component_registry" %>
+    <%= javascript_include_tag "dbwatcher/core/component_loader" %>
     <%= javascript_include_tag "dbwatcher/components/base" %>
     <%= javascript_include_tag "dbwatcher/components/changes_table" %>
     <%= javascript_include_tag "dbwatcher/components/diagrams" %>
@@ -28,6 +30,12 @@
     <%= javascript_include_tag "dbwatcher/core/alpine_store" %>
     <%= javascript_include_tag "dbwatcher/core/api_client" %>
     <%= javascript_include_tag "dbwatcher/services/mermaid" %>
+
+    <!-- Alpine.js Component Registrations -->
+    <%= javascript_include_tag "dbwatcher/alpine_registrations" %>
+
+    <!-- Auto-initialization -->
+    <%= javascript_include_tag "dbwatcher/auto_init" %>
 
     <script>
       // Initialize DBWatcher before Alpine.js starts
@@ -57,7 +65,7 @@
             console.error('❌ Error during DBWatcher fallback initialization:', error);
           }
         }, 100);
-        
+
         // Plugin verification
         setTimeout(() => {
           if (window.Alpine && !window.Alpine.directive('collapse')) {
@@ -567,5 +575,55 @@
         <%= yield %>
       </main>
     </div>
+
+    <!-- Initialize DBWatcher system -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Initialize DBWatcher if available
+        if (window.DBWatcher) {
+          // Ensure BaseComponent is available
+          if (!window.DBWatcher.BaseComponent && typeof DBWatcher.BaseComponent !== 'function') {
+            window.DBWatcher.BaseComponent = function(config = {}) {
+              return {
+                init() {
+                  if (this.componentInit) {
+                    try {
+                      this.componentInit();
+                    } catch (error) {
+                      console.error("Error during component initialization:", error);
+                    }
+                  }
+                }
+              };
+            };
+            console.log('Added fallback BaseComponent');
+          }
+
+          // Register legacy components with Alpine directly if ComponentRegistry isn't available
+          if (!window.DBWatcher.ComponentRegistry) {
+            console.log('ComponentRegistry not available, using direct Alpine registration');
+
+            // Ensure Alpine is available
+            if (window.Alpine) {
+              // Direct registration of components with Alpine
+              if (!window.Alpine.data('changesTable') && window.DBWatcher.components && window.DBWatcher.components.changesTable) {
+                window.Alpine.data('changesTable', (config = {}) => {
+                  const component = window.DBWatcher.components.changesTable(config);
+                  return component;
+                });
+                console.log('Registered changesTable component with Alpine');
+              }
+            }
+          }
+
+          console.log('✅ DBWatcher initialized (fallback)');
+        }
+
+        // Verify Alpine.js plugins
+        if (window.Alpine && window.Alpine.directive && window.Alpine.directive('collapse')) {
+          console.log('✅ Alpine.js Collapse plugin verified');
+        }
+      });
+    </script>
   </body>
 </html>

@@ -32,11 +32,7 @@ const ApiClient = {
 
   // Build full URL
   buildURL(endpoint) {
-    if (endpoint.startsWith('http')) {
-      return endpoint;
-    }
-
-    if (endpoint.startsWith('/')) {
+    if (endpoint.startsWith('http') || endpoint.startsWith('/')) {
       return endpoint;
     }
 
@@ -58,7 +54,7 @@ const ApiClient = {
     // Add query parameters
     Object.entries(params).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
-        url.searchParams.set(key, value);
+        url.searchParams.append(key, value);
       }
     });
 
@@ -86,27 +82,21 @@ const ApiClient = {
 
       return await this.handleResponse(response);
     } catch (error) {
-      console.error(`API request failed: ${method} ${endpoint}`, error);
-      throw this.handleError(error);
+      return this.handleError(error);
     }
   },
 
   // Handle response processing
   async handleResponse(response) {
     if (!response.ok) {
-      const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const error = new Error(`HTTP error ${response.status}: ${response.statusText}`);
       error.status = response.status;
       error.statusText = response.statusText;
 
-      // Try to get error details from response
       try {
-        const errorData = await response.json();
-        error.details = errorData;
-        if (errorData.error) {
-          error.message = errorData.error;
-        }
-      } catch (parseError) {
-        // Response not JSON, use status text
+        error.data = await response.json();
+      } catch (e) {
+        error.data = null;
       }
 
       throw error;
@@ -127,54 +117,46 @@ const ApiClient = {
   // Handle errors consistently
   handleError(error) {
     if (error.name === 'AbortError') {
-      return new Error('Request was cancelled');
+      console.error('Request aborted');
     }
 
     if (error.message === 'Request timeout') {
-      return new Error('Request timed out. Please try again.');
+      console.error('Request timeout');
     }
 
     if (error.status) {
-      switch (error.status) {
-        case 401:
-          return new Error('Authentication required');
-        case 403:
-          return new Error('Access forbidden');
-        case 404:
-          return new Error('Resource not found');
-        case 422:
-          return new Error(error.details?.error || 'Invalid request');
-        case 500:
-          return new Error('Server error. Please try again later.');
-        default:
-          return error;
-      }
+      console.error(`HTTP error: ${error.status} ${error.statusText}`);
     }
 
-    return error;
+    throw error;
   },
 
   // Convenience methods
-  async get(endpoint, params = {}, options = {}) {
+  get(endpoint, params = {}, options = {}) {
     return this.request('GET', endpoint, { params, ...options });
   },
 
-  async post(endpoint, body = {}, options = {}) {
+  post(endpoint, body = {}, options = {}) {
     return this.request('POST', endpoint, { body, ...options });
   },
 
-  async put(endpoint, body = {}, options = {}) {
+  put(endpoint, body = {}, options = {}) {
     return this.request('PUT', endpoint, { body, ...options });
   },
 
-  async patch(endpoint, body = {}, options = {}) {
+  patch(endpoint, body = {}, options = {}) {
     return this.request('PATCH', endpoint, { body, ...options });
   },
 
-  async delete(endpoint, options = {}) {
+  delete(endpoint, options = {}) {
     return this.request('DELETE', endpoint, options);
   }
 };
+
+// Register with DBWatcher if available
+if (window.DBWatcher) {
+  window.DBWatcher.ApiClient = ApiClient;
+}
 
 // Make available globally
 window.ApiClient = ApiClient;

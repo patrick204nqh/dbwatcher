@@ -5,26 +5,54 @@
 
 // Register component with DBWatcher
 DBWatcher.registerComponent('changesTable', function(config) {
-  return Object.assign(DBWatcher.BaseComponent(config), {
+  const baseComponent = DBWatcher.BaseComponent ? DBWatcher.BaseComponent(config) : {};
+
+  return {
+    // Include BaseComponent
+    ...baseComponent,
+
     // Component-specific state
-    sessionId: config.sessionId,
+    sessionId: config.sessionId || null,
     tableData: config.tableData || {},
-    filters: config.filters || {},
+    filters: config.filters || {
+      search: '',
+      operation: '',
+      table: ''
+    },
     showColumnSelector: null,
+
+    // Alpine init hook (auto-called by Alpine.js)
+    init() {
+      // Initialize columns
+      this.initializeColumns();
+
+      // Setup filtering
+      this.setupFiltering();
+
+      // Call base init if it exists
+      if (baseComponent.init) {
+        baseComponent.init.call(this);
+      }
+    },
     tableColumns: {},
+    expandedRows: {},
 
     // Component initialization
     componentInit() {
+      // Initialize columns and filters
       this.initializeColumns();
       this.setupFiltering();
+
+      console.log('Changes table component initialized with',
+        Object.keys(this.tableData).length, 'tables');
     },
 
     // Initialize column visibility tracking
     initializeColumns() {
       this.tableColumns = {};
-      Object.keys(this.tableData).forEach((tableName) => {
+      Object.keys(this.tableData || {}).forEach((tableName) => {
         this.tableColumns[tableName] = {};
-        const columns = this.tableData[tableName].columns || [];
+        const columns = this.tableData[tableName]?.columns || [];
         columns.forEach((col) => {
           this.tableColumns[tableName][col] = true;
         });
@@ -153,5 +181,5 @@ DBWatcher.registerComponent('changesTable', function(config) {
       }
       return change.record_snapshot?.[column];
     }
-  });
+  };
 });

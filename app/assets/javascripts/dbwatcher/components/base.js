@@ -1,6 +1,7 @@
 /**
  * DBWatcher Base Component
  * Provides standard lifecycle, utilities, and error handling for all components
+ * Optimized to leverage libraries for common utilities
  */
 DBWatcher.BaseComponent = function(config = {}) {
   return {
@@ -9,7 +10,7 @@ DBWatcher.BaseComponent = function(config = {}) {
     error: null,
     config: config,
 
-    // Initialization
+    // Initialization - called automatically by Alpine.js
     init() {
       if (this.componentInit) {
         try {
@@ -20,7 +21,7 @@ DBWatcher.BaseComponent = function(config = {}) {
       }
     },
 
-    // Cleanup
+    // Cleanup - should be called when component is removed
     destroy() {
       if (this.componentDestroy) {
         try {
@@ -31,35 +32,40 @@ DBWatcher.BaseComponent = function(config = {}) {
       }
     },
 
-    // Utilities available to all components
-    debounce(func, wait) {
-      return DBWatcher.utils.debounce(func, wait);
-    },
+    // ==========================================
+    // Utility methods (directly use library methods)
+    // ==========================================
 
-    throttle(func, wait) {
-      return DBWatcher.utils.throttle(func, wait);
-    },
+    // Date and time formatting (using date-fns)
+    formatDate: (date, format) => window.dateFns?.format(date, format) || new Date(date).toISOString().split('T')[0],
+    formatTime: (date) => window.dateFns?.format(date, 'HH:mm:ss') || new Date(date).toTimeString().split(' ')[0],
 
-    formatDate(date, format) {
-      return DBWatcher.utils.formatDate(date, format);
-    },
+    // Collection utilities (using lodash)
+    isEmpty: (value) => window._ ? _.isEmpty(value) : (
+      Array.isArray(value) ? value.length === 0 :
+      typeof value === 'object' && value !== null ? Object.keys(value).length === 0 : !value
+    ),
 
-    formatTime(date) {
-      return DBWatcher.utils.formatTime(date);
-    },
+    // Performance utilities (using lodash)
+    debounce: (fn, wait) => window._ ? _.debounce(fn, wait) : fn,
+    throttle: (fn, wait) => window._ ? _.throttle(fn, wait) : fn,
 
-    formatNumber(num) {
-      return DBWatcher.utils.formatNumber(num);
-    },
+    // ==========================================
+    // State management
+    // ==========================================
 
-    groupBy(array, key) {
-      return DBWatcher.utils.groupBy(array, key);
-    },
-
-    // Standard error handling
+    // Error handling with standardized pattern
     handleError(error) {
       this.error = error.message || "An unexpected error occurred";
       console.error("Component error:", error);
+
+      // Dispatch error event for global tracking
+      if (this.$dispatch) {
+        this.$dispatch('dbwatcher:error', {
+          component: this.constructor.name,
+          error: this.error
+        });
+      }
     },
 
     // Clear error state
@@ -67,17 +73,33 @@ DBWatcher.BaseComponent = function(config = {}) {
       this.error = null;
     },
 
-    // Standard loading state management
+    // Loading state management
     setLoading(loading) {
       this.loading = loading;
+
+      // Dispatch loading state change event
+      if (this.$dispatch) {
+        this.$dispatch('dbwatcher:loading', { loading });
+      }
     },
 
-    // API helper methods
-    async fetchData(url, options = {}) {
+    // ==========================================
+    // API integration (using ApiClient)
+    // ==========================================
+
+    // Fetch data with standardized error handling
+    async fetchData(endpoint, options = {}) {
       this.setLoading(true);
       this.clearError();
 
       try {
+        // Use centralized API client if available
+        if (window.ApiClient) {
+          return await window.ApiClient.get(endpoint, options.params || {}, options);
+        }
+
+        // Fallback to standard fetch
+        const url = endpoint.startsWith('/') ? endpoint : `/dbwatcher/api/v1/${endpoint}`;
         const response = await fetch(url, {
           headers: {
             'Content-Type': 'application/json',
@@ -91,8 +113,7 @@ DBWatcher.BaseComponent = function(config = {}) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
-        return data;
+        return await response.json();
       } catch (error) {
         this.handleError(error);
         throw error;
@@ -101,28 +122,20 @@ DBWatcher.BaseComponent = function(config = {}) {
       }
     },
 
+    // ==========================================
+    // Event handling
+    // ==========================================
+
     // Dispatch custom events
     dispatchEvent(eventName, detail = {}) {
-      this.$dispatch(eventName, detail);
+      if (this.$dispatch) {
+        this.$dispatch(eventName, detail);
+      }
     },
 
     // Common UI helpers
     toggleVisibility(property) {
       this[property] = !this[property];
-    },
-
-    // Data validation helpers
-    isValidData(data) {
-      return data !== null && data !== undefined;
-    },
-
-    // Array/Object helpers
-    isEmpty(value) {
-      if (Array.isArray(value)) return value.length === 0;
-      if (typeof value === 'object' && value !== null) {
-        return Object.keys(value).length === 0;
-      }
-      return !value;
     }
   };
 };

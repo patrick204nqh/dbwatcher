@@ -5,8 +5,7 @@
 %>
 <div class="h-full"
      x-data="changesTable(JSON.parse($el.dataset.config))"
-     data-config='<%= config.to_json %>'
-     x-init="init()">
+     data-config='<%= config.to_json %>'>
 
   <!-- Alpine.js template iteration -->
   <template x-for="[tableName, tableData] in Object.entries(tableData)" :key="tableName">
