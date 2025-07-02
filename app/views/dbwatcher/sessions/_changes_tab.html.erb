@@ -185,12 +185,6 @@
                               <div class="space-y-2">
                                 <!-- Old Value -->
                                 <div class="bg-red-50 border border-red-200 rounded p-3">
-                                  <div class="text-xs font-medium text-red-800 mb-2 flex items-center gap-1">
-                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                                    </svg>
-                                    Previous Value:
-                                  </div>
                                   <template x-if="isJsonValue(getColumnValue(change, column, 'old'))">
                                     <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(getColumnValue(change, column, 'old'))"></pre>
                                   </template>
@@ -209,12 +203,6 @@
 
                                 <!-- New Value -->
                                 <div class="bg-green-50 border border-green-200 rounded p-3">
-                                  <div class="text-xs font-medium text-green-800 mb-2 flex items-center gap-1">
-                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                    </svg>
-                                    New Value:
-                                  </div>
                                   <template x-if="isJsonValue(getColumnValue(change, column, 'new'))">
                                     <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(getColumnValue(change, column, 'new'))"></pre>
                                   </template>
@@ -228,12 +216,6 @@
                             <!-- If column wasn't changed, show unchanged value with neutral styling -->
                             <template x-if="!isColumnChanged(change, column)">
                               <div class="bg-gray-50 border border-gray-200 rounded p-3">
-                                <div class="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
-                                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"/>
-                                  </svg>
-                                  Unchanged Value:
-                                </div>
                                 <template x-if="isJsonValue(getColumnValue(change, column))">
                                   <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(getColumnValue(change, column))"></pre>
                                 </template>
@@ -248,12 +230,6 @@
                         <!-- INSERT Operation -->
                         <template x-if="change.operation === 'INSERT'">
                           <div class="bg-green-50 border border-green-200 rounded p-3">
-                            <div class="text-xs font-medium text-green-800 mb-2 flex items-center gap-1">
-                              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
-                              </svg>
-                              Inserted Value:
-                            </div>
                             <template x-if="isJsonValue(change.record_snapshot?.[column])">
                               <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(change.record_snapshot?.[column])"></pre>
                             </template>
@@ -266,13 +242,6 @@
                         <!-- DELETE Operation -->
                         <template x-if="change.operation === 'DELETE'">
                           <div class="bg-red-50 border border-red-200 rounded p-3">
-                            <div class="text-xs font-medium text-red-800 mb-2 flex items-center gap-1">
-                              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clip-rule="evenodd"/>
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 012 0v4a1 1 0 11-2 0V7zM12 7a1 1 0 012 0v4a1 1 0 11-2 0V7z" clip-rule="evenodd"/>
-                              </svg>
-                              Deleted Value:
-                            </div>
                             <template x-if="isJsonValue(change.record_snapshot?.[column])">
                               <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(change.record_snapshot?.[column])"></pre>
                             </template>
@@ -285,7 +254,6 @@
                         <!-- Other Operations -->
                         <template x-if="!['UPDATE', 'INSERT', 'DELETE'].includes(change.operation)">
                           <div class="bg-gray-100 border border-gray-200 rounded p-3">
-                            <div class="text-xs font-medium text-gray-600 mb-2">Value:</div>
                             <template x-if="isJsonValue(change.record_snapshot?.[column])">
                               <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(change.record_snapshot?.[column])"></pre>
                             </template>
