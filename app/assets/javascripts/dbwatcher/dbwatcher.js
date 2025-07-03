@@ -101,6 +101,15 @@ window.DBWatcher = {
     return factory(config);
   },
 
+  // Register a component using the ComponentRegistry
+  register(name, factory) {
+    if (!this.ComponentRegistry) {
+      console.error('ComponentRegistry not loaded');
+      return false;
+    }
+    return this.ComponentRegistry.register(name, factory);
+  },
+
   // Legacy support for old API
   registerComponent(name, factory) {
     return this.register(name, factory);

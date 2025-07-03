@@ -1,6 +1,6 @@
-<!-- Changes Content - API-First Implementation -->
+<!-- Changes Content - Hybrid Tabulator Implementation with Original UI Structure -->
 <div class="h-full"
-     x-data="changesTable({ sessionId: '<%= @session.id %>' })">
+     x-data="changesTableHybrid({ sessionId: '<%= @session.id %>' })">
 
   <!-- Loading State -->
   <div x-show="loading" class="flex items-center justify-center h-64">
@@ -24,271 +24,242 @@
     <p class="mt-2 text-gray-500">No changes data available</p>
   </div>
 
-  <!-- Alpine.js template iteration (only shown when data loaded) -->
+  <!-- Multiple Tables - Original UI Structure -->
   <template x-if="!loading && !error && Object.keys(tableData).length > 0">
-  <template x-for="[tableName, tableData] in Object.entries(tableData)" :key="tableName">
-    <div class="border-b border-gray-300" x-data="{ expanded: true }">
-      <!-- Table Header with Column Controls -->
-      <div class="bg-gray-100 px-3 py-2 flex items-center cursor-pointer"
-           @click="expanded = !expanded"
-           :id="`table-${tableName}`">
-        <svg class="w-3 h-3 mr-2 transition-transform"
-             :class="{ 'rotate-90': expanded }"
-             fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-        </svg>
-        <h3 class="text-sm font-medium text-gray-900 flex-1" x-text="tableName"></h3>
-        <div class="flex gap-2 mr-4">
-          <template x-for="[op, count] in Object.entries(tableData.operations || {})" :key="op">
-            <span x-show="count > 0" class="badge" :class="`badge-${op.toLowerCase()}`" x-text="count"></span>
-          </template>
-        </div>
-
-        <!-- Column Visibility Button -->
-        <button @click.stop="toggleColumnSelector(tableName)"
-                class="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50 relative">
-          Columns
-        </button>
-      </div>
-
-      <!-- Column Selector Dropdown -->
-      <div x-show="showColumnSelector === tableName"
-           x-transition
-           @click.away="showColumnSelector = null"
-           class="absolute z-50 bg-white border border-gray-300 rounded shadow-lg p-3 max-h-64 overflow-auto"
-           style="right: 1rem; margin-top: -2px;">
-        <div class="text-xs font-medium mb-2">Select Visible Columns:</div>
-        <div class="space-y-1 min-w-48">
-          <template x-for="column in tableData.columns" :key="column">
-            <label class="flex items-center text-xs hover:bg-gray-50 p-1 rounded">
-              <input type="checkbox"
-                     x-model="tableColumns[tableName][column]"
-                     class="mr-2">
-              <span class="flex-1" x-text="column"></span>
-            </label>
-          </template>
-        </div>
-        <div class="mt-2 pt-2 border-t border-gray-200 flex gap-1">
-          <button @click="selectAllColumns(tableName)"
-                  class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">All</button>
-          <button @click="selectNoneColumns(tableName)"
-                  class="text-xs bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-700">None</button>
-        </div>
-      </div>
-
-      <!-- Table Content - For now keeping ERB structure but with Alpine column visibility -->
-      <div x-show="expanded" x-collapse>
-        <div class="overflow-x-auto">
-          <table class="compact-table w-full table-fixed">
-            <thead>
-              <tr class="sticky top-0 bg-gray-100">
-                <th scope="col" class="text-center sticky left-0 bg-gray-100 border-r border-gray-300 px-2" style="width: 64px; min-width: 64px; max-width: 64px; z-index: 100;">
-                  <span class="text-xs">Op</span>
-                </th>
-                <th scope="col" class="text-left sticky bg-gray-100 border-r border-gray-300 px-2" style="width: 180px; min-width: 180px; max-width: 180px; left: 64px; z-index: 99;">
-                  <span class="text-xs">Time</span>
-                </th>
-                <template x-for="column in tableData.columns" :key="`header-${tableName}-${column}`">
-                  <th scope="col"
-                      class="text-left px-2 border-r border-gray-300 bg-gray-100"
-                      style="width: 200px; min-width: 200px; max-width: 200px; z-index: 10;"
-                      x-show="tableColumns[tableName] && tableColumns[tableName][column]"
-                      x-text="column">
-                  </th>
-                </template>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Alpine.js table rows with expand functionality -->
-              <template x-for="(change, index) in tableData.changes" :key="index">
-                <tbody x-data="{ expanded: false }">
-                  <tr class="hover:bg-blue-50">
-                    <td scope="row" class="text-center bg-white border-r border-gray-200 sticky left-0 px-2" style="width: 64px; min-width: 64px; max-width: 64px; z-index: 50;">
-                      <div class="flex items-center justify-center gap-1">
-                        <!-- Expand/Collapse Button -->
-                        <button @click="expanded = !expanded"
-                                class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-gray-100">
-                          <svg class="w-3 h-3 transition-transform"
-                               :class="{ 'rotate-90': expanded }"
-                               fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                          </svg>
-                        </button>
-                        <!-- Operation Badge -->
-                        <span class="badge" :class="`badge-${change.operation?.toLowerCase()}`" x-text="change.operation?.[0] || '?'"></span>
-                      </div>
-                    </td>
-                    <td class="text-xs text-gray-600 bg-white border-r border-gray-200 sticky px-2" style="width: 180px; min-width: 180px; max-width: 180px; left: 64px; z-index: 49;" x-text="formatTime(change.timestamp)">
-                    </td>
-                    <template x-for="column in tableData.columns" :key="`row-${tableName}-${column}-${index}`">
-                      <td x-show="tableColumns[tableName] && tableColumns[tableName][column]"
-                          class="px-2 border-r border-gray-200 bg-white"
-                          style="width: 200px; min-width: 200px; max-width: 200px; z-index: 1;"
-                          @click.stop="">
-                        <div class="truncate"
-                             :title="getColumnValue(change, column)">
-                          <!-- UPDATE Operation: Show both changed and unchanged values -->
-                          <template x-if="change.operation === 'UPDATE'">
-                            <div class="text-xs">
-                              <!-- Changed columns: show old/new values -->
-                              <template x-if="change.changes && change.changes.find(c => c.column === column)">
-                                <div class="space-y-1">
-                                  <div class="text-red-600 line-through text-xs" x-text="change.changes.find(c => c.column === column)?.old_value || '--'"></div>
-                                  <div class="text-green-600 font-medium text-xs" x-text="change.changes.find(c => c.column === column)?.new_value || '--'"></div>
-                                </div>
-                              </template>
-                              <!-- Unchanged columns: show current value with no special styling -->
-                              <template x-if="!change.changes || !change.changes.find(c => c.column === column)">
-                                <span class="text-gray-700 text-xs"
-                                      x-text="change.record_snapshot?.[column] || '--'"
-                                      title="Unchanged value"></span>
-                              </template>
-                            </div>
-                          </template>
-                          <!-- INSERT Operation -->
-                          <template x-if="change.operation === 'INSERT'">
-                            <span class="text-green-600 font-medium text-xs" x-text="change.record_snapshot?.[column] || '--'"></span>
-                          </template>
-                          <!-- DELETE Operation -->
-                          <template x-if="change.operation === 'DELETE'">
-                            <span class="text-red-600 line-through text-xs" x-text="change.record_snapshot?.[column] || '--'"></span>
-                          </template>
-                          <!-- Other Operations -->
-                          <template x-if="!['UPDATE', 'INSERT', 'DELETE'].includes(change.operation)">
-                            <span class="text-gray-700 text-xs" x-text="change.record_snapshot?.[column] || '--'"></span>
-                          </template>
-                        </div>
-                      </td>
-                    </template>
-                  </tr>
-
-                  <!-- Expanded Row Content -->
-                  <tr x-show="expanded"
-                      x-collapse
-                      class="bg-gray-50 border-t border-gray-200">
-                    <td colspan="2" class="bg-gray-50 border-r border-gray-200 p-3 sticky left-0" style="width: 244px; min-width: 244px; max-width: 244px; z-index: 30;">
-                      <div class="text-xs font-medium text-gray-700 mb-2">Record Details</div>
-                      <div class="text-xs text-gray-600 space-y-1">
-                        <div>Operation: <span class="badge" :class="`badge-${change.operation?.toLowerCase()}`" x-text="change.operation"></span></div>
-                        <div x-show="change.timestamp">
-                          <span class="font-medium">Time:</span><br>
-                          <span x-text="formatDate(change.timestamp)"></span>
-                        </div>
-                        <template x-if="change.operation === 'UPDATE' && change.changes">
-                          <div>
-                            <span class="font-medium">Changes:</span><br>
-                            <span x-text="`${change.changes?.length || 0} column(s) modified`"></span>
-                          </div>
-                        </template>
-                        <template x-if="change.record_snapshot && Object.keys(change.record_snapshot).length > 0">
-                          <div>
-                            <span class="font-medium">Record ID:</span><br>
-                            <span x-text="change.record_snapshot?.id || change.record_snapshot?.uuid || 'N/A'"></span>
-                          </div>
-                        </template>
-                      </div>
-                    </td>
-                    <!-- Display expanded details for all columns -->
-                    <template x-for="column in tableData.columns" :key="`expanded-${tableName}-${column}-${index}`">
-                      <td x-show="tableColumns[tableName] && tableColumns[tableName][column]"
-                          class="p-3 border-r border-gray-200 align-top"
-                          style="width: 200px; min-width: 200px; max-width: 200px;">
-                        <div class="text-xs font-medium text-gray-600 mb-2" x-text="column"></div>
-
-                        <!-- UPDATE Operation: Show both old and new values, plus unchanged values -->
-                        <template x-if="change.operation === 'UPDATE'">
-                          <div class="space-y-3">
-                            <!-- Check if this column was actually changed -->
-                            <template x-if="isColumnChanged(change, column)">
-                              <div class="space-y-2">
-                                <!-- Old Value -->
-                                <div class="bg-red-50 border border-red-200 rounded p-3">
-                                  <template x-if="isJsonValue(getColumnValue(change, column, 'old'))">
-                                    <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(getColumnValue(change, column, 'old'))"></pre>
-                                  </template>
-                                  <template x-if="!isJsonValue(getColumnValue(change, column, 'old'))">
-                                    <div class="text-xs bg-white p-3 rounded border text-gray-800 min-h-16 overflow-auto max-h-64 break-all whitespace-pre-wrap" x-text="getColumnValue(change, column, 'old') || 'No value'"></div>
-                                  </template>
-                                </div>
-
-                                <!-- Arrow indicating change -->
-                                <div class="flex justify-center">
-                                  <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                                    <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h10a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
-                                  </svg>
-                                </div>
-
-                                <!-- New Value -->
-                                <div class="bg-green-50 border border-green-200 rounded p-3">
-                                  <template x-if="isJsonValue(getColumnValue(change, column, 'new'))">
-                                    <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(getColumnValue(change, column, 'new'))"></pre>
-                                  </template>
-                                  <template x-if="!isJsonValue(getColumnValue(change, column, 'new'))">
-                                    <div class="text-xs bg-white p-3 rounded border text-gray-800 min-h-16 overflow-auto max-h-64 break-all whitespace-pre-wrap" x-text="getColumnValue(change, column, 'new') || 'No value'"></div>
-                                  </template>
-                                </div>
-                              </div>
-                            </template>
-
-                            <!-- If column wasn't changed, show unchanged value with neutral styling -->
-                            <template x-if="!isColumnChanged(change, column)">
-                              <div class="bg-gray-50 border border-gray-200 rounded p-3">
-                                <template x-if="isJsonValue(getColumnValue(change, column))">
-                                  <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(getColumnValue(change, column))"></pre>
-                                </template>
-                                <template x-if="!isJsonValue(getColumnValue(change, column))">
-                                  <div class="text-xs bg-white p-3 rounded border text-gray-800 min-h-16 overflow-auto max-h-64 break-all whitespace-pre-wrap" x-text="getColumnValue(change, column) || 'No value'"></div>
-                                </template>
-                              </div>
-                            </template>
-                          </div>
-                        </template>
-
-                        <!-- INSERT Operation -->
-                        <template x-if="change.operation === 'INSERT'">
-                          <div class="bg-green-50 border border-green-200 rounded p-3">
-                            <template x-if="isJsonValue(change.record_snapshot?.[column])">
-                              <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(change.record_snapshot?.[column])"></pre>
-                            </template>
-                            <template x-if="!isJsonValue(change.record_snapshot?.[column])">
-                              <div class="text-xs bg-white p-3 rounded border text-gray-800 min-h-16 overflow-auto max-h-64 break-all whitespace-pre-wrap" x-text="change.record_snapshot?.[column] || 'No value'"></div>
-                            </template>
-                          </div>
-                        </template>
-
-                        <!-- DELETE Operation -->
-                        <template x-if="change.operation === 'DELETE'">
-                          <div class="bg-red-50 border border-red-200 rounded p-3">
-                            <template x-if="isJsonValue(change.record_snapshot?.[column])">
-                              <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(change.record_snapshot?.[column])"></pre>
-                            </template>
-                            <template x-if="!isJsonValue(change.record_snapshot?.[column])">
-                              <div class="text-xs bg-white p-3 rounded border text-gray-800 min-h-16 overflow-auto max-h-64 break-all whitespace-pre-wrap" x-text="change.record_snapshot?.[column] || 'No value'"></div>
-                            </template>
-                          </div>
-                        </template>
-
-                        <!-- Other Operations -->
-                        <template x-if="!['UPDATE', 'INSERT', 'DELETE'].includes(change.operation)">
-                          <div class="bg-gray-100 border border-gray-200 rounded p-3">
-                            <template x-if="isJsonValue(change.record_snapshot?.[column])">
-                              <pre class="text-xs bg-white p-3 rounded border text-gray-800 overflow-auto max-h-64 min-h-16 font-mono whitespace-pre-wrap break-all" x-text="formatJsonValue(change.record_snapshot?.[column])"></pre>
-                            </template>
-                            <template x-if="!isJsonValue(change.record_snapshot?.[column])">
-                              <div class="text-xs bg-white p-3 rounded border text-gray-800 min-h-16 overflow-auto max-h-64 break-all whitespace-pre-wrap" x-text="change.record_snapshot?.[column] || 'No value'"></div>
-                            </template>
-                          </div>
-                        </template>
-                      </td>
-                    </template>
-                  </tr>
-                </tbody>
+    <div class="h-full overflow-auto">
+      <template x-for="[tableName, tableInfo] in Object.entries(tableData)" :key="tableName">
+        <div class="border-b border-gray-300" x-data="{ expanded: true }">
+          <!-- Table Header with Column Controls -->
+          <div class="bg-gray-100 px-3 py-2 flex items-center cursor-pointer"
+               @click="expanded = !expanded"
+               :id="`table-${tableName}`">
+            <svg class="w-3 h-3 mr-2 transition-transform"
+                 :class="{ 'rotate-90': expanded }"
+                 fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <h3 class="text-sm font-medium text-gray-900 flex-1" x-text="tableName"></h3>
+            <div class="flex gap-2 mr-4">
+              <template x-for="[op, count] in Object.entries(tableInfo.operations || {})" :key="op">
+                <span x-show="count > 0" class="badge" :class="`badge-${op.toLowerCase()}`" x-text="count"></span>
               </template>
-            </tbody>
-          </table>
+            </div>
+
+            <!-- Column Visibility Button -->
+            <button @click.stop="toggleColumnSelector(tableName)"
+                    class="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50 relative">
+              Columns
+            </button>
+          </div>
+
+          <!-- Column Selector Dropdown -->
+          <div x-show="showColumnSelector === tableName"
+               x-transition
+               @click.away="showColumnSelector = null"
+               class="absolute z-50 bg-white border border-gray-300 rounded shadow-lg p-3 max-h-64 overflow-auto"
+               style="right: 1rem; margin-top: -2px;">
+            <div class="text-xs font-medium mb-2">Select Visible Columns:</div>
+            <div class="space-y-1 min-w-48">
+              <template x-for="column in tableInfo.columns" :key="column">
+                <label class="flex items-center text-xs hover:bg-gray-50 p-1 rounded">
+                  <input type="checkbox"
+                         :checked="isColumnVisible(tableName, column)"
+                         @change="toggleColumnVisibility(tableName, column)"
+                         class="mr-2">
+                  <span class="flex-1" x-text="column"></span>
+                </label>
+              </template>
+            </div>
+            <div class="mt-2 pt-2 border-t border-gray-200 flex gap-1">
+              <button @click="selectAllColumns(tableName)"
+                      class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">All</button>
+              <button @click="selectNoneColumns(tableName)"
+                      class="text-xs bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-700">None</button>
+            </div>
+          </div>
+
+          <!-- Tabulator Container for This Table -->
+          <div x-show="expanded" x-collapse>
+            <div :id="`changes-table-${tableName}`" class="table-container"></div>
+          </div>
         </div>
-      </div>
+      </template>
     </div>
   </template>
 </div>
+
+<!-- Custom Tabulator Styles -->
+<style>
+  /* Override Tabulator styles to match current design */
+  .tabulator {
+    font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace !important;
+    font-size: 12px !important;
+    border: none;
+    background: white;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .tabulator .tabulator-header {
+    background: #f3f3f3 !important;
+    border-bottom: 2px solid #e8e8e8 !important;
+    font-size: 11px !important;
+  }
+
+  .tabulator .tabulator-header .tabulator-col {
+    background: #f3f3f3 !important;
+    border-right: 1px solid #e8e8e8 !important;
+    padding: 4px 8px !important;
+    font-weight: 500 !important;
+    text-transform: none !important;
+    height: 32px !important;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row {
+    background: white !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    min-height: auto;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover {
+    background: #f3f4f6 !important;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell {
+    border-right: 1px solid #f0f0f0 !important;
+    padding: 2px 8px !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: top;
+    font-size: 12px !important;
+    height: auto;
+    min-height: 28px;
+  }
+
+  /* Override for UPDATE operation cells to allow multi-line */
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell:has(.space-y-1) {
+    white-space: normal;
+    height: auto;
+    padding: 4px 8px !important;
+  }
+
+  /* Maintain sticky columns exactly as current */
+  .tabulator .tabulator-header .tabulator-col.sticky-left-0 {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 20 !important;
+    background: #f3f3f3 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1) !important;
+  }
+
+  .tabulator .tabulator-header .tabulator-col.sticky-left-1 {
+    position: sticky !important;
+    left: 60px !important;
+    z-index: 19 !important;
+    background: #f3f3f3 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1) !important;
+  }
+
+  .tabulator .tabulator-header .tabulator-col.sticky-left-2 {
+    position: sticky !important;
+    left: 108px !important;
+    z-index: 18 !important;
+    background: #f3f3f3 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1) !important;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell.sticky-left-0 {
+    position: sticky !important;
+    left: 0 !important;
+    background: white !important;
+    z-index: 5 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.05) !important;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell.sticky-left-1 {
+    position: sticky !important;
+    left: 60px !important;
+    background: white !important;
+    z-index: 4 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.05) !important;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell.sticky-left-2 {
+    position: sticky !important;
+    left: 108px !important;
+    background: white !important;
+    z-index: 3 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.05) !important;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-0,
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-1,
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-2 {
+    background: #f9fafb !important;
+  }
+
+  /* Operation badges */
+  .badge-insert { background: #10b981; color: white; }
+  .badge-update { background: #6CADDF; color: white; }
+  .badge-delete { background: #ef4444; color: white; }
+  .badge-select { background: #6b7280; color: white; }
+
+  .badge {
+    padding: 1px 6px;
+    font-size: 10px;
+    border-radius: 3px;
+    font-weight: 500;
+    text-transform: uppercase;
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  /* Row detail styling */
+  .row-detail {
+    border-top: 1px solid #e5e7eb;
+    background: #f9fafb;
+    padding: 0;
+  }
+
+  .row-detail td {
+    padding: 8px !important;
+    vertical-align: top !important;
+    border-right: 1px solid #e5e7eb !important;
+  }
+
+  .row-detail h4 {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+  }
+
+  /* Maintain sticky positioning in expanded rows - combined first 3 columns */
+  .row-detail .sticky-left-0 {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 5 !important;  /* Lower z-index to prevent overlay issues */
+    background: #f9fafb !important;  /* Match row-detail background */
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1) !important;
+    width: 268px !important;
+    min-width: 268px !important;
+  }
+
+  /* Expand button styling */
+  .expand-btn {
+    padding: 2px;
+    border-radius: 2px;
+    transition: all 0.15s ease;
+  }
+
+  .expand-btn:hover {
+    background-color: #f3f4f6;
+  }
+</style>

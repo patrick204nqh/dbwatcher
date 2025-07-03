@@ -15,6 +15,10 @@
     <!-- SVG Pan Zoom Library -->
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
 
+    <!-- Tabulator.js for table library -->
+    <%= javascript_include_tag "dbwatcher/vendor/tabulator.min" %>
+    <%= stylesheet_link_tag "dbwatcher/vendor/tabulator.min", media: "all" %>
+
     <!-- DBWatcher Core Architecture -->
     <%= javascript_include_tag "dbwatcher/vendor/lodash.min" %>
     <%= javascript_include_tag "dbwatcher/vendor/date-fns-browser" %>
@@ -22,7 +26,7 @@
     <%= javascript_include_tag "dbwatcher/core/component_registry" %>
     <%= javascript_include_tag "dbwatcher/core/component_loader" %>
     <%= javascript_include_tag "dbwatcher/components/base" %>
-    <%= javascript_include_tag "dbwatcher/components/changes_table" %>
+    <%= javascript_include_tag "dbwatcher/components/changes_table_hybrid" %>
     <%= javascript_include_tag "dbwatcher/components/diagrams" %>
     <%= javascript_include_tag "dbwatcher/components/summary" %>
 
@@ -102,7 +106,6 @@
         font-size: 12px;
         line-height: 1.2;
         width: 100%;
-        table-layout: fixed;
         border-collapse: separate;
         border-spacing: 0;
       }
@@ -119,29 +122,29 @@
         top: 0;
         z-index: 10;
         text-align: left;
+        height: 32px;
       }
 
-      /* Sticky headers need higher z-index than regular headers */
-      .compact-table th.sticky {
-        z-index: 50;
-      }
-
-      /* Op header - sticky left and top with highest z-index */
+      /* Enhanced sticky header styling */
       .compact-table th.sticky-left-0 {
         position: sticky;
         left: 0;
-        z-index: 100;
+        z-index: 20;
+        box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
       }
 
-      /* Time header - sticky left and top */
-      .compact-table th.sticky-left-16 {
+      .compact-table th.sticky-left-1 {
         position: sticky;
-        left: 64px; /* Width of Op column */
-        z-index: 99;
+        left: 60px; /* Width of Index column */
+        z-index: 19;
+        box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
       }
 
-      .compact-table th[scope="col"] {
-        background: #f3f3f3;
+      .compact-table th.sticky-left-2 {
+        position: sticky;
+        left: 108px; /* Width of Index + Op columns (60px + 48px) */
+        z-index: 18;
+        box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
       }
 
       .compact-table td {
@@ -154,28 +157,63 @@
         vertical-align: top;
       }
 
-      /* Op column cells */
+      /* Enhanced sticky cell styling */
       .compact-table td.sticky-left-0 {
         position: sticky;
         left: 0;
         background: white;
-        z-index: 50;
+        z-index: 5;
+        box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
       }
 
-      /* Time column cells */
-      .compact-table td.sticky-left-16 {
+      .compact-table td.sticky-left-1 {
         position: sticky;
-        left: 64px; /* Width of Op column */
+        left: 60px; /* Width of Index column */
         background: white;
-        z-index: 49;
+        z-index: 4;
+        box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
       }
 
-      .compact-table tr:hover {
-        background: #f8f8f8;
+      .compact-table td.sticky-left-2 {
+        position: sticky;
+        left: 108px; /* Width of Index + Op columns (60px + 48px) */
+        background: white;
+        z-index: 3;
+        box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
       }
 
-      .compact-table tr.selected {
-        background: #e6f3ff;
+      /* Special cell formatting */
+      .compact-table td.highlight-change {
+        background-color: rgba(255, 240, 200, 0.5);
+      }
+
+      .compact-table td.highlight-new {
+        color: #047857;
+      }
+
+      .compact-table td.highlight-deleted {
+        color: #b91c1c;
+      }
+
+      /* Row styles */
+      .compact-table tr:hover td:not(.sticky-left-0):not(.sticky-left-1):not(.sticky-left-2) {
+        background-color: rgba(243, 244, 246, 0.7);
+      }
+
+      .compact-table tr:hover td.sticky-left-0,
+      .compact-table tr:hover td.sticky-left-1,
+      .compact-table tr:hover td.sticky-left-2 {
+        background-color: #f9fafb;
+      }
+
+      .compact-table tr.selected td:not(.sticky-left-0):not(.sticky-left-1):not(.sticky-left-2) {
+        background-color: rgba(230, 243, 255, 0.7);
+      }
+
+      .compact-table tr.selected td.sticky-left-0,
+      .compact-table tr.selected td.sticky-left-1,
+      .compact-table tr.selected td.sticky-left-2 {
+        background-color: #e6f3ff;
       }
 
       /* Sidebar styles */
@@ -261,9 +299,58 @@
       .badge {
         padding: 1px 6px;
         font-size: 10px;
-        border-radius: 2px;
+        border-radius: 3px;
         font-weight: 500;
         text-transform: uppercase;
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        line-height: 18px;
+        text-align: center;
+      }
+
+      /* Smart column width distribution */
+      .compact-table th,
+      .compact-table td {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* Fixed widths for sticky columns only */
+      .compact-table th:first-child,
+      .compact-table td:first-child {
+        width: 60px;
+        min-width: 60px;
+        max-width: 60px;
+      }
+
+      .compact-table th:nth-child(2),
+      .compact-table td:nth-child(2) {
+        width: 48px;
+        min-width: 48px;
+        max-width: 48px;
+        text-align: center;
+      }
+
+      .compact-table th:nth-child(3),
+      .compact-table td:nth-child(3) {
+        width: 160px;
+        min-width: 160px;
+        max-width: 160px;
+        font-family: monospace;
+        font-size: 11px;
+      }
+
+      /* Font styling for specific column types */
+      .compact-table .text-right {
+        font-family: monospace;
+      }
+
+      .compact-table td:nth-child(3),
+      .compact-table th:nth-child(3) {
+        font-family: monospace;
+        font-size: 11px;
       }
 
       /* Highlight colors */

@@ -28,6 +28,12 @@ DBWatcher.ComponentRegistry = {
 
     this._components[name] = factory;
 
+    // Also store in DBWatcher.components for backward compatibility
+    if (window.DBWatcher) {
+      window.DBWatcher.components = window.DBWatcher.components || {};
+      window.DBWatcher.components[name] = factory;
+    }
+
     // Auto-register with Alpine if available
     if (window.Alpine && window.Alpine.data) {
       this._registerWithAlpine(name, factory);
