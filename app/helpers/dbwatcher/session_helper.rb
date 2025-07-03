@@ -17,33 +17,12 @@ module Dbwatcher
       name.to_s.gsub(/^HTTP \w+ /, "")
     end
 
-    # Generate session ID display (truncated)
+    # Generate session ID display (wider format)
     def display_session_id(id)
       return "N/A" unless id
 
-      "#{id[0..7]}..."
-    end
-
-    # Format timestamp for display
-    def format_timestamp(timestamp)
-      return "N/A" unless timestamp.present?
-
-      time = timestamp.is_a?(String) ? Time.parse(timestamp) : timestamp
-      time.strftime("%Y-%m-%d %H:%M:%S")
-    end
-
-    # Format large numbers for display
-    def format_large_count(count)
-      return "0" unless count.present?
-
-      count = count.to_i
-      if count > 999
-        "#{count / 1000}k+"
-      elsif count > 99
-        "99+"
-      else
-        count.to_s
-      end
+      # Show more characters of the session ID for better readability
+      "#{id[0..15]}..."
     end
   end
 end

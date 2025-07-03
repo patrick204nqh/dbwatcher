@@ -59,8 +59,8 @@
     <table class="compact-table w-full">
       <thead>
         <tr>
-          <th class="text-left w-40">Session ID</th>
-          <th class="text-left w-1/3">Name</th>
+          <th class="text-left" style="min-width:180px; max-width:260px; width:18%">Session ID</th>
+          <th class="text-left" style="min-width:160px; max-width:260px; width:22%">Name</th>
           <th class="text-center">Status</th>
           <th class="text-center">Changes</th>
           <th class="text-right">Started</th>
@@ -71,15 +71,16 @@
       <tbody>
         <% @sessions.each do |session| %>
           <tr class="hover:bg-blue-50">
-            <td class="font-mono text-xs w-40">
-              <span class="inline-block whitespace-normal break-all">
+            <td class="font-mono text-xs" style="min-width:180px; max-width:260px; width:18%">
+              <span class="inline-block whitespace-nowrap overflow-x-auto" style="max-width:260px;">
                 <%= safe_value(session, :id) %>
               </span>
             </td>
-            <td class="w-1/3" title="<%= safe_value(session, :name) %>">
+            <td style="min-width:160px; max-width:260px; width:22%" title="<%= safe_value(session, :name) %>">
               <%= link_to display_session_name(safe_value(session, :name)),
                   session_path(safe_value(session, :id)),
-                  class: "text-navy-dark hover:text-blue-medium whitespace-normal break-words inline-block" %>
+                  class: "text-navy-dark hover:text-blue-medium whitespace-normal break-words inline-block",
+                  style: "max-width:260px; overflow-x:auto; display:inline-block;" %>
             </td>
             <td class="text-center">
               <%= render 'dbwatcher/shared/badge',

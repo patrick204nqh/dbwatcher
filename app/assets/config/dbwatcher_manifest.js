@@ -10,5 +10,6 @@
 //= link dbwatcher/vendor/date-fns-browser.js
 //= link dbwatcher/vendor/tabulator.min.js
 
-// Stylesheets  
+// Stylesheets
 //= link dbwatcher/application.css
+//= link dbwatcher/vendor/tabulator.min.css
