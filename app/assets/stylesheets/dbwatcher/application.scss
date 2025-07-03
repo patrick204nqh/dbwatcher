@@ -1,0 +1,14 @@
+/**
+ * DBWatcher Application Styles
+ * Main stylesheet that imports all components
+ */
+
+// Core styles
+@import "core/variables";
+@import "core/base";
+
+// Component styles
+@import "components/compact_table";
+@import "components/navigation";
+@import "components/forms";
+@import "components/badges";

@@ -60,7 +60,7 @@ module Dbwatcher
     def format_timestamp(timestamp_str)
       return "N/A" unless timestamp_str
 
-      Time.parse(timestamp_str).strftime("%H:%M:%S")
+      Time.parse(timestamp_str).strftime("%Y-%m-%d %H:%M:%S")
     rescue ArgumentError
       "N/A"
     end

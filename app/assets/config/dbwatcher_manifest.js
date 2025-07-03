@@ -9,3 +9,6 @@
 //= link dbwatcher/vendor/lodash.min.js
 //= link dbwatcher/vendor/date-fns-browser.js
 //= link dbwatcher/vendor/tabulator.min.js
+
+// Stylesheets  
+//= link dbwatcher/application.css

@@ -23,5 +23,27 @@ module Dbwatcher
 
       "#{id[0..7]}..."
     end
+
+    # Format timestamp for display
+    def format_timestamp(timestamp)
+      return "N/A" unless timestamp.present?
+
+      time = timestamp.is_a?(String) ? Time.parse(timestamp) : timestamp
+      time.strftime("%Y-%m-%d %H:%M:%S")
+    end
+
+    # Format large numbers for display
+    def format_large_count(count)
+      return "0" unless count.present?
+
+      count = count.to_i
+      if count > 999
+        "#{count / 1000}k+"
+      elsif count > 99
+        "99+"
+      else
+        count.to_s
+      end
+    end
   end
 end
