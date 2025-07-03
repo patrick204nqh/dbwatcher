@@ -14,6 +14,10 @@ module Dbwatcher
       # Define asset paths
       app.config.assets.paths << root.join("app", "assets", "stylesheets")
       app.config.assets.paths << root.join("app", "assets", "javascripts")
+      app.config.assets.paths << root.join("app", "assets", "config")
+
+      # Load engine's manifest file
+      app.config.assets.precompile << "dbwatcher_manifest.js"
     end
 
     initializer "dbwatcher.setup" do |app|
