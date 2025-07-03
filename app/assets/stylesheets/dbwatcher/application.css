@@ -341,3 +341,156 @@
   line-height: 18px;
   text-align: center;
 }
+
+/* Enhanced table styles for data readability */
+.table-detailed .compact-table td {
+  max-width: 300px;
+  padding: 4px 8px;
+}
+
+.cell-content {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.cell-compact {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-detailed {
+  max-width: 300px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cell-value {
+  cursor: help;
+}
+
+/* Column type styling */
+.column-meta {
+  background-color: rgba(156, 163, 175, 0.1);
+}
+
+.column-timestamp {
+  background-color: rgba(59, 130, 246, 0.1);
+  font-family: monospace;
+}
+
+.column-id {
+  background-color: rgba(245, 158, 11, 0.1);
+  font-family: monospace;
+}
+
+/* Tooltip improvements */
+.tooltip-content {
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+}
+
+/* Essential mode adjustments */
+.view-essential .compact-table th,
+.view-essential .compact-table td {
+  font-size: 11px;
+  padding: 2px 6px;
+}
+
+/* JSON/Array content indicators */
+.json-indicator {
+  color: #6366f1;
+  font-style: italic;
+  font-size: 10px;
+}
+
+.array-indicator {
+  color: #059669;
+  font-style: italic;
+  font-size: 10px;
+}
+
+/* Diagram styles */
+.mermaid {
+  text-align: center;
+  padding: 20px;
+  background: #fafafa;
+  border-radius: 4px;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto !important;
+  min-height: 150px;
+  margin: 0 auto;
+  display: block;
+}
+
+#diagram-container {
+  min-height: 300px;
+  max-height: 600px;
+  overflow: auto;
+  padding: 10px;
+  background: white;
+  position: relative;
+}
+
+.mermaid-wrapper {
+  display: inline-block;
+  min-width: 100%;
+  transform-origin: center top;
+  transition: transform 0.2s ease;
+}
+
+/* Responsive diagram container */
+@media (max-width: 768px) {
+  #diagram-container {
+    max-height: 400px;
+  }
+}
+
+/* Ensure SVG paths have some minimal stroke */
+.mermaid svg path {
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Better visibility for nodes */
+.mermaid .node rect,
+.mermaid .node circle,
+.mermaid .node ellipse,
+.mermaid .node polygon,
+.mermaid .entityBox {
+  stroke-width: 1.5px !important;
+  fill: #fff !important;
+  stroke: #333 !important;
+}
+
+/* Flowchart specific styles (for model associations) */
+.mermaid .flowchart-link {
+  stroke-width: 2px !important;
+  fill: none !important;
+}
+
+.mermaid .edgeLabel {
+  background-color: #fff !important;
+  border-radius: 4px !important;
+  padding: 2px 4px !important;
+  font-size: 12px !important;
+}
+
+/* Make sure marker-end arrows are visible */
+.mermaid marker {
+  fill: #333 !important;
+  stroke: none !important;
+}
+
+/* Ensure SVG elements have minimum dimensions */
+.mermaid .flowchart-link path {
+  stroke-width: 2px !important;
+  min-width: 2px !important;
+  min-height: 2px !important;
+}
