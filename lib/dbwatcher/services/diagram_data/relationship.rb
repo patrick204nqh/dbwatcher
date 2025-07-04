@@ -31,6 +31,25 @@ module Dbwatcher
           nil
         ].freeze
 
+        # Cardinality mapping for relationship types
+        CARDINALITY_MAPPING = {
+          "has_many" => "one_to_many",
+          "belongs_to" => "many_to_one",
+          "has_one" => "one_to_one",
+          "has_and_belongs_to_many" => "many_to_many"
+        }.freeze
+
+        # ERD cardinality notations
+        ERD_NOTATIONS = {
+          "one_to_many" => "||--o{",
+          "many_to_one" => "}o--||",
+          "one_to_one" => "||--||",
+          "many_to_many" => "}|--|{"
+        }.freeze
+
+        # Default ERD notation
+        DEFAULT_ERD_NOTATION = "||--o{" # Default to one-to-many
+
         # Initialize relationship
         #
         # @param source_id [String] ID of the source entity
@@ -78,36 +97,15 @@ module Dbwatcher
         def infer_cardinality
           return cardinality if cardinality
 
-          case type
-          when "has_many"
-            "one_to_many"
-          when "belongs_to"
-            "many_to_one"
-          when "has_one"
-            "one_to_one"
-          when "has_and_belongs_to_many"
-            "many_to_many"
-          else
-            nil
-          end
+          CARDINALITY_MAPPING[type]
         end
 
         # Get cardinality for ERD notation
         #
         # @return [String] ERD cardinality notation
         def erd_cardinality_notation
-          case infer_cardinality
-          when "one_to_many"
-            "||--o{"
-          when "many_to_one"
-            "}o--||"
-          when "one_to_one"
-            "||--||"
-          when "many_to_many"
-            "}|--|{"
-          else
-            "||--o{" # Default to one-to-many
-          end
+          # Default to one-to-many if not recognized
+          ERD_NOTATIONS[infer_cardinality] || DEFAULT_ERD_NOTATION
         end
 
         # Serialize relationship to hash
@@ -136,13 +134,15 @@ module Dbwatcher
         # @param hash [Hash] relationship data
         # @return [Relationship] new relationship instance
         def self.from_h(hash)
+          hash = hash.transform_keys(&:to_sym) if hash.keys.first.is_a?(String)
+
           new(
-            source_id: hash[:source_id] || hash["source_id"],
-            target_id: hash[:target_id] || hash["target_id"],
-            type: hash[:type] || hash["type"],
-            label: hash[:label] || hash["label"],
-            cardinality: hash[:cardinality] || hash["cardinality"],
-            metadata: hash[:metadata] || hash["metadata"] || {}
+            source_id: hash[:source_id],
+            target_id: hash[:target_id],
+            type: hash[:type],
+            label: hash[:label],
+            cardinality: hash[:cardinality],
+            metadata: hash[:metadata] || {}
           )
         end
 

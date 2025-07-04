@@ -59,23 +59,23 @@ module Dbwatcher
 
           # Create entities for each unique table
           table_entities = {}
+
+          # First, collect all unique tables from the relationships
+          tables = []
           raw_data.each do |relationship|
-            # Create source entity with columns
-            if relationship[:from_table] && !table_entities.key?(relationship[:from_table])
-              entity = create_entity_with_columns(relationship[:from_table])
-              dataset.add_entity(entity)
-              table_entities[relationship[:from_table]] = entity
-            end
+            tables << relationship[:from_table] if relationship[:from_table]
+            tables << relationship[:to_table] if relationship[:to_table]
+          end
+          tables.uniq!
 
-            # Create target entity with columns
-            next unless relationship[:to_table] && !table_entities.key?(relationship[:to_table])
-
-            entity = create_entity_with_columns(relationship[:to_table])
+          # Create entities for all tables
+          tables.each do |table_name|
+            entity = create_entity_with_columns(table_name)
             dataset.add_entity(entity)
-            table_entities[relationship[:to_table]] = entity
+            table_entities[table_name] = entity
           end
 
-          # Create relationships
+          # Create relationships in a separate loop
           raw_data.each do |relationship|
             next unless relationship[:from_table] && relationship[:to_table]
 
@@ -83,7 +83,8 @@ module Dbwatcher
             # but log them for debugging
             if relationship[:from_table] == relationship[:to_table]
               Rails.logger.info "ForeignKeyAnalyzer: Including self-referential relationship for " \
-                                "#{relationship[:from_table]} (#{relationship[:from_column]} -> #{relationship[:to_column]})"
+                                "#{relationship[:from_table]} " \
+                                "(#{relationship[:from_column]} -> #{relationship[:to_column]})"
             end
 
             cardinality = determine_cardinality(relationship)
@@ -131,9 +132,14 @@ module Dbwatcher
           }
         end
 
+        # Get the database connection
+        #
+        # @return [ActiveRecord::ConnectionAdapters::AbstractAdapter] database connection
+        attr_reader :connection
+
         private
 
-        attr_reader :session, :connection, :session_tables
+        attr_reader :session, :session_tables
 
         # Create entity with table columns
         #
@@ -237,7 +243,8 @@ module Dbwatcher
               indexes = connection.indexes(table_name)
               return indexes.any? { |idx| idx.columns == [column_name] && idx.unique }
             rescue StandardError => e
-              Rails.logger.warn "ForeignKeyAnalyzer: Could not check unique constraints for #{table_name}.#{column_name}: #{e.message}"
+              Rails.logger.warn "ForeignKeyAnalyzer: Could not check unique constraints for " \
+                                "#{table_name}.#{column_name}: #{e.message}"
             end
           end
 
