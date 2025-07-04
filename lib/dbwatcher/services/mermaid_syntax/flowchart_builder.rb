@@ -61,20 +61,21 @@ module Dbwatcher
           "    #{node_id}[\"#{node_content}\"]"
         end
 
-        # Build flowchart relationship
+        # Format entity name for node ID
         #
-        # @param relationship [DiagramData::Relationship] relationship to render
-        # @param dataset [DiagramData::Dataset] full dataset for context
-        # @return [String] relationship definition line
-        def build_flowchart_relationship(relationship, dataset)
-          source = Sanitizer.node_id(
-            dataset.get_entity(relationship.source_id)&.name || relationship.source_id
-          )
+        # @param entity_id [String] entity ID
+        # @param dataset [DiagramData::Dataset] dataset for entity lookup
+        # @return [String] formatted node ID
+        def format_node_id(entity_id, dataset)
+          entity_name = dataset.get_entity(entity_id)&.name || entity_id
+          Sanitizer.node_id(entity_name)
+        end
 
-          target = Sanitizer.node_id(
-            dataset.get_entity(relationship.target_id)&.name || relationship.target_id
-          )
-
+        # Format relationship label with optional cardinality
+        #
+        # @param relationship [DiagramData::Relationship] relationship
+        # @return [String] formatted label
+        def format_relationship_label(relationship)
           label = Sanitizer.label(relationship.label)
 
           # Add cardinality to label if enabled
@@ -82,6 +83,19 @@ module Dbwatcher
             cardinality = CardinalityMapper.to_simple(relationship.cardinality, cardinality_format)
             label = label.empty? ? cardinality : "#{label} (#{cardinality})"
           end
+
+          label
+        end
+
+        # Build flowchart relationship
+        #
+        # @param relationship [DiagramData::Relationship] relationship to render
+        # @param dataset [DiagramData::Dataset] full dataset for context
+        # @return [String] relationship definition line
+        def build_flowchart_relationship(relationship, dataset)
+          source = format_node_id(relationship.source_id, dataset)
+          target = format_node_id(relationship.target_id, dataset)
+          label = format_relationship_label(relationship)
 
           if label && !label.empty?
             "    #{source} -->|\"#{label}\"| #{target}"

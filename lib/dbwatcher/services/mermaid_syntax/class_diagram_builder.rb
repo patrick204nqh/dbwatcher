@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "class_diagram_helper"
+
 module Dbwatcher
   module Services
     module MermaidSyntax
@@ -11,16 +13,21 @@ module Dbwatcher
       # @example
       #   builder = ClassDiagramBuilder.new(show_methods: true)
       #   content = builder.build_from_dataset(dataset)
-      #   # => "classDiagram\n    class User {\n        +string name\n        +orders()\n    }\n    User --> Order : orders"
+      #   # => "classDiagram
+      #   #     class User {
+      #   #         +string name
+      #   #         +orders()
+      #   #     }
+      #   #     User --> Order : orders"
       class ClassDiagramBuilder < BaseBuilder
+        include ClassDiagramHelper
+
         # Build class diagram content from dataset
         #
         # @param dataset [DiagramData::Dataset] dataset to render
         # @return [String] Mermaid class diagram content
         def build_from_dataset(dataset)
           lines = ["classDiagram"]
-
-          # Set diagram direction if specified
           lines << "    direction #{diagram_direction}"
 
           # Add class definitions with attributes and methods
@@ -58,94 +65,70 @@ module Dbwatcher
 
         private
 
+        # Build attributes section for class definition
+        def build_attributes_section(entity)
+          return [] unless show_attributes? && entity.attributes.any?
+
+          lines = ["        %% Attributes"]
+          entity.attributes.first(max_attributes).each do |attr|
+            lines << format_attribute_line(attr)
+          end
+          add_attributes_overflow_message(lines, entity)
+          add_section_divider(lines, entity)
+          lines
+        end
+
+        # Build methods section for class definition
+        def build_methods_section(entity)
+          return [] unless show_methods? && entity.metadata[:methods]&.any?
+
+          lines = ["        %% Methods"]
+          entity.metadata[:methods].first(max_methods).each do |method|
+            lines << format_method_line(method)
+          end
+          if entity.metadata[:methods].size > max_methods
+            lines << "        %% ... #{entity.metadata[:methods].size - max_methods} more methods"
+          end
+          lines << "        %% ----------------------"
+          lines
+        end
+
+        # Build statistics section for class definition
+        def build_statistics_section(entity)
+          return [] unless entity.attributes.any? || entity.metadata[:methods]&.any?
+
+          lines = ["        %% Statistics"]
+          lines << "        +Stats: #{entity.attributes.size} attributes" if entity.attributes.any?
+          lines << "        +Stats: #{entity.metadata[:methods].size} methods" if entity.metadata[:methods]&.any?
+          lines
+        end
+
         # Build class definition
-        #
-        # @param entity [DiagramData::Entity] entity to render
-        # @return [Array<String>] class definition lines
         def build_class_definition(entity)
           class_name = Sanitizer.class_name(entity.name)
           lines = ["    class #{class_name} {"]
-
-          # Add attributes section if enabled and available
-          if show_attributes? && entity.attributes.any?
-            lines << "        %% Attributes"
-            entity.attributes.first(max_attributes).each do |attr|
-              visibility = attr.metadata[:visibility] || "+"
-              type = attr.type.to_s.empty? ? "any" : attr.type
-              lines << "        #{visibility}#{type} #{attr.name}"
-            end
-
-            # Show message if there are more attributes than we're displaying
-            if entity.attributes.size > max_attributes
-              lines << "        %% ... #{entity.attributes.size - max_attributes} more attributes"
-            end
-
-            # Add a divider after attributes if methods will follow
-            lines << "        %% ----------------------" if show_methods? && entity.metadata[:methods]&.any?
-          end
-
-          # Add methods section if enabled and available
-          if show_methods? && entity.metadata[:methods]&.any?
-            lines << "        %% Methods"
-            entity.metadata[:methods].first(max_methods).each do |method|
-              visibility = method[:visibility] || "+"
-              method_name = Sanitizer.method_name(method[:name])
-              lines << "        #{visibility}#{method_name}"
-            end
-
-            # Show message if there are more methods than we're displaying
-            if entity.metadata[:methods].size > max_methods
-              lines << "        %% ... #{entity.metadata[:methods].size - max_methods} more methods"
-            end
-
-            # Add a divider before statistics
-            lines << "        %% ----------------------"
-          end
-
-          # Add statistics section at the end
-          if entity.attributes.any? || entity.metadata[:methods]&.any?
-            lines << "        %% Statistics"
-            lines << "        +Stats: #{entity.attributes.size} attributes" if entity.attributes.any?
-            lines << "        +Stats: #{entity.metadata[:methods].size} methods" if entity.metadata[:methods]&.any?
-          end
-
+          lines += build_attributes_section(entity)
+          lines += build_methods_section(entity)
+          lines += build_statistics_section(entity)
           lines << "    }"
           lines << ""
           lines
         end
 
         # Build class relationship
-        #
-        # @param relationship [DiagramData::Relationship] relationship to render
-        # @param dataset [DiagramData::Dataset] full dataset for context
-        # @return [String] relationship definition line
         def build_class_relationship(relationship, dataset)
-          source = Sanitizer.class_name(
-            dataset.get_entity(relationship.source_id)&.name || relationship.source_id
-          )
-
-          target = Sanitizer.class_name(
-            dataset.get_entity(relationship.target_id)&.name || relationship.target_id
-          )
-
+          source = format_class_name(relationship.source_id, dataset)
+          target = format_class_name(relationship.target_id, dataset)
           label = Sanitizer.label(relationship.label)
 
-          # Add cardinality if enabled
+          relationship_line = "    #{source}"
           if show_cardinality? && relationship.cardinality
             cardinality = CardinalityMapper.to_class(relationship.cardinality, cardinality_format)
-
-            # Add relationship with label and cardinality
-            if label && !label.empty?
-              "    #{source} \"#{cardinality}\" --> #{target} : #{label}"
-            else
-              "    #{source} \"#{cardinality}\" --> #{target}"
-            end
-          elsif label && !label.empty?
-            # Add relationship with label if available (without cardinality)
-            "    #{source} --> #{target} : #{label}"
-          else
-            "    #{source} --> #{target}"
+            relationship_line += " \"#{cardinality}\""
           end
+          relationship_line += " --> #{target}"
+          relationship_line += " : #{label}" if label && !label.empty?
+          relationship_line
         end
       end
     end

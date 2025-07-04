@@ -52,6 +52,19 @@ module Dbwatcher
 
         private
 
+        # Format attribute definition for ERD
+        #
+        # @param attr [DiagramData::Attribute] attribute to format
+        # @return [String] formatted attribute line
+        def format_attribute_line(attr)
+          type = attr.type.to_s.empty? ? "any" : attr.type
+          key_suffix = ""
+          key_suffix += " PK" if attr.primary_key?
+          key_suffix += " FK" if attr.foreign_key? && !attr.primary_key?
+
+          "        #{type} #{attr.name}#{key_suffix}"
+        end
+
         # Build entity definition
         #
         # @param entity [DiagramData::Entity] entity to render
@@ -63,12 +76,7 @@ module Dbwatcher
           # Add attributes if enabled and available
           if show_attributes? && entity.attributes.any?
             entity.attributes.first(max_attributes).each do |attr|
-              type = attr.type.to_s.empty? ? "any" : attr.type
-              key_suffix = ""
-              key_suffix += " PK" if attr.primary_key?
-              key_suffix += " FK" if attr.foreign_key? && !attr.primary_key?
-
-              lines << "        #{type} #{attr.name}#{key_suffix}"
+              lines << format_attribute_line(attr)
             end
           end
 
@@ -77,21 +85,24 @@ module Dbwatcher
           lines
         end
 
+        # Format entity name for ERD
+        #
+        # @param entity_id [String] entity ID
+        # @param dataset [DiagramData::Dataset] dataset for entity lookup
+        # @return [String] formatted entity name
+        def format_entity_name(entity_id, dataset)
+          entity_name = dataset.get_entity(entity_id)&.name || entity_id
+          Sanitizer.table_name(entity_name, preserve_table_case?)
+        end
+
         # Build relationship definition
         #
         # @param relationship [DiagramData::Relationship] relationship to render
         # @param dataset [DiagramData::Dataset] full dataset for context
         # @return [String] relationship definition line
         def build_erd_relationship(relationship, dataset)
-          source = Sanitizer.table_name(
-            dataset.get_entity(relationship.source_id)&.name || relationship.source_id,
-            preserve_table_case?
-          )
-
-          target = Sanitizer.table_name(
-            dataset.get_entity(relationship.target_id)&.name || relationship.target_id,
-            preserve_table_case?
-          )
+          source = format_entity_name(relationship.source_id, dataset)
+          target = format_entity_name(relationship.target_id, dataset)
 
           label = Sanitizer.label(relationship.label)
           cardinality = CardinalityMapper.to_erd(relationship.cardinality, cardinality_format)
