@@ -37,7 +37,12 @@ module Dbwatcher
       # Routing configuration defaults
       @mount_path = "/dbwatcher"
 
-      # Diagram configuration defaults
+      # Initialize diagram configuration with defaults
+      initialize_diagram_config
+    end
+
+    # Initialize diagram configuration with default values
+    def initialize_diagram_config
       @diagram_show_attributes = true
       @diagram_show_methods = false # Hide methods by default
       @diagram_show_cardinality = true
@@ -54,7 +59,7 @@ module Dbwatcher
     # Validate configuration
     #
     # @return [Boolean] true if configuration is valid
-    def validate!
+    def valid?
       validate_storage_path
       validate_max_sessions
       validate_auto_clean_after_days

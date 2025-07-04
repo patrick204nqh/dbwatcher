@@ -36,16 +36,14 @@ module Dbwatcher
         # @param source_id [String] ID of the source entity
         # @param target_id [String] ID of the target entity
         # @param type [String] relationship type (has_many, belongs_to, foreign_key, etc.)
-        # @param label [String] optional display label for the relationship
-        # @param cardinality [String] optional cardinality type (one_to_one, one_to_many, etc.)
-        # @param metadata [Hash] additional type-specific information
-        def initialize(source_id:, target_id:, type:, label: nil, cardinality: nil, metadata: {})
+        # @param options [Hash] additional options including label, cardinality, and metadata
+        def initialize(source_id:, target_id:, type:, **options)
           @source_id = source_id.to_s
           @target_id = target_id.to_s
           @type = type.to_s
-          @label = label&.to_s
-          @cardinality = cardinality&.to_s
-          @metadata = metadata.is_a?(Hash) ? metadata : {}
+          @label = options[:label]&.to_s
+          @cardinality = options[:cardinality]&.to_s
+          @metadata = options[:metadata].is_a?(Hash) ? options[:metadata] : {}
         end
 
         # Check if relationship is valid
@@ -78,36 +76,33 @@ module Dbwatcher
         def infer_cardinality
           return cardinality if cardinality
 
-          case type
-          when "has_many"
-            "one_to_many"
-          when "belongs_to"
-            "many_to_one"
-          when "has_one"
-            "one_to_one"
-          when "has_and_belongs_to_many"
-            "many_to_many"
-          else
-            nil
-          end
+          {
+            "has_many" => "one_to_many",
+            "belongs_to" => "many_to_one",
+            "has_one" => "one_to_one",
+            "has_and_belongs_to_many" => "many_to_many"
+          }[type]
         end
 
         # Get cardinality for ERD notation
         #
         # @return [String] ERD cardinality notation
         def erd_cardinality_notation
+          # Default to one-to-many if not recognized
+          notation = "||--o{"
+
           case infer_cardinality
           when "one_to_many"
-            "||--o{"
+            notation = "||--o{"
           when "many_to_one"
-            "}o--||"
+            notation = "}o--||"
           when "one_to_one"
-            "||--||"
+            notation = "||--||"
           when "many_to_many"
-            "}|--|{"
-          else
-            "||--o{" # Default to one-to-many
+            notation = "}|--|{"
           end
+
+          notation
         end
 
         # Serialize relationship to hash
@@ -136,13 +131,15 @@ module Dbwatcher
         # @param hash [Hash] relationship data
         # @return [Relationship] new relationship instance
         def self.from_h(hash)
+          hash = hash.transform_keys(&:to_sym) if hash.keys.first.is_a?(String)
+
           new(
-            source_id: hash[:source_id] || hash["source_id"],
-            target_id: hash[:target_id] || hash["target_id"],
-            type: hash[:type] || hash["type"],
-            label: hash[:label] || hash["label"],
-            cardinality: hash[:cardinality] || hash["cardinality"],
-            metadata: hash[:metadata] || hash["metadata"] || {}
+            source_id: hash[:source_id],
+            target_id: hash[:target_id],
+            type: hash[:type],
+            label: hash[:label],
+            cardinality: hash[:cardinality],
+            metadata: hash[:metadata] || {}
           )
         end
 

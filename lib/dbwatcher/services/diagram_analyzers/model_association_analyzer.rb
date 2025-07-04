@@ -129,10 +129,8 @@ module Dbwatcher
             )
             dataset.add_entity(entity)
             model_entities[association[:target_model]] = entity
-          end
 
-          # Create relationships (separate from entity creation)
-          raw_data.each do |association|
+            # Create relationships (separate from entity creation)
             next if association[:type] == "node_only" || !association[:target_model]
 
             source_id = association[:source_table] || association[:source_model].downcase
@@ -510,7 +508,7 @@ module Dbwatcher
         # @param model_class [Class, nil] ActiveRecord model class
         # @return [Array<Attribute>] model attributes
         def extract_model_attributes(model_class)
-          return [] unless model_class && model_class.respond_to?(:columns)
+          return [] unless model_class.respond_to?(:columns)
 
           begin
             model_class.columns.map do |column|
@@ -527,7 +525,8 @@ module Dbwatcher
               )
             end
           rescue StandardError => e
-            Rails.logger.warn "ModelAssociationAnalyzer: Could not extract attributes for #{model_class.name}: #{e.message}"
+            Rails.logger.warn "ModelAssociationAnalyzer: Could not extract attributes for " \
+                              "#{model_class.name}: #{e.message}"
             []
           end
         end
@@ -554,7 +553,8 @@ module Dbwatcher
               end
             end
           rescue StandardError => e
-            Rails.logger.warn "ModelAssociationAnalyzer: Could not extract methods for #{model_class.name}: #{e.message}"
+            Rails.logger.warn "ModelAssociationAnalyzer: Could not extract methods for " \
+                              "#{model_class.name}: #{e.message}"
           end
 
           methods
@@ -574,8 +574,6 @@ module Dbwatcher
             "one_to_one"
           when "has_and_belongs_to_many", "has_many_through"
             "many_to_many"
-          else
-            nil
           end
         end
       end

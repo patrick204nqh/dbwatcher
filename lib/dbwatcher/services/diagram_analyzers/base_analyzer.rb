@@ -133,18 +133,14 @@ module Dbwatcher
         # @param source_id [String] source entity ID
         # @param target_id [String] target entity ID
         # @param type [String] relationship type
-        # @param label [String] relationship label
-        # @param cardinality [String] relationship cardinality
-        # @param metadata [Hash] relationship metadata
+        # @param options [Hash] additional options including label, cardinality, and metadata
         # @return [DiagramData::Relationship] new relationship
-        def create_relationship(source_id:, target_id:, type:, label: nil, cardinality: nil, metadata: {})
+        def create_relationship(source_id:, target_id:, type:, **options)
           Dbwatcher::Services::DiagramData::Relationship.new(
             source_id: source_id,
             target_id: target_id,
             type: type,
-            label: label,
-            cardinality: cardinality,
-            metadata: metadata
+            **options
           )
         end
 

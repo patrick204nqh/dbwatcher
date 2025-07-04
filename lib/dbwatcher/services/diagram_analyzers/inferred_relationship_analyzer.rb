@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "active_support/core_ext/string/inflections" if defined?(ActiveSupport)
+
 module Dbwatcher
   module Services
     module DiagramAnalyzers
@@ -89,17 +91,16 @@ module Dbwatcher
             )
             dataset.add_entity(entity)
             table_entities[relationship[:to_table]] = entity
-          end
 
-          # Create relationships (separate from entity creation)
-          raw_data.each do |relationship|
+            # Create relationships (separate from entity creation)
             next unless relationship[:from_table] && relationship[:to_table]
 
             # Include self-referential relationships (source and target are the same)
             # but log them for debugging
             if relationship[:from_table] == relationship[:to_table]
               Rails.logger.info "InferredRelationshipAnalyzer: Including self-referential relationship for " \
-                                "#{relationship[:from_table]} (#{relationship[:from_column]} -> #{relationship[:to_column]})"
+                                "#{relationship[:from_table]} " \
+                                "(#{relationship[:from_column]} -> #{relationship[:to_column]})"
             end
 
             relationship_obj = create_relationship(
@@ -235,7 +236,7 @@ module Dbwatcher
         # @param table_name [String] current table name
         # @param primary_key [String, nil] optional primary key for testing
         # @return [Boolean] true if likely self-referential
-        def is_self_referential_column?(column_name, table_name, primary_key = nil)
+        def self_referential_column?(column_name, table_name, primary_key = nil)
           # Common self-referential patterns
           self_ref_patterns = %w[
             parent_id
@@ -265,7 +266,7 @@ module Dbwatcher
           return true if self_ref_patterns.include?(column_name)
 
           # Get the singular form of the table name
-          base_name = table_name.singularize
+          base_name = singularize(table_name)
 
           # Special case for post_id in posts table - not a self-reference
           return false if column_name == "#{base_name}_id" && table_name == "posts" && base_name == "post"
@@ -390,13 +391,33 @@ module Dbwatcher
           base_name = column_name.gsub(/_id$/, "")
 
           # Try pluralized version first
-          plural_table = base_name.pluralize
+          plural_table = pluralize(base_name)
           return plural_table if connection.table_exists?(plural_table)
 
           # Try singular version
           return base_name if connection.table_exists?(base_name)
 
           nil
+        end
+
+        # Get the plural form of a table name
+        #
+        # @param table_name [String] table name
+        # @return [String] plural form of table name
+        def pluralize(table_name)
+          return table_name if table_name.nil? || table_name.empty?
+
+          # Use ActiveSupport if available
+          return table_name.pluralize if table_name.respond_to?(:pluralize)
+
+          # Simple fallback pluralization rules
+          if table_name.end_with?("y") && !table_name.end_with?("ay", "ey", "iy", "oy", "uy")
+            "#{table_name[0...-1]}ies"
+          elsif table_name.end_with?("s", "x", "z", "ch", "sh")
+            "#{table_name}es"
+          else
+            "#{table_name}s"
+          end
         end
 
         # Check if table is likely a junction table
@@ -459,6 +480,26 @@ module Dbwatcher
         def find_user_table
           user_tables = %w[users user accounts account people person]
           user_tables.find { |table| tables_to_analyze.include?(table) }
+        end
+
+        # Get the singular form of a table name
+        #
+        # @param table_name [String] table name
+        # @return [String] singular form of table name
+        def singularize(table_name)
+          return table_name if table_name.nil? || table_name.empty?
+
+          # Use ActiveSupport if available
+          return table_name.singularize if table_name.respond_to?(:singularize)
+
+          # Simple fallback singularization rules
+          if table_name.end_with?("ies")
+            "#{table_name[0...-3]}y"
+          elsif table_name.end_with?("s")
+            table_name[0...-1]
+          else
+            table_name
+          end
         end
       end
     end

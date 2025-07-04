@@ -11,7 +11,8 @@ module Dbwatcher
       # @example
       #   builder = ClassDiagramBuilder.new(show_methods: true)
       #   content = builder.build_from_dataset(dataset)
-      #   # => "classDiagram\n    class User {\n        +string name\n        +orders()\n    }\n    User --> Order : orders"
+      #   # => "classDiagram\n    class User {\n        +string name\n        +orders()\n    }\n" \
+      #   #    "    User --> Order : orders"
       class ClassDiagramBuilder < BaseBuilder
         # Build class diagram content from dataset
         #
