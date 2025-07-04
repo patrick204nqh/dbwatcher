@@ -7,6 +7,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-07-04
+### Added
+
+- Add sassc gem for improved CSS processing
+- Add code view functionality and styling for diagrams component
+- Add unit tests and helper files for diagram services
+- Add Mermaid syntax builders and cardinality mapping
+- Enhance session display with improved ID formatting and add Tabulator CSS
+- Enhance table and diagram styles for improved readability and usability
+- Add DBWatcher styles and enhance timestamp formatting
+- Enhance caching mechanism in BaseApiService and add .keep file for asset directory
+- Add dbwatcher_manifest.js and configure asset paths in engine
+- Implement DBWatcher component architecture with Alpine.js integration and optimized Mermaid service
+- Streamline component configuration and improve layout
+- Introduce Dbwatcher component helper methods for configuration generation
+- Implement new changes and summary views with API support
+- Add CODEOWNERS file and update dependabot.yml to remove reviewers
+- Revise README for clarity and consistency, updating project description, features, and usage instructions
+- Enhance Mermaid diagram rendering with responsive settings and improved loading logic
+- Add show_legend option and update layout direction for flowchart diagrams
+- Add methods to build ERD and flowchart diagrams from standardized datasets
+- Add native SVG interactions and enhance Mermaid.js diagram functionality
+- Add Mermaid.js integration and diagram rendering enhancements
+- Add analyzers and services for session data processing and schema relationships
+- Add detailed architecture diagrams for DBWatcher components and UI functionality
+- Enhance table analysis by ensuring consistent column ordering in sample records and add comprehensive tests for mixed operations
+- Add clear all functionality and enhance testing interface
+
+
+### Changed
+
+- Simplify button class generation and improve code readability
+- Streamline relationship creation by introducing RelationshipParams class
+- Enhance class diagram and ERD builders with formatting helpers
+- Refactor and enhance diagram analyzers and configuration
+- Revert "refactor: improve configuration initialization and method naming for clarity"
+- Improve configuration initialization and method naming for clarity
+- Implement Hybrid Tabulator for Changes Tab with Enhanced UI and Sticky Columns
+- Update diagram content expectations to reflect has_many relationships for users
+- Update diagram content expectations to reflect belongs_to relationships for comments
+- Update diagram content expectations for user associations in tests
+- Remove unused files from .gitignore for cleaner project structure
+- Enhance readability and structure of diagram and summary services
+- Update method names and improve logging for clarity and consistency
+- Simplify DBWatcher setup by removing production environment check and unused query tracking configuration
+- Refactor DBWatcher components for API-first architecture
+- Remove redundant value labels for clarity in change display
+- Remove date-fns.min.js and update to date-fns-browser; enhance Alpine.js initialization with improved error handling and plugin verification
+- Consolidate asset serving initializer for clarity
+- Improve layout and styling for diagram controls and states
+- Refactor API endpoints and improve diagram handling
+- Update diagram_type_options to use dynamic registry data
+- Refactor Mermaid Syntax Builder and Session API
+- Deps-dev(deps-dev): bump cucumber-html-formatter from 21.10.1 to 21.12.0
+- Update README to include images for dashboard and session views
+- Update screenshots.md
+- Update readme
+- Remove export diagram functionality and related UI elements
+- Enhance diagram generation and session view functionality
+- Enhance summary tab and table summary builder with operation filtering and improved logging
+- Refactor session view to support tab navigation and modularize content
+- Refactor table analyzer and specs for consistent symbol usage and improved error handling
+
+
+### Fixed
+
+- Fix failing specs by updating specs to match current implementation
+- Prevent infinite redirect in error handling and correct stylesheet link tag
+- Set track_queries to false for disabled SQL logging
+- Fix comments table not showing in database tables diagram
+
+
+### Build
+
+- Implement diagram generation strategies and syntax builder
+
+
 ## [1.0.0] - 2025-06-16
 
 ### Added
