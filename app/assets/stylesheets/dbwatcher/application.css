@@ -1,9 +1,17 @@
 /**
  * DBWatcher Application Styles
  * Compiled CSS for all components
+ * Generated at 2025-07-04 17:05:33 +0700
  */
 
-/* CSS Variables */
+/**
+ * DBWatcher Application Styles
+ * Main stylesheet that imports all components
+ */
+/**
+ * DBWatcher CSS Variables
+ * Core color scheme and layout dimensions
+ */
 :root {
   /* Brand colors */
   --navy-dark: #00285D;
@@ -11,13 +19,11 @@
   --blue-medium: #6CADDF;
   --gold-dark: #D4A11E;
   --gold-light: #FFC758;
-
   /* Layout dimensions for diagram container */
   --header-height: 64px;
   --tab-bar-height: 32px;
   --toolbar-height: 56px;
   --footer-height: 0px;
-
   /* Gray scale */
   --gray-50: #f9fafb;
   --gray-100: #f3f3f3;
@@ -29,25 +35,26 @@
   --gray-700: #374151;
   --gray-800: #1f2937;
   --gray-900: #111827;
-
   /* Border colors */
   --border-light: #f0f0f0;
   --border-medium: #e8e8e8;
   --border-dark: #d1d5db;
-
   /* Status colors */
   --status-insert: #10b981;
   --status-update: #6CADDF;
   --status-delete: #ef4444;
   --status-select: #6b7280;
-
   /* Highlight colors */
   --highlight-change: rgba(255, 199, 88, 0.3);
   --highlight-new: rgba(16, 185, 129, 0.2);
   --highlight-deleted: rgba(239, 68, 68, 0.2);
 }
 
-/* Base Styles */
+/**
+ * Base Styles
+ * Scrollbars, splitters, and utility styles
+ */
+/* Splitter */
 .splitter {
   width: 4px;
   background: var(--border-medium);
@@ -58,6 +65,7 @@
   background: var(--blue-medium);
 }
 
+/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -76,7 +84,10 @@
   background: var(--blue-medium);
 }
 
-/* Compact Table Styles */
+/**
+ * Compact Table Styles
+ * Core table styling for DBWatcher data tables
+ */
 .compact-table {
   font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
   font-size: 12px;
@@ -101,25 +112,28 @@
   height: 32px;
 }
 
+/* Enhanced sticky header styling */
 .compact-table th.sticky-left-0 {
   position: sticky;
   left: 0;
   z-index: 20;
-  box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
+  box-shadow: 2px 0px 3px rgba(0, 0, 0, 0.05);
 }
 
 .compact-table th.sticky-left-1 {
   position: sticky;
   left: 60px;
+  /* Width of Index column */
   z-index: 19;
-  box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
+  box-shadow: 2px 0px 3px rgba(0, 0, 0, 0.05);
 }
 
 .compact-table th.sticky-left-2 {
   position: sticky;
   left: 108px;
+  /* Width of Index + Op columns (60px + 48px) */
   z-index: 18;
-  box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
+  box-shadow: 2px 0px 3px rgba(0, 0, 0, 0.05);
 }
 
 .compact-table td {
@@ -132,30 +146,34 @@
   vertical-align: top;
 }
 
+/* Enhanced sticky cell styling */
 .compact-table td.sticky-left-0 {
   position: sticky;
   left: 0;
   background: white;
   z-index: 5;
-  box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
+  box-shadow: 2px 0px 3px rgba(0, 0, 0, 0.05);
 }
 
 .compact-table td.sticky-left-1 {
   position: sticky;
   left: 60px;
+  /* Width of Index column */
   background: white;
   z-index: 4;
-  box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
+  box-shadow: 2px 0px 3px rgba(0, 0, 0, 0.05);
 }
 
 .compact-table td.sticky-left-2 {
   position: sticky;
   left: 108px;
+  /* Width of Index + Op columns (60px + 48px) */
   background: white;
   z-index: 3;
-  box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
+  box-shadow: 2px 0px 3px rgba(0, 0, 0, 0.05);
 }
 
+/* Special cell formatting */
 .compact-table td.highlight-change {
   background-color: var(--highlight-change);
 }
@@ -168,6 +186,7 @@
   color: #b91c1c;
 }
 
+/* Row styles */
 .compact-table tr:hover td:not(.sticky-left-0):not(.sticky-left-1):not(.sticky-left-2) {
   background-color: rgba(243, 244, 246, 0.7);
 }
@@ -188,6 +207,7 @@
   background-color: #e6f3ff;
 }
 
+/* Smart column width distribution */
 .compact-table th,
 .compact-table td {
   overflow: hidden;
@@ -195,6 +215,7 @@
   white-space: nowrap;
 }
 
+/* Fixed widths for sticky columns only */
 .compact-table th:first-child,
 .compact-table td:first-child {
   width: 60px;
@@ -219,23 +240,29 @@
   font-size: 11px;
 }
 
+/* Font styling for specific column types */
 .compact-table .text-right {
   font-family: monospace;
 }
 
-.highlight-change { 
-  background: var(--highlight-change); 
+/* Highlight colors */
+.highlight-change {
+  background: var(--highlight-change);
 }
 
-.highlight-new { 
-  background: var(--highlight-new); 
+.highlight-new {
+  background: var(--highlight-new);
 }
 
-.highlight-deleted { 
-  background: var(--highlight-deleted); 
+.highlight-deleted {
+  background: var(--highlight-deleted);
 }
 
-/* Navigation Styles */
+/**
+ * Navigation Styles
+ * Sidebar, tabs, and navigation controls
+ */
+/* Sidebar styles */
 .sidebar-item {
   font-size: 13px;
   padding: 6px 12px;
@@ -256,6 +283,7 @@
   color: white;
 }
 
+/* Tab styles */
 .tab-bar {
   background: var(--gray-100);
   border-bottom: 1px solid var(--border-medium);
@@ -285,7 +313,11 @@
   font-weight: 500;
 }
 
-/* Form Controls */
+/**
+ * Form Controls
+ * Input fields, selects, buttons
+ */
+/* Compact form controls */
 .compact-input {
   padding: 3px 8px;
   font-size: 12px;
@@ -308,25 +340,29 @@
   font-weight: 500;
 }
 
-/* Status Badges */
-.badge-insert { 
-  background: var(--status-insert); 
-  color: white; 
+/**
+ * Status Badges
+ * Operation and status indicators
+ */
+/* Status badges */
+.badge-insert {
+  background: var(--status-insert);
+  color: white;
 }
 
-.badge-update { 
-  background: var(--status-update); 
-  color: white; 
+.badge-update {
+  background: var(--status-update);
+  color: white;
 }
 
-.badge-delete { 
-  background: var(--status-delete); 
-  color: white; 
+.badge-delete {
+  background: var(--status-delete);
+  color: white;
 }
 
-.badge-select { 
-  background: var(--status-select); 
-  color: white; 
+.badge-select {
+  background: var(--status-select);
+  color: white;
 }
 
 .badge {
@@ -342,155 +378,46 @@
   text-align: center;
 }
 
-/* Enhanced table styles for data readability */
-.table-detailed .compact-table td {
-  max-width: 300px;
-  padding: 4px 8px;
-}
-
-.cell-content {
+/**
+ * Diagram Component Styles
+ */
+.diagram-code-view {
   position: relative;
-  display: inline-block;
-  max-width: 100%;
+  height: 100%;
 }
 
-.cell-compact {
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.diagram-code-view pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  tab-size: 2;
 }
 
-.cell-detailed {
-  max-width: 300px;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.cell-value {
-  cursor: help;
-}
-
-/* Column type styling */
-.column-meta {
-  background-color: rgba(156, 163, 175, 0.1);
-}
-
-.column-timestamp {
-  background-color: rgba(59, 130, 246, 0.1);
-  font-family: monospace;
-}
-
-.column-id {
-  background-color: rgba(245, 158, 11, 0.1);
-  font-family: monospace;
-}
-
-/* Tooltip improvements */
-.tooltip-content {
-  max-height: 200px;
+.diagram-code-view pre.large-content {
+  max-height: calc(100vh - 220px);
   overflow-y: auto;
-  font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+  border-width: 1px;
+  border-color: theme("colors.gray.300");
 }
 
-/* Essential mode adjustments */
-.view-essential .compact-table th,
-.view-essential .compact-table td {
-  font-size: 11px;
-  padding: 2px 6px;
+[x-ref="diagramContainer"] .mermaid {
+  overflow: auto;
+  max-height: calc(100vh - 180px);
 }
 
-/* JSON/Array content indicators */
-.json-indicator {
-  color: #6366f1;
-  font-style: italic;
-  font-size: 10px;
+pre[x-ref="codeContainer"]::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.array-indicator {
-  color: #059669;
-  font-style: italic;
-  font-size: 10px;
-}
-
-/* Diagram styles */
-.mermaid {
-  text-align: center;
-  padding: 20px;
-  background: #fafafa;
+pre[x-ref="codeContainer"]::-webkit-scrollbar-track {
+  background: theme("colors.gray.100");
   border-radius: 4px;
 }
 
-.mermaid svg {
-  max-width: 100%;
-  height: auto !important;
-  min-height: 150px;
-  margin: 0 auto;
-  display: block;
+pre[x-ref="codeContainer"]::-webkit-scrollbar-thumb {
+  background: theme("colors.gray.400");
+  border-radius: 4px;
 }
 
-#diagram-container {
-  min-height: 300px;
-  max-height: 600px;
-  overflow: auto;
-  padding: 10px;
-  background: white;
-  position: relative;
-}
-
-.mermaid-wrapper {
-  display: inline-block;
-  min-width: 100%;
-  transform-origin: center top;
-  transition: transform 0.2s ease;
-}
-
-/* Responsive diagram container */
-@media (max-width: 768px) {
-  #diagram-container {
-    max-height: 400px;
-  }
-}
-
-/* Ensure SVG paths have some minimal stroke */
-.mermaid svg path {
-  stroke-width: 1.5px;
-  vector-effect: non-scaling-stroke;
-}
-
-/* Better visibility for nodes */
-.mermaid .node rect,
-.mermaid .node circle,
-.mermaid .node ellipse,
-.mermaid .node polygon,
-.mermaid .entityBox {
-  stroke-width: 1.5px !important;
-  fill: #fff !important;
-  stroke: #333 !important;
-}
-
-/* Flowchart specific styles (for model associations) */
-.mermaid .flowchart-link {
-  stroke-width: 2px !important;
-  fill: none !important;
-}
-
-.mermaid .edgeLabel {
-  background-color: #fff !important;
-  border-radius: 4px !important;
-  padding: 2px 4px !important;
-  font-size: 12px !important;
-}
-
-/* Make sure marker-end arrows are visible */
-.mermaid marker {
-  fill: #333 !important;
-  stroke: none !important;
-}
-
-/* Ensure SVG elements have minimum dimensions */
-.mermaid .flowchart-link path {
-  stroke-width: 2px !important;
-  min-width: 2px !important;
-  min-height: 2px !important;
+pre[x-ref="codeContainer"]::-webkit-scrollbar-thumb:hover {
+  background: theme("colors.gray.500");
 }

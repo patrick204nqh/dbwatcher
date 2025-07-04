@@ -1,0 +1,51 @@
+/**
+ * Diagram Component Styles
+ */
+
+// Code view styles
+.diagram-code-view {
+  position: relative;
+  height: 100%;
+
+  pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    tab-size: 2;
+
+    &.large-content {
+      max-height: calc(100vh - 220px);
+      overflow-y: auto;
+      border-width: 1px;
+      border-color: theme('colors.gray.300');
+    }
+  }
+}
+
+// Mermaid diagram container
+[x-ref="diagramContainer"] {
+  .mermaid {
+    overflow: auto;
+    max-height: calc(100vh - 180px);
+  }
+}
+
+// Code container scrollbar styling
+pre[x-ref="codeContainer"] {
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: theme('colors.gray.100');
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: theme('colors.gray.400');
+    border-radius: 4px;
+
+    &:hover {
+      background: theme('colors.gray.500');
+    }
+  }
+}

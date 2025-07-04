@@ -37,28 +37,33 @@ module Dbwatcher
 
     # Generate button classes for diagram controls
     def diagram_button_classes(type = :default)
-      base_classes = "compact-button"
+      base_classes = "compact-button text-xs rounded"
 
       case type
       when :primary
-        "#{base_classes} bg-blue-medium text-white hover:bg-blue-dark"
+        "#{base_classes} bg-blue-medium text-white px-3 py-1 hover:bg-navy-dark"
       when :secondary
-        "#{base_classes} bg-white border border-gray-300 hover:bg-gray-50"
+        "#{base_classes} bg-navy-dark text-white px-2 py-1 hover:bg-blue-medium"
       when :toggle
-        "#{base_classes} bg-white border border-gray-300 hover:bg-gray-50 flex items-center gap-1"
+        "#{base_classes} bg-blue-medium text-white px-2 py-1 hover:bg-navy-dark flex items-center gap-1"
       when :icon
         "#{base_classes} bg-white border border-gray-300 hover:bg-gray-50 p-1"
+      when :danger
+        "#{base_classes} bg-red-500 text-white px-2 py-1 hover:bg-red-600"
+      when :success
+        "#{base_classes} bg-green-500 text-white px-2 py-1 hover:bg-green-600"
       else
-        base_classes
+        "#{base_classes} bg-blue-medium text-white px-2 py-1 hover:bg-navy-dark"
       end
     end
 
     # Generate a code view with syntax highlighting for Mermaid code
-    def mermaid_code_view(content)
-      return "" if content.blank?
-
-      content_tag(:pre, class: "language-mermaid p-4 bg-gray-800 text-white rounded overflow-auto") do
-        content_tag(:code, content)
+    def diagram_code_view(content)
+      content_tag(:div, class: "diagram-code-view") do
+        content_tag(:pre,
+                    class: "text-xs font-mono p-4 bg-gray-50 rounded border border-gray-200 overflow-x-auto whitespace-pre-wrap", style: "max-height: calc(100vh - 220px); overflow-y: auto;") do
+          content_tag(:code, content)
+        end
       end
     end
 

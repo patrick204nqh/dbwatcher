@@ -16,6 +16,7 @@ DBWatcher.registerComponent('diagrams', function(config) {
     diagramContent: null,
     panZoomInstance: null,
     generating: false,
+    showCodeView: false, // Add state for code view toggle
 
     // Component initialization
     componentInit() {
@@ -239,6 +240,59 @@ DBWatcher.registerComponent('diagrams', function(config) {
         URL.revokeObjectURL(url);
       } catch (error) {
         this.handleError(new Error('Failed to download SVG'));
+      }
+    },
+
+    // Toggle code view
+    toggleCodeView() {
+      this.showCodeView = !this.showCodeView;
+
+      // If showing code view, ensure the code is properly displayed
+      if (this.showCodeView && this.diagramContent) {
+        const codeContainer = this.$refs.codeContainer;
+        if (codeContainer) {
+          codeContainer.textContent = this.diagramContent;
+
+          // Ensure container is properly scrollable for large content
+          setTimeout(() => {
+            // Reset scroll position to top when showing code
+            const container = codeContainer.parentElement;
+            if (container) {
+              container.scrollTop = 0;
+            }
+
+            // Add specific handling for very large content
+            if (codeContainer.scrollHeight > window.innerHeight * 0.8) {
+              codeContainer.classList.add('large-content');
+            } else {
+              codeContainer.classList.remove('large-content');
+            }
+          }, 10);
+        }
+      }
+    },
+
+    // Copy diagram code to clipboard
+    copyDiagramCode() {
+      if (!this.diagramContent) return;
+
+      try {
+        navigator.clipboard.writeText(this.diagramContent).then(() => {
+          // Show a temporary success message
+          const copyBtn = this.$refs.copyButton;
+          if (copyBtn) {
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = 'Copied!';
+            copyBtn.classList.add('bg-green-500');
+
+            setTimeout(() => {
+              copyBtn.textContent = originalText;
+              copyBtn.classList.remove('bg-green-500');
+            }, 2000);
+          }
+        });
+      } catch (error) {
+        console.error('Failed to copy code:', error);
       }
     },
 
