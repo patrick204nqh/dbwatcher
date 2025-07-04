@@ -60,58 +60,48 @@ module Dbwatcher
           # Create entities for each unique table
           table_entities = {}
           raw_data.each do |relationship|
-            # Create source entity
+            # Create source entity with columns
             if relationship[:from_table] && !table_entities.key?(relationship[:from_table])
-              entity = create_entity(
-                id: relationship[:from_table],
-                name: relationship[:from_table],
-                type: "table",
-                metadata: {
-                  table_name: relationship[:from_table],
-                  source: "database_schema"
-                }
-              )
+              entity = create_entity_with_columns(relationship[:from_table])
               dataset.add_entity(entity)
               table_entities[relationship[:from_table]] = entity
             end
 
-            # Create target entity
+            # Create target entity with columns
             next unless relationship[:to_table] && !table_entities.key?(relationship[:to_table])
 
-            entity = create_entity(
-              id: relationship[:to_table],
-              name: relationship[:to_table],
-              type: "table",
-              metadata: {
-                table_name: relationship[:to_table],
-                source: "database_schema"
-              }
-            )
+            entity = create_entity_with_columns(relationship[:to_table])
             dataset.add_entity(entity)
             table_entities[relationship[:to_table]] = entity
+          end
 
-            # Create relationships
+          # Create relationships
+          raw_data.each do |relationship|
             next unless relationship[:from_table] && relationship[:to_table]
 
-            # Skip self-referential relationships (source and target are the same)
+            # Include self-referential relationships (source and target are the same)
+            # but log them for debugging
             if relationship[:from_table] == relationship[:to_table]
-              Rails.logger.info "ForeignKeyAnalyzer: Skipping self-referential relationship for " \
-                                "#{relationship[:from_table]}"
-              next
+              Rails.logger.info "ForeignKeyAnalyzer: Including self-referential relationship for " \
+                                "#{relationship[:from_table]} (#{relationship[:from_column]} -> #{relationship[:to_column]})"
             end
+
+            cardinality = determine_cardinality(relationship)
 
             relationship_obj = create_relationship(
               source_id: relationship[:from_table],
               target_id: relationship[:to_table],
               type: relationship[:type],
-              label: relationship[:constraint_name],
+              label: relationship[:constraint_name] || relationship[:from_column],
+              cardinality: cardinality,
               metadata: {
                 constraint_name: relationship[:constraint_name],
                 from_column: relationship[:from_column],
                 to_column: relationship[:to_column],
                 on_delete: relationship[:on_delete],
                 on_update: relationship[:on_update],
-                original_type: relationship[:type]
+                original_type: relationship[:type],
+                self_referential: relationship[:from_table] == relationship[:to_table]
               }
             )
 
@@ -144,6 +134,115 @@ module Dbwatcher
         private
 
         attr_reader :session, :connection, :session_tables
+
+        # Create entity with table columns
+        #
+        # @param table_name [String] table name
+        # @return [DiagramData::Entity] entity with columns as attributes
+        def create_entity_with_columns(table_name)
+          return nil unless table_exists?(table_name)
+
+          attributes = []
+
+          # Extract columns from table
+          if connection.respond_to?(:columns)
+            begin
+              columns = connection.columns(table_name)
+
+              # Convert columns to attributes
+              attributes = columns.map do |column|
+                primary_key = column.name == connection.primary_key(table_name)
+                foreign_key = column.name.end_with?("_id") ||
+                              foreign_key_columns(table_name).include?(column.name)
+
+                create_attribute(
+                  name: column.name,
+                  type: column.type.to_s,
+                  nullable: column.null,
+                  default: column.default,
+                  metadata: {
+                    primary_key: primary_key,
+                    foreign_key: foreign_key,
+                    limit: column.limit,
+                    precision: column.precision,
+                    scale: column.scale,
+                    visibility: "+" # Public visibility for all columns
+                  }
+                )
+              end
+            rescue StandardError => e
+              Rails.logger.warn "ForeignKeyAnalyzer: Could not get columns for #{table_name}: #{e.message}"
+            end
+          end
+
+          create_entity(
+            id: table_name,
+            name: table_name,
+            type: "table",
+            attributes: attributes,
+            metadata: {
+              table_name: table_name,
+              source: "database_schema"
+            }
+          )
+        end
+
+        # Get foreign key column names for a table
+        #
+        # @param table_name [String] table name
+        # @return [Array<String>] foreign key column names
+        def foreign_key_columns(table_name)
+          return [] unless connection.respond_to?(:foreign_keys)
+
+          begin
+            connection.foreign_keys(table_name).map(&:column)
+          rescue StandardError => e
+            Rails.logger.warn "ForeignKeyAnalyzer: Could not get foreign keys for #{table_name}: #{e.message}"
+            []
+          end
+        end
+
+        # Determine relationship cardinality
+        #
+        # @param relationship [Hash] relationship data
+        # @return [String] cardinality type
+        def determine_cardinality(relationship)
+          # For foreign keys, we can determine cardinality based on constraints
+          if relationship[:from_column] && relationship[:to_column]
+            # If the foreign key column is part of a unique constraint or primary key,
+            # it's likely a one-to-one relationship
+            return "one_to_one" if column_has_unique_constraint?(relationship[:from_table], relationship[:from_column])
+
+            # Default to one-to-many for standard foreign keys
+            # (many records in source table can reference one record in target table)
+            return "many_to_one"
+          end
+
+          # Default to one-to-many if we can't determine
+          "one_to_many"
+        end
+
+        # Check if column has a unique constraint
+        #
+        # @param table_name [String] table name
+        # @param column_name [String] column name
+        # @return [Boolean] true if column has unique constraint
+        def column_has_unique_constraint?(table_name, column_name)
+          # Check if column is primary key
+          return true if column_name == connection.primary_key(table_name)
+
+          # Check for unique indexes if supported
+          if connection.respond_to?(:indexes)
+            begin
+              indexes = connection.indexes(table_name)
+              return indexes.any? { |idx| idx.columns == [column_name] && idx.unique }
+            rescue StandardError => e
+              Rails.logger.warn "ForeignKeyAnalyzer: Could not check unique constraints for #{table_name}.#{column_name}: #{e.message}"
+            end
+          end
+
+          false
+        end
 
         # Check if schema analysis is available
         #

@@ -89,15 +89,17 @@ module Dbwatcher
             )
             dataset.add_entity(entity)
             table_entities[relationship[:to_table]] = entity
+          end
 
-            # Create relationships
+          # Create relationships (separate from entity creation)
+          raw_data.each do |relationship|
             next unless relationship[:from_table] && relationship[:to_table]
 
-            # Skip self-referential relationships
+            # Include self-referential relationships (source and target are the same)
+            # but log them for debugging
             if relationship[:from_table] == relationship[:to_table]
-              Rails.logger.info "InferredRelationshipAnalyzer: Skipping self-referential relationship " \
-                                "for #{relationship[:from_table]}"
-              next
+              Rails.logger.info "InferredRelationshipAnalyzer: Including self-referential relationship for " \
+                                "#{relationship[:from_table]} (#{relationship[:from_column]} -> #{relationship[:to_column]})"
             end
 
             relationship_obj = create_relationship(
@@ -110,7 +112,8 @@ module Dbwatcher
                 confidence: relationship[:confidence],
                 from_column: relationship[:from_column],
                 to_column: relationship[:to_column],
-                original_type: relationship[:type]
+                original_type: relationship[:type],
+                self_referential: relationship[:from_table] == relationship[:to_table]
               }
             )
 
@@ -140,9 +143,14 @@ module Dbwatcher
           }
         end
 
+        # Get the database connection
+        #
+        # @return [ActiveRecord::ConnectionAdapters::AbstractAdapter] database connection
+        attr_reader :connection
+
         private
 
-        attr_reader :session, :connection, :session_tables
+        attr_reader :session, :session_tables
 
         # Check if schema analysis is available
         #
@@ -186,6 +194,21 @@ module Dbwatcher
               # Look for _id columns that might reference other tables
               next unless column.name.end_with?("_id") && column.name != "id"
 
+              # Check for common self-referential patterns
+              if is_self_referential_column?(column.name, table_name)
+                relationships << {
+                  from_table: table_name,
+                  to_table: table_name,
+                  type: "inferred_belongs_to",
+                  inference_type: "self_referential",
+                  confidence: 0.9,
+                  from_column: column.name,
+                  to_column: "id",
+                  label: "inferred (#{column.name})"
+                }
+                next
+              end
+
               referenced_table = infer_table_from_column(column.name)
 
               next unless referenced_table && tables_to_analyze.include?(referenced_table)
@@ -204,6 +227,86 @@ module Dbwatcher
           end
 
           relationships
+        end
+
+        # Check if a column name suggests a self-referential relationship
+        #
+        # @param column_name [String] column name to check
+        # @param table_name [String] current table name
+        # @param primary_key [String, nil] optional primary key for testing
+        # @return [Boolean] true if likely self-referential
+        def is_self_referential_column?(column_name, table_name, primary_key = nil)
+          # Common self-referential patterns
+          self_ref_patterns = %w[
+            parent_id
+            ancestor_id
+            child_id
+            reply_to_id
+            reference_id
+            original_id
+            source_id
+            target_id
+            superior_id
+            manager_id
+            supervisor_id
+            predecessor_id
+            successor_id
+            previous_id
+            next_id
+            related_id
+            duplicate_id
+            clone_id
+            copy_id
+            forwarded_id
+            replied_to_id
+          ]
+
+          # Check for exact matches with common patterns
+          return true if self_ref_patterns.include?(column_name)
+
+          # Get the singular form of the table name
+          base_name = table_name.singularize
+
+          # Special case for post_id in posts table - not a self-reference
+          return false if column_name == "#{base_name}_id" && table_name == "posts" && base_name == "post"
+
+          # Check for table-specific self-references (e.g., comment_id in comments table)
+          if column_name == "#{base_name}_id"
+            # Check if this is not the primary key column
+            if primary_key.nil?
+              begin
+                primary_key = connection.primary_key(table_name)
+              rescue StandardError
+                return false
+              end
+            end
+
+            return column_name != primary_key
+          end
+
+          # Check for hierarchy patterns with table name
+          hierarchy_prefixes = %w[parent child ancestor descendant superior subordinate manager supervisor]
+          hierarchy_prefixes.each do |prefix|
+            # Check for patterns like parent_comment_id in comments table
+            return true if column_name.start_with?("#{prefix}_#{base_name}_id")
+
+            # Check for patterns like parent_of_id in any table
+            return true if column_name.start_with?("#{prefix}_of_id")
+          end
+
+          # Check for relationship patterns
+          relationship_patterns = %w[related linked connected associated referenced]
+          relationship_patterns.each do |pattern|
+            return true if column_name.start_with?("#{pattern}_")
+          end
+
+          # Check for directional patterns
+          directional_patterns = %w[previous next original copy source target]
+          directional_patterns.each do |pattern|
+            return true if column_name.start_with?("#{pattern}_")
+          end
+
+          false
         end
 
         # Analyze junction tables (many-to-many relationships)

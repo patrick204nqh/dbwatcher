@@ -14,12 +14,22 @@ module Dbwatcher
       #     target_id: "orders",
       #     type: "has_many",
       #     label: "orders",
-      #     metadata: { cardinality: "1:n" }
+      #     cardinality: "one_to_many",
+      #     metadata: { association_type: "has_many" }
       #   )
       #   relationship.valid? # => true
       #   relationship.to_h   # => { source_id: "users", target_id: "orders", ... }
       class Relationship
-        attr_accessor :source_id, :target_id, :type, :label, :metadata
+        attr_accessor :source_id, :target_id, :type, :label, :cardinality, :metadata
+
+        # Valid cardinality types
+        VALID_CARDINALITIES = [
+          "one_to_one",
+          "one_to_many",
+          "many_to_one",
+          "many_to_many",
+          nil
+        ].freeze
 
         # Initialize relationship
         #
@@ -27,12 +37,14 @@ module Dbwatcher
         # @param target_id [String] ID of the target entity
         # @param type [String] relationship type (has_many, belongs_to, foreign_key, etc.)
         # @param label [String] optional display label for the relationship
+        # @param cardinality [String] optional cardinality type (one_to_one, one_to_many, etc.)
         # @param metadata [Hash] additional type-specific information
-        def initialize(source_id:, target_id:, type:, label: nil, metadata: {})
+        def initialize(source_id:, target_id:, type:, label: nil, cardinality: nil, metadata: {})
           @source_id = source_id.to_s
           @target_id = target_id.to_s
           @type = type.to_s
           @label = label&.to_s
+          @cardinality = cardinality&.to_s
           @metadata = metadata.is_a?(Hash) ? metadata : {}
         end
 
@@ -51,9 +63,51 @@ module Dbwatcher
           errors << "Source ID cannot be blank" if source_id.nil? || source_id.to_s.strip.empty?
           errors << "Target ID cannot be blank" if target_id.nil? || target_id.to_s.strip.empty?
           errors << "Type cannot be blank" if type.nil? || type.to_s.strip.empty?
-          errors << "Source and target cannot be the same" if source_id == target_id
+
+          # Allow self-referential relationships when explicitly marked as such
+          errors << "Source and target cannot be the same" if !metadata[:self_referential] && (source_id == target_id)
+
+          errors << "Invalid cardinality: #{cardinality}" if cardinality && !VALID_CARDINALITIES.include?(cardinality)
           errors << "Metadata must be a Hash" unless metadata.is_a?(Hash)
           errors
+        end
+
+        # Infer cardinality from relationship type if not explicitly set
+        #
+        # @return [String, nil] inferred cardinality or nil if can't be determined
+        def infer_cardinality
+          return cardinality if cardinality
+
+          case type
+          when "has_many"
+            "one_to_many"
+          when "belongs_to"
+            "many_to_one"
+          when "has_one"
+            "one_to_one"
+          when "has_and_belongs_to_many"
+            "many_to_many"
+          else
+            nil
+          end
+        end
+
+        # Get cardinality for ERD notation
+        #
+        # @return [String] ERD cardinality notation
+        def erd_cardinality_notation
+          case infer_cardinality
+          when "one_to_many"
+            "||--o{"
+          when "many_to_one"
+            "}o--||"
+          when "one_to_one"
+            "||--||"
+          when "many_to_many"
+            "}|--|{"
+          else
+            "||--o{" # Default to one-to-many
+          end
         end
 
         # Serialize relationship to hash
@@ -65,6 +119,7 @@ module Dbwatcher
             target_id: target_id,
             type: type,
             label: label,
+            cardinality: cardinality,
             metadata: metadata
           }
         end
@@ -86,6 +141,7 @@ module Dbwatcher
             target_id: hash[:target_id] || hash["target_id"],
             type: hash[:type] || hash["type"],
             label: hash[:label] || hash["label"],
+            cardinality: hash[:cardinality] || hash["cardinality"],
             metadata: hash[:metadata] || hash["metadata"] || {}
           )
         end
@@ -109,6 +165,7 @@ module Dbwatcher
             target_id == other.target_id &&
             type == other.type &&
             label == other.label &&
+            cardinality == other.cardinality &&
             metadata == other.metadata
         end
 
@@ -116,68 +173,22 @@ module Dbwatcher
         #
         # @return [Integer] hash code
         def hash
-          [source_id, target_id, type, label, metadata].hash
-        end
-
-        # Check if relationship is bidirectional
-        #
-        # @return [Boolean] true if relationship should be treated as bidirectional
-        def bidirectional?
-          metadata[:bidirectional] == true || metadata["bidirectional"] == true
-        end
-
-        # Get reverse relationship
-        #
-        # @return [Relationship] relationship with source and target swapped
-        def reverse
-          self.class.new(
-            source_id: target_id,
-            target_id: source_id,
-            type: reverse_type,
-            label: reverse_label,
-            metadata: metadata.merge(reversed: true)
-          )
+          [source_id, target_id, type, label, cardinality, metadata].hash
         end
 
         # String representation of relationship
         #
         # @return [String] string representation
         def to_s
-          label_part = label ? " (#{label})" : ""
-          "#{self.class.name}(#{source_id} --#{type}#{label_part}--> #{target_id})"
+          "#{self.class.name}(source: #{source_id}, target: #{target_id}, type: #{type})"
         end
 
         # Detailed string representation
         #
         # @return [String] detailed string representation
         def inspect
-          "#{self.class.name}(source_id: #{source_id.inspect}, target_id: #{target_id.inspect}, " \
-            "type: #{type.inspect}, label: #{label.inspect}, metadata: #{metadata.inspect})"
-        end
-
-        private
-
-        # Get reverse relationship type
-        #
-        # @return [String] reverse type or original type if no mapping exists
-        def reverse_type
-          reverse_mappings = {
-            "has_many" => "belongs_to",
-            "belongs_to" => "has_many",
-            "has_one" => "belongs_to",
-            "has_and_belongs_to_many" => "has_and_belongs_to_many"
-          }
-
-          reverse_mappings[type] || type
-        end
-
-        # Get reverse relationship label
-        #
-        # @return [String, nil] reverse label or nil
-        def reverse_label
-          # For now, don't auto-generate reverse labels
-          # Subclasses or specific implementations can override this
-          nil
+          "#{self.class.name}(source: #{source_id.inspect}, target: #{target_id.inspect}, " \
+            "type: #{type.inspect}, label: #{label.inspect}, cardinality: #{cardinality.inspect})"
         end
       end
     end

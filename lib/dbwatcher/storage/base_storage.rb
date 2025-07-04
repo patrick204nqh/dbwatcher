@@ -47,8 +47,15 @@ module Dbwatcher
       # instance, and initializes timestamps.
       #
       # @param storage_path [String, nil] custom storage path (optional)
+      # @raise [StorageError] if storage_path is nil or empty
       def initialize(storage_path = nil)
         @storage_path = storage_path || Dbwatcher.configuration.storage_path
+
+        # Ensure storage path is valid
+        if @storage_path.nil? || @storage_path.to_s.strip.empty?
+          raise StorageError, "Storage path cannot be nil or empty. Please configure a valid storage path."
+        end
+
         @file_manager = FileManager.new(@storage_path)
         initialize_timestamps
         ensure_storage_directory

@@ -14,6 +14,12 @@ require_relative "diagram_type_registry"
 
 # Mermaid syntax generation
 require_relative "mermaid_syntax_builder"
+require_relative "mermaid_syntax/base_builder"
+require_relative "mermaid_syntax/sanitizer"
+require_relative "mermaid_syntax/cardinality_mapper"
+require_relative "mermaid_syntax/erd_builder"
+require_relative "mermaid_syntax/class_diagram_builder"
+require_relative "mermaid_syntax/flowchart_builder"
 
 # Diagram analyzers
 require_relative "diagram_analyzers/base_analyzer"
@@ -24,6 +30,7 @@ require_relative "diagram_analyzers/model_association_analyzer"
 # Diagram strategies
 require_relative "diagram_strategies/base_diagram_strategy"
 require_relative "diagram_strategies/erd_diagram_strategy"
+require_relative "diagram_strategies/class_diagram_strategy"
 require_relative "diagram_strategies/flowchart_diagram_strategy"
 
 # Diagram generator (must be loaded after all components)

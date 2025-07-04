@@ -16,21 +16,28 @@ module Dbwatcher
           strategy_class: "Dbwatcher::Services::DiagramStrategies::ErdDiagramStrategy",
           analyzer_class: "Dbwatcher::Services::DiagramAnalyzers::ForeignKeyAnalyzer",
           display_name: "Database Schema",
-          description: "Entity relationship diagram showing database tables and relationships",
+          description: "Entity relationship diagram showing database tables and foreign key relationships",
           mermaid_type: "erDiagram"
         },
         "database_tables_inferred" => {
           strategy_class: "Dbwatcher::Services::DiagramStrategies::ErdDiagramStrategy",
           analyzer_class: "Dbwatcher::Services::DiagramAnalyzers::InferredRelationshipAnalyzer",
           display_name: "Database Schema (Inferred)",
-          description: "Entity relationship diagram with inferred relationships",
+          description: "Entity relationship diagram with inferred relationships from naming patterns",
           mermaid_type: "erDiagram"
         },
         "model_associations" => {
-          strategy_class: "Dbwatcher::Services::DiagramStrategies::FlowchartDiagramStrategy",
+          strategy_class: "Dbwatcher::Services::DiagramStrategies::ClassDiagramStrategy",
           analyzer_class: "Dbwatcher::Services::DiagramAnalyzers::ModelAssociationAnalyzer",
           display_name: "Model Associations",
-          description: "Flowchart showing ActiveRecord model relationships",
+          description: "Class diagram showing ActiveRecord models with attributes and methods",
+          mermaid_type: "classDiagram"
+        },
+        "model_associations_flowchart" => {
+          strategy_class: "Dbwatcher::Services::DiagramStrategies::FlowchartDiagramStrategy",
+          analyzer_class: "Dbwatcher::Services::DiagramAnalyzers::ModelAssociationAnalyzer",
+          display_name: "Model Associations (Flowchart)",
+          description: "Flowchart diagram showing model relationships",
           mermaid_type: "flowchart"
         }
       }.freeze

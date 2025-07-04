@@ -115,13 +115,15 @@ module Dbwatcher
         # @param id [String] entity ID
         # @param name [String] entity name
         # @param type [String] entity type
+        # @param attributes [Array<Attribute>] entity attributes/properties
         # @param metadata [Hash] entity metadata
         # @return [DiagramData::Entity] new entity
-        def create_entity(id:, name:, type: "default", metadata: {})
+        def create_entity(id:, name:, type: "default", attributes: [], metadata: {})
           Dbwatcher::Services::DiagramData::Entity.new(
             id: id,
             name: name,
             type: type,
+            attributes: attributes,
             metadata: metadata
           )
         end
@@ -132,14 +134,34 @@ module Dbwatcher
         # @param target_id [String] target entity ID
         # @param type [String] relationship type
         # @param label [String] relationship label
+        # @param cardinality [String] relationship cardinality
         # @param metadata [Hash] relationship metadata
         # @return [DiagramData::Relationship] new relationship
-        def create_relationship(source_id:, target_id:, type:, label: nil, metadata: {})
+        def create_relationship(source_id:, target_id:, type:, label: nil, cardinality: nil, metadata: {})
           Dbwatcher::Services::DiagramData::Relationship.new(
             source_id: source_id,
             target_id: target_id,
             type: type,
             label: label,
+            cardinality: cardinality,
+            metadata: metadata
+          )
+        end
+
+        # Helper method to create attributes
+        #
+        # @param name [String] attribute name
+        # @param type [String] attribute data type
+        # @param nullable [Boolean] whether attribute can be null
+        # @param default [Object] default value
+        # @param metadata [Hash] additional type-specific information
+        # @return [DiagramData::Attribute] new attribute
+        def create_attribute(name:, type: nil, nullable: true, default: nil, metadata: {})
+          Dbwatcher::Services::DiagramData::Attribute.new(
+            name: name,
+            type: type,
+            nullable: nullable,
+            default: default,
             metadata: metadata
           )
         end

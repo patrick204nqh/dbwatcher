@@ -88,13 +88,20 @@ module Dbwatcher
           raw_data.each do |association|
             # Create source entity
             if association[:source_model] && !model_entities.key?(association[:source_model])
+              # Find the model class to extract attributes
+              source_model_class = find_model_class(association[:source_model])
+              attributes = extract_model_attributes(source_model_class)
+              methods = extract_model_methods(source_model_class)
+
               entity = create_entity(
                 id: association[:source_table] || association[:source_model].downcase,
                 name: association[:source_model],
                 type: "model",
+                attributes: attributes,
                 metadata: {
                   table_name: association[:source_table],
-                  model_class: association[:source_model]
+                  model_class: association[:source_model],
+                  methods: methods
                 }
               )
               dataset.add_entity(entity)
@@ -104,40 +111,55 @@ module Dbwatcher
             # Create target entity (if exists)
             next unless association[:target_model] && !model_entities.key?(association[:target_model])
 
+            # Find the model class to extract attributes
+            target_model_class = find_model_class(association[:target_model])
+            attributes = extract_model_attributes(target_model_class)
+            methods = extract_model_methods(target_model_class)
+
             entity = create_entity(
               id: association[:target_table] || association[:target_model].downcase,
               name: association[:target_model],
               type: "model",
+              attributes: attributes,
               metadata: {
                 table_name: association[:target_table],
-                model_class: association[:target_model]
+                model_class: association[:target_model],
+                methods: methods
               }
             )
             dataset.add_entity(entity)
             model_entities[association[:target_model]] = entity
+          end
 
-            # Create relationships
+          # Create relationships (separate from entity creation)
+          raw_data.each do |association|
             next if association[:type] == "node_only" || !association[:target_model]
 
             source_id = association[:source_table] || association[:source_model].downcase
             target_id = association[:target_table] || association[:target_model].downcase
 
-            # Skip self-referential relationships (source and target are the same)
+            # Include self-referential relationships (source and target are the same)
+            # but log them for debugging
             if source_id == target_id
-              Rails.logger.info "ModelAssociationAnalyzer: Skipping self-referential relationship for #{source_id}"
-              next
+              Rails.logger.info "ModelAssociationAnalyzer: Including self-referential relationship for " \
+                                "#{source_id} (#{association[:association_name]})"
             end
+
+            # Determine cardinality based on relationship type
+            cardinality = determine_cardinality(association[:type])
 
             relationship = create_relationship(
               source_id: source_id,
               target_id: target_id,
               type: association[:type],
               label: association[:association_name],
+              cardinality: cardinality,
               metadata: {
                 association_name: association[:association_name],
                 source_model: association[:source_model],
                 target_model: association[:target_model],
-                original_type: association[:type]
+                original_type: association[:type],
+                self_referential: source_id == target_id
               }
             )
 
@@ -470,6 +492,91 @@ module Dbwatcher
           association.table_name
         rescue StandardError
           association.class_name.tableize
+        end
+
+        # Find model class by name
+        #
+        # @param model_name [String] model class name
+        # @return [Class, nil] ActiveRecord model class or nil if not found
+        def find_model_class(model_name)
+          model_name.constantize
+        rescue NameError
+          Rails.logger.warn "ModelAssociationAnalyzer: Could not find model class #{model_name}"
+          nil
+        end
+
+        # Extract attributes from model
+        #
+        # @param model_class [Class, nil] ActiveRecord model class
+        # @return [Array<Attribute>] model attributes
+        def extract_model_attributes(model_class)
+          return [] unless model_class && model_class.respond_to?(:columns)
+
+          begin
+            model_class.columns.map do |column|
+              create_attribute(
+                name: column.name,
+                type: column.type.to_s,
+                nullable: column.null,
+                default: column.default,
+                metadata: {
+                  primary_key: column.name == model_class.primary_key,
+                  foreign_key: column.name.end_with?("_id"),
+                  visibility: "+"
+                }
+              )
+            end
+          rescue StandardError => e
+            Rails.logger.warn "ModelAssociationAnalyzer: Could not extract attributes for #{model_class.name}: #{e.message}"
+            []
+          end
+        end
+
+        # Extract methods from model
+        #
+        # @param model_class [Class, nil] ActiveRecord model class
+        # @return [Array<Hash>] model methods
+        def extract_model_methods(model_class)
+          return [] unless model_class && Dbwatcher.configuration.diagram_show_methods
+
+          methods = []
+
+          begin
+            # Add association methods
+            if model_class.respond_to?(:reflect_on_all_associations)
+              model_class.reflect_on_all_associations.each do |association|
+                methods << {
+                  name: "#{association.name}()",
+                  type: "association",
+                  association_type: association.macro.to_s,
+                  visibility: "+"
+                }
+              end
+            end
+          rescue StandardError => e
+            Rails.logger.warn "ModelAssociationAnalyzer: Could not extract methods for #{model_class.name}: #{e.message}"
+          end
+
+          methods
+        end
+
+        # Determine cardinality based on relationship type
+        #
+        # @param relationship_type [String] relationship type
+        # @return [String] cardinality type
+        def determine_cardinality(relationship_type)
+          case relationship_type
+          when "has_many"
+            "one_to_many"
+          when "belongs_to"
+            "many_to_one"
+          when "has_one"
+            "one_to_one"
+          when "has_and_belongs_to_many", "has_many_through"
+            "many_to_many"
+          else
+            nil
+          end
         end
       end
     end
