@@ -17,11 +17,12 @@ module Dbwatcher
       name.to_s.gsub(/^HTTP \w+ /, "")
     end
 
-    # Generate session ID display (truncated)
+    # Generate session ID display (wider format)
     def display_session_id(id)
       return "N/A" unless id
 
-      "#{id[0..7]}..."
+      # Show more characters of the session ID for better readability
+      "#{id[0..15]}..."
     end
   end
 end

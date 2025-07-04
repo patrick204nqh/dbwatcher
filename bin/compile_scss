@@ -1,0 +1,49 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Script to compile SCSS to CSS for DBWatcher
+
+require 'rubygems'
+require 'bundler/setup'
+require 'sassc'
+require 'fileutils'
+
+# Get the root directory
+root_dir = File.expand_path('..', __dir__)
+
+# Path to the main SCSS file
+scss_dir = File.join(root_dir, 'app', 'assets', 'stylesheets', 'dbwatcher')
+scss_file = File.join(scss_dir, 'application.scss')
+css_file = File.join(scss_dir, 'application.css')
+
+puts "Compiling DBWatcher SCSS files to CSS..."
+puts "SCSS file: #{scss_file}"
+puts "CSS file: #{css_file}"
+
+# Read the SCSS content
+scss_content = File.read(scss_file)
+
+# Create a list of import paths
+load_paths = [scss_dir]
+
+# Compile SCSS to CSS
+begin
+  css_content = SassC::Engine.new(
+    scss_content,
+    style: :expanded,
+    load_paths: load_paths,
+    syntax: :scss
+  ).render
+
+  # Add a header comment
+  css_content = "/**\n * DBWatcher Application Styles\n * Compiled CSS for all components\n * Generated at #{Time.now}\n */\n\n" + css_content
+
+  # Write to file
+  File.write(css_file, css_content)
+
+  puts "SCSS compilation complete! CSS written to #{css_file}"
+rescue => e
+  puts "Error compiling SCSS: #{e.message}"
+  puts e.backtrace.join("\n")
+  exit 1
+end

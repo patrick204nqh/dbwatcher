@@ -1,0 +1,55 @@
+/**
+ * Navigation Styles
+ * Sidebar, tabs, and navigation controls
+ */
+
+/* Sidebar styles */
+.sidebar-item {
+  font-size: 13px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 3px;
+  transition: all 0.15s;
+}
+
+.sidebar-item:hover {
+  background: rgba(108, 173, 223, 0.1);
+  color: var(--blue-medium);
+}
+
+.sidebar-item.active {
+  background: var(--navy-dark);
+  color: white;
+}
+
+/* Tab styles */
+.tab-bar {
+  background: var(--gray-100);
+  border-bottom: 1px solid var(--border-medium);
+  display: flex;
+  align-items: center;
+  height: 32px;
+  font-size: 12px;
+}
+
+.tab-item {
+  padding: 0 16px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--border-medium);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tab-item:hover {
+  background: var(--border-medium);
+}
+
+.tab-item.active {
+  background: white;
+  color: var(--navy-dark);
+  font-weight: 500;
+}

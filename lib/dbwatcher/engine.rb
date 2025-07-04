@@ -4,8 +4,24 @@ module Dbwatcher
   class Engine < ::Rails::Engine
     isolate_namespace Dbwatcher
 
+    # Configure autoload paths
+    config.autoload_paths += %W[
+      #{root}/lib
+    ]
+
+    # Serve static assets
+    initializer "dbwatcher.assets", before: :add_to_load_path do |app|
+      # Define asset paths
+      app.config.assets.paths << root.join("app", "assets", "stylesheets")
+      app.config.assets.paths << root.join("app", "assets", "javascripts")
+      app.config.assets.paths << root.join("app", "assets", "config")
+
+      # Load engine's manifest file
+      app.config.assets.precompile << "dbwatcher_manifest.js"
+    end
+
     initializer "dbwatcher.setup" do |app|
-      if Dbwatcher.configuration.enabled && !Rails.env.production?
+      if Dbwatcher.configuration.enabled
         # Auto-include in all models
         ActiveSupport.on_load(:active_record) do
           include Dbwatcher::ModelExtension
@@ -24,12 +40,6 @@ module Dbwatcher
       app.routes.prepend do
         mount Dbwatcher::Engine => "/dbwatcher", as: :dbwatcher
       end
-    end
-
-    # Serve static assets
-    initializer "dbwatcher.assets" do |app|
-      app.config.assets.paths << root.join("app", "assets", "stylesheets")
-      app.config.assets.paths << root.join("app", "assets", "javascripts")
     end
   end
 end

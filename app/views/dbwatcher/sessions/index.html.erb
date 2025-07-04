@@ -59,8 +59,8 @@
     <table class="compact-table w-full">
       <thead>
         <tr>
-          <th class="text-left">Session ID</th>
-          <th class="text-left">Name</th>
+          <th class="text-left" style="min-width:180px; max-width:260px; width:18%">Session ID</th>
+          <th class="text-left" style="min-width:160px; max-width:260px; width:22%">Name</th>
           <th class="text-center">Status</th>
           <th class="text-center">Changes</th>
           <th class="text-right">Started</th>
@@ -71,13 +71,16 @@
       <tbody>
         <% @sessions.each do |session| %>
           <tr class="hover:bg-blue-50">
-            <td class="font-mono text-xs">
-              <%= display_session_id(safe_value(session, :id)) %>
+            <td class="font-mono text-xs" style="min-width:180px; max-width:260px; width:18%">
+              <span class="inline-block whitespace-nowrap overflow-x-auto" style="max-width:260px;">
+                <%= safe_value(session, :id) %>
+              </span>
             </td>
-            <td class="max-w-xs truncate" title="<%= safe_value(session, :name) %>">
+            <td style="min-width:160px; max-width:260px; width:22%" title="<%= safe_value(session, :name) %>">
               <%= link_to display_session_name(safe_value(session, :name)),
                   session_path(safe_value(session, :id)),
-                  class: "text-navy-dark hover:text-blue-medium" %>
+                  class: "text-navy-dark hover:text-blue-medium whitespace-normal break-words inline-block",
+                  style: "max-width:260px; overflow-x:auto; display:inline-block;" %>
             </td>
             <td class="text-center">
               <%= render 'dbwatcher/shared/badge',
@@ -85,14 +88,15 @@
                   badge_class: (session_active?(session) ? 'badge-success' : 'badge-primary') %>
             </td>
             <td class="text-center">
+              <% change_count = session_change_count(session) %>
               <%= render 'dbwatcher/shared/badge',
-                  content: session_change_count(session),
-                  badge_class: 'bg-gray-600 text-white' %>
+                  content: change_count > 99 ? "#{change_count}" : change_count,
+                  badge_class: 'bg-gray-600 text-white whitespace-nowrap' %>
             </td>
-            <td class="text-right text-xs">
+            <td class="text-right text-xs whitespace-nowrap">
               <%= format_timestamp(safe_value(session, :started_at)) %>
             </td>
-            <td class="text-right text-xs">
+            <td class="text-right text-xs whitespace-nowrap">
               <% if session_active?(session) %>
                 <span class="text-blue-600">Active</span>
               <% else %>

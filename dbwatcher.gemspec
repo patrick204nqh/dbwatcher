@@ -34,6 +34,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "cucumber-rails", "~> 3.1"
   spec.add_development_dependency "database_cleaner-active_record", "~> 2.0"
   spec.add_development_dependency "rspec-rails", "~> 6.0"
+  spec.add_development_dependency "sassc", "~> 2.4"
   spec.add_development_dependency "selenium-webdriver", "~> 4.0"
   spec.add_development_dependency "sprockets-rails", "~> 3.4"
   spec.add_development_dependency "sqlite3", "~> 1.4"

@@ -1,0 +1,38 @@
+/**
+ * Status Badges
+ * Operation and status indicators
+ */
+
+/* Status badges */
+.badge-insert { 
+  background: var(--status-insert); 
+  color: white; 
+}
+
+.badge-update { 
+  background: var(--status-update); 
+  color: white; 
+}
+
+.badge-delete { 
+  background: var(--status-delete); 
+  color: white; 
+}
+
+.badge-select { 
+  background: var(--status-select); 
+  color: white; 
+}
+
+.badge {
+  padding: 1px 6px;
+  font-size: 10px;
+  border-radius: 3px;
+  font-weight: 500;
+  text-transform: uppercase;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+}

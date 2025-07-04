@@ -1,0 +1,162 @@
+/**
+ * Compact Table Styles
+ * Core table styling for DBWatcher data tables
+ */
+
+.compact-table {
+  font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+  font-size: 12px;
+  line-height: 1.2;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.compact-table th {
+  padding: 4px 8px;
+  font-weight: 500;
+  text-transform: none;
+  font-size: 11px;
+  background: var(--gray-100);
+  border-bottom: 2px solid var(--border-medium);
+  border-right: 1px solid var(--border-medium);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  text-align: left;
+  height: 32px;
+}
+
+/* Enhanced sticky header styling */
+.compact-table th.sticky-left-0 {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
+}
+
+.compact-table th.sticky-left-1 {
+  position: sticky;
+  left: 60px; /* Width of Index column */
+  z-index: 19;
+  box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
+}
+
+.compact-table th.sticky-left-2 {
+  position: sticky;
+  left: 108px; /* Width of Index + Op columns (60px + 48px) */
+  z-index: 18;
+  box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
+}
+
+.compact-table td {
+  padding: 2px 8px;
+  border-right: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+/* Enhanced sticky cell styling */
+.compact-table td.sticky-left-0 {
+  position: sticky;
+  left: 0;
+  background: white;
+  z-index: 5;
+  box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
+}
+
+.compact-table td.sticky-left-1 {
+  position: sticky;
+  left: 60px; /* Width of Index column */
+  background: white;
+  z-index: 4;
+  box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
+}
+
+.compact-table td.sticky-left-2 {
+  position: sticky;
+  left: 108px; /* Width of Index + Op columns (60px + 48px) */
+  background: white;
+  z-index: 3;
+  box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
+}
+
+/* Special cell formatting */
+.compact-table td.highlight-change {
+  background-color: var(--highlight-change);
+}
+
+.compact-table td.highlight-new {
+  color: #047857;
+}
+
+.compact-table td.highlight-deleted {
+  color: #b91c1c;
+}
+
+/* Row styles */
+.compact-table tr:hover td:not(.sticky-left-0):not(.sticky-left-1):not(.sticky-left-2) {
+  background-color: rgba(243, 244, 246, 0.7);
+}
+
+.compact-table tr:hover td.sticky-left-0,
+.compact-table tr:hover td.sticky-left-1,
+.compact-table tr:hover td.sticky-left-2 {
+  background-color: var(--gray-50);
+}
+
+.compact-table tr.selected td:not(.sticky-left-0):not(.sticky-left-1):not(.sticky-left-2) {
+  background-color: rgba(230, 243, 255, 0.7);
+}
+
+.compact-table tr.selected td.sticky-left-0,
+.compact-table tr.selected td.sticky-left-1,
+.compact-table tr.selected td.sticky-left-2 {
+  background-color: #e6f3ff;
+}
+
+/* Smart column width distribution */
+.compact-table th,
+.compact-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Fixed widths for sticky columns only */
+.compact-table th:first-child,
+.compact-table td:first-child {
+  width: 60px;
+  min-width: 60px;
+  max-width: 60px;
+}
+
+.compact-table th:nth-child(2),
+.compact-table td:nth-child(2) {
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  text-align: center;
+}
+
+.compact-table th:nth-child(3),
+.compact-table td:nth-child(3) {
+  width: 160px;
+  min-width: 160px;
+  max-width: 160px;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+/* Font styling for specific column types */
+.compact-table .text-right {
+  font-family: monospace;
+}
+
+/* Highlight colors */
+.highlight-change { background: var(--highlight-change); }
+.highlight-new { background: var(--highlight-new); }
+.highlight-deleted { background: var(--highlight-deleted); }

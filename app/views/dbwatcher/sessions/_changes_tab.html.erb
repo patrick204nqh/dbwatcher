@@ -1,0 +1,265 @@
+<!-- Changes Content - Hybrid Tabulator Implementation with Original UI Structure -->
+<div class="h-full"
+     x-data="changesTableHybrid({ sessionId: '<%= @session.id %>' })">
+
+  <!-- Loading State -->
+  <div x-show="loading" class="flex items-center justify-center h-64">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    <span class="ml-2 text-gray-600">Loading changes...</span>
+  </div>
+
+  <!-- Error State -->
+  <div x-show="error" class="p-4 bg-red-50 border border-red-200 rounded">
+    <p class="text-red-700" x-text="error"></p>
+    <button @click="loadChangesData()" class="mt-2 text-red-600 underline">Retry</button>
+  </div>
+
+  <!-- No Data State -->
+  <div x-show="!loading && !error && Object.keys(tableData).length === 0"
+       class="flex flex-col items-center justify-center h-64">
+    <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    </svg>
+    <p class="mt-2 text-gray-500">No changes data available</p>
+  </div>
+
+  <!-- Multiple Tables - Original UI Structure -->
+  <template x-if="!loading && !error && Object.keys(tableData).length > 0">
+    <div class="h-full overflow-auto">
+      <template x-for="[tableName, tableInfo] in Object.entries(tableData)" :key="tableName">
+        <div class="border-b border-gray-300" x-data="{ expanded: true }">
+          <!-- Table Header with Column Controls -->
+          <div class="bg-gray-100 px-3 py-2 flex items-center cursor-pointer"
+               @click="expanded = !expanded"
+               :id="`table-${tableName}`">
+            <svg class="w-3 h-3 mr-2 transition-transform"
+                 :class="{ 'rotate-90': expanded }"
+                 fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <h3 class="text-sm font-medium text-gray-900 flex-1" x-text="tableName"></h3>
+            <div class="flex gap-2 mr-4">
+              <template x-for="[op, count] in Object.entries(tableInfo.operations || {})" :key="op">
+                <span x-show="count > 0" class="badge" :class="`badge-${op.toLowerCase()}`" x-text="count"></span>
+              </template>
+            </div>
+
+            <!-- Column Visibility Button -->
+            <button @click.stop="toggleColumnSelector(tableName)"
+                    class="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50 relative">
+              Columns
+            </button>
+          </div>
+
+          <!-- Column Selector Dropdown -->
+          <div x-show="showColumnSelector === tableName"
+               x-transition
+               @click.away="showColumnSelector = null"
+               class="absolute z-50 bg-white border border-gray-300 rounded shadow-lg p-3 max-h-64 overflow-auto"
+               style="right: 1rem; margin-top: -2px;">
+            <div class="text-xs font-medium mb-2">Select Visible Columns:</div>
+            <div class="space-y-1 min-w-48">
+              <template x-for="column in tableInfo.columns" :key="column">
+                <label class="flex items-center text-xs hover:bg-gray-50 p-1 rounded">
+                  <input type="checkbox"
+                         :checked="isColumnVisible(tableName, column)"
+                         @change="toggleColumnVisibility(tableName, column)"
+                         class="mr-2">
+                  <span class="flex-1" x-text="column"></span>
+                </label>
+              </template>
+            </div>
+            <div class="mt-2 pt-2 border-t border-gray-200 flex gap-1">
+              <button @click="selectAllColumns(tableName)"
+                      class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">All</button>
+              <button @click="selectNoneColumns(tableName)"
+                      class="text-xs bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-700">None</button>
+            </div>
+          </div>
+
+          <!-- Tabulator Container for This Table -->
+          <div x-show="expanded" x-collapse>
+            <div :id="`changes-table-${tableName}`" class="table-container"></div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </template>
+</div>
+
+<!-- Custom Tabulator Styles -->
+<style>
+  /* Override Tabulator styles to match current design */
+  .tabulator {
+    font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace !important;
+    font-size: 12px !important;
+    border: none;
+    background: white;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .tabulator .tabulator-header {
+    background: #f3f3f3 !important;
+    border-bottom: 2px solid #e8e8e8 !important;
+    font-size: 11px !important;
+  }
+
+  .tabulator .tabulator-header .tabulator-col {
+    background: #f3f3f3 !important;
+    border-right: 1px solid #e8e8e8 !important;
+    padding: 4px 8px !important;
+    font-weight: 500 !important;
+    text-transform: none !important;
+    height: 32px !important;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row {
+    background: white !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    min-height: auto;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover {
+    background: #f3f4f6 !important;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell {
+    border-right: 1px solid #f0f0f0 !important;
+    padding: 2px 8px !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: top;
+    font-size: 12px !important;
+    height: auto;
+    min-height: 28px;
+  }
+
+  /* Override for UPDATE operation cells to allow multi-line */
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell:has(.space-y-1) {
+    white-space: normal;
+    height: auto;
+    padding: 4px 8px !important;
+  }
+
+  /* Maintain sticky columns exactly as current */
+  .tabulator .tabulator-header .tabulator-col.sticky-left-0 {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 20 !important;
+    background: #f3f3f3 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1) !important;
+  }
+
+  .tabulator .tabulator-header .tabulator-col.sticky-left-1 {
+    position: sticky !important;
+    left: 60px !important;
+    z-index: 19 !important;
+    background: #f3f3f3 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1) !important;
+  }
+
+  .tabulator .tabulator-header .tabulator-col.sticky-left-2 {
+    position: sticky !important;
+    left: 108px !important;
+    z-index: 18 !important;
+    background: #f3f3f3 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1) !important;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell.sticky-left-0 {
+    position: sticky !important;
+    left: 0 !important;
+    background: white !important;
+    z-index: 5 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.05) !important;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell.sticky-left-1 {
+    position: sticky !important;
+    left: 60px !important;
+    background: white !important;
+    z-index: 4 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.05) !important;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell.sticky-left-2 {
+    position: sticky !important;
+    left: 108px !important;
+    background: white !important;
+    z-index: 3 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.05) !important;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-0,
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-1,
+  .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-2 {
+    background: #f9fafb !important;
+  }
+
+  /* Operation badges */
+  .badge-insert { background: #10b981; color: white; }
+  .badge-update { background: #6CADDF; color: white; }
+  .badge-delete { background: #ef4444; color: white; }
+  .badge-select { background: #6b7280; color: white; }
+
+  .badge {
+    padding: 1px 6px;
+    font-size: 10px;
+    border-radius: 3px;
+    font-weight: 500;
+    text-transform: uppercase;
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  /* Row detail styling */
+  .row-detail {
+    border-top: 1px solid #e5e7eb;
+    background: #f9fafb;
+    padding: 0;
+  }
+
+  .row-detail td {
+    padding: 8px !important;
+    vertical-align: top !important;
+    border-right: 1px solid #e5e7eb !important;
+  }
+
+  .row-detail h4 {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+  }
+
+  /* Maintain sticky positioning in expanded rows - combined first 3 columns */
+  .row-detail .sticky-left-0 {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 5 !important;  /* Lower z-index to prevent overlay issues */
+    background: #f9fafb !important;  /* Match row-detail background */
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1) !important;
+    width: 268px !important;
+    min-width: 268px !important;
+  }
+
+  /* Expand button styling */
+  .expand-btn {
+    padding: 2px;
+    border-radius: 2px;
+    transition: all 0.15s ease;
+  }
+
+  .expand-btn:hover {
+    background-color: #f3f4f6;
+  }
+</style>

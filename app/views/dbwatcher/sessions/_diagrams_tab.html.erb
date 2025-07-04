@@ -1,0 +1,166 @@
+<!-- Diagrams Content - API-First Implementation -->
+<div class="h-full"
+     x-data="diagrams({ sessionId: '<%= @session.id %>' })"
+     x-init="init()">
+  <!-- Diagram Controls - consistent with other tabs -->
+  <div class="p-3 border-b border-gray-300 bg-gray-100">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-medium text-gray-700">Diagram Type:</label>
+          <select
+            x-model="selectedType"
+            @change="loadDiagram()"
+            class="compact-select text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <template x-for="[type, metadata] in Object.entries(diagramTypes)" :key="type">
+              <option :value="type" x-text="metadata.display_name"></option>
+            </template>
+          </select>
+        </div>
+
+        <button
+          @click="loadDiagram()"
+          :disabled="loading"
+          class="<%= diagram_button_classes(:primary) %>"
+        >
+          <span x-show="!loading">Generate</span>
+          <span x-show="loading">Generating...</span>
+        </button>
+      </div>
+
+      <!-- Right-aligned controls -->
+      <div class="flex items-center gap-1">
+        <button
+          x-show="diagramContent && !loading"
+          @click="toggleCodeView()"
+          class="<%= diagram_button_classes(:secondary) %>"
+        >
+          <span x-show="!showCodeView">View Code</span>
+          <span x-show="showCodeView">Hide Code</span>
+        </button>
+        <button
+          x-show="diagramContent && !loading"
+          @click="downloadSVG()"
+          class="<%= diagram_button_classes(:primary) %>"
+        >
+          Download
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Diagram Content Area -->
+  <div class="flex-1 overflow-hidden relative mx-1 mb-1 mt-2 rounded-lg" style="min-height: 600px; height: calc(100vh - 150px);">
+    <!-- Loading Types State (Initial) -->
+    <div
+      x-show="loading && Object.keys(diagramTypes).length === 0"
+      class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-75 rounded-md border border-gray-200"
+      style="z-index: 10;"
+    >
+      <div class="flex flex-col items-center">
+        <div class="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+        <div class="text-xs text-gray-600">Loading diagram types...</div>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div
+      x-show="error"
+      class="absolute inset-0 flex flex-col items-center justify-center p-4 bg-red-50 border border-red-200 rounded-md"
+      style="z-index: 10;"
+    >
+      <svg class="w-10 h-10 mb-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <p class="text-sm font-medium mb-1 text-red-700" x-text="error"></p>
+      <button @click="loadDiagramTypes().then(() => loadDiagram())" class="mt-2 text-red-600 underline">Retry</button>
+    </div>
+
+    <!-- Empty State -->
+    <div
+      x-show="!diagramContent && !loading && !generating && !error && Object.keys(diagramTypes).length > 0"
+      class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 p-6 border border-gray-200 rounded-md bg-gray-50"
+    >
+      <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+      <p class="text-sm font-medium mb-1">Database Diagram</p>
+      <p class="text-xs text-center text-gray-400">Select a diagram type and click Generate to visualize your database structure</p>
+    </div>
+
+    <!-- Generating Diagram State -->
+    <div
+      x-show="generating"
+      class="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-75 rounded-md border border-gray-200"
+      style="z-index: 10;"
+    >
+      <div class="flex flex-col items-center">
+        <div class="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+        <div class="text-xs text-gray-600">Generating diagram...</div>
+      </div>
+    </div>
+
+    <!-- Rendered Diagram -->
+    <div
+      x-ref="diagramContainer"
+      x-show="diagramContent && !loading && !error && !showCodeView"
+      class="absolute inset-0 p-4 overflow-hidden bg-white border border-gray-200 rounded-md shadow-inner"
+      style="display: flex; flex-direction: column;"
+    >
+      <!-- Mermaid diagram will be rendered here -->
+      <div class="flex-1 bg-gray-50 rounded-md p-2" style="min-height: 400px;">
+        <!-- This div will contain the actual diagram -->
+      </div>
+    </div>
+
+    <!-- Code View -->
+    <div
+      x-show="diagramContent && !loading && !error && showCodeView"
+      class="absolute inset-0 p-4 overflow-hidden bg-white border border-gray-200 rounded-md shadow-inner"
+      style="display: flex; flex-direction: column;"
+    >
+      <div class="flex justify-between items-center mb-2">
+        <h3 class="text-sm font-medium text-gray-700">Mermaid Diagram Code</h3>
+        <button
+          x-ref="copyButton"
+          @click="copyDiagramCode()"
+          class="<%= diagram_button_classes(:primary) %>"
+        >
+          Copy Code
+        </button>
+      </div>
+      <div class="flex-1 bg-gray-50 rounded-md overflow-auto diagram-code-view" style="min-height: 400px;">
+        <div class="relative h-full">
+          <pre x-ref="codeContainer" class="text-xs font-mono p-4 whitespace-pre-wrap overflow-x-auto h-full" style="max-height: calc(100vh - 220px); overflow-y: auto;" x-text="diagramContent"></pre>
+          <div class="absolute top-0 right-2 bg-gray-200 text-xs text-gray-500 px-1 py-0.5 rounded-b opacity-70">
+            Mermaid Syntax
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div
+      x-show="error"
+      class="absolute inset-0 flex items-center justify-center p-6 border border-gray-200 rounded-md bg-gray-50"
+    >
+      <div class="max-w-md w-full text-center">
+        <div class="bg-red-50 border border-red-200 rounded p-4">
+          <svg class="w-10 h-10 text-red-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+          </svg>
+          <h3 class="text-sm font-medium text-red-800 mb-2">Error Generating Diagram</h3>
+          <p class="text-xs text-red-600 mb-3" x-text="error"></p>
+          <button
+            @click="error = null; loadDiagram()"
+            class="<%= diagram_button_classes(:primary) %>"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

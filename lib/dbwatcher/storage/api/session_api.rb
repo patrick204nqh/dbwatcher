@@ -91,6 +91,42 @@ module Dbwatcher
             .first(limit)
         end
 
+        # Get comprehensive session analysis including tables and relationships
+        #
+        # @param session_id [String] session identifier
+        # @return [Hash] session analysis data
+        def summary(session_id)
+          session = find(session_id)
+          return { error: "Session not found" } unless session
+
+          {
+            tables_summary: tables_summary(session_id),
+            total_changes: session.changes&.count || 0,
+            session_metadata: extract_session_metadata(session)
+          }
+        end
+
+        # Get tables summary for a session
+        #
+        # @param session_id [String] session identifier
+        # @return [Hash] tables summary
+        def tables_summary(session_id)
+          session = find(session_id)
+          return { error: "Session not found" } unless session
+
+          analyzer = Dbwatcher::Services::Analyzers::TableSummaryBuilder.new(session)
+          analyzer.call
+        end
+
+        # Generate diagram data for a session
+        #
+        # @param session_id [String] session identifier
+        # @param diagram_type [String] type of diagram to generate
+        # @return [Hash] diagram data
+        def diagram_data(session_id, diagram_type = "database_tables")
+          Dbwatcher::Services::DiagramSystem.generate(session_id, diagram_type)
+        end
+
         private
 
         def apply_filters(sessions)
@@ -127,6 +163,17 @@ module Dbwatcher
             session = find(safe_extract(s, :id))
             session&.changes&.any?
           end
+        end
+
+        # Extract session metadata for analysis
+        #
+        # @param session [Session] session object
+        # @return [Hash] metadata hash
+        def extract_session_metadata(session)
+          {
+            id: session.id,
+            changes_count: session.changes&.count || 0
+          }
         end
       end
     end

@@ -13,6 +13,11 @@ module Dbwatcher
     # Common error handling
     rescue_from StandardError, with: :handle_error
 
+    # Include helpers
+    helper Dbwatcher::ApplicationHelper
+    helper Dbwatcher::FormattingHelper
+    helper Dbwatcher::DiagramHelper if defined?(Dbwatcher::DiagramHelper)
+
     protected
 
     # Set current time for consistent timestamp usage across views
@@ -35,7 +40,8 @@ module Dbwatcher
       respond_to do |format|
         format.html do
           flash[:error] = "An error occurred while processing your request."
-          redirect_to root_path
+          # Avoid infinite redirect by using main app root or request referer
+          redirect_to(request.referer || main_app.root_path)
         end
         format.json do
           render json: { error: "Internal server error" }, status: :internal_server_error
@@ -54,7 +60,7 @@ module Dbwatcher
     def format_timestamp(timestamp_str)
       return "N/A" unless timestamp_str
 
-      Time.parse(timestamp_str).strftime("%H:%M:%S")
+      Time.parse(timestamp_str).strftime("%Y-%m-%d %H:%M:%S")
     rescue ArgumentError
       "N/A"
     end

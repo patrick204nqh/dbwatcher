@@ -1,0 +1,12 @@
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <div class="tab-item"
+       :class="{ active: activeTab === 'changes' }"
+       @click="setActiveTab('changes')">Changes</div>
+  <div class="tab-item"
+       :class="{ active: activeTab === 'summary' }"
+       @click="setActiveTab('summary')">Summary</div>
+  <div class="tab-item"
+       :class="{ active: activeTab === 'diagrams' }"
+       @click="setActiveTab('diagrams')">Diagrams</div>
+</div>

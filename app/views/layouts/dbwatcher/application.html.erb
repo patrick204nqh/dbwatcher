@@ -5,254 +5,87 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
 
-    <!-- Alpine.js -->
+    <!-- Alpine.js and Plugins - ensure plugins load BEFORE Alpine.js core -->
+    <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Mermaid.js for database diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js" crossorigin="anonymous"></script>
+
+    <!-- SVG Pan Zoom Library -->
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+
+    <!-- Tabulator.js for table library -->
+    <%= javascript_include_tag "dbwatcher/vendor/tabulator.min" %>
+    <%= stylesheet_link_tag "dbwatcher/vendor/tabulator.min", media: "all" %>
+
+    <!-- DBWatcher Core Architecture -->
+    <%= javascript_include_tag "dbwatcher/vendor/lodash.min" %>
+    <%= javascript_include_tag "dbwatcher/vendor/date-fns-browser" %>
+    <%= javascript_include_tag "dbwatcher/dbwatcher" %>
+    <%= javascript_include_tag "dbwatcher/core/component_registry" %>
+    <%= javascript_include_tag "dbwatcher/core/component_loader" %>
+    <%= javascript_include_tag "dbwatcher/components/base" %>
+    <%= javascript_include_tag "dbwatcher/components/changes_table_hybrid" %>
+    <%= javascript_include_tag "dbwatcher/components/diagrams" %>
+    <%= javascript_include_tag "dbwatcher/components/summary" %>
+
+    <!-- DBWatcher Services -->
+    <%= javascript_include_tag "dbwatcher/core/alpine_store" %>
+    <%= javascript_include_tag "dbwatcher/core/api_client" %>
+    <%= javascript_include_tag "dbwatcher/services/mermaid" %>
+
+    <!-- Alpine.js Component Registrations -->
+    <%= javascript_include_tag "dbwatcher/alpine_registrations" %>
+
+    <!-- Auto-initialization -->
+    <%= javascript_include_tag "dbwatcher/auto_init" %>
+
+    <script>
+      // Initialize DBWatcher before Alpine.js starts
+      document.addEventListener('alpine:init', () => {
+        try {
+          if (window.DBWatcher) {
+            DBWatcher.init();
+            console.log('✅ DBWatcher initialized with optimized architecture');
+          } else {
+            console.error('❌ DBWatcher not loaded');
+          }
+        } catch (error) {
+          console.error('❌ Error during DBWatcher initialization:', error);
+        }
+      });
+
+      // Fallback initialization with better error handling
+      document.addEventListener('DOMContentLoaded', function() {
+        // Small delay to ensure Alpine is available
+        setTimeout(() => {
+          try {
+            if (window.DBWatcher && !DBWatcher.initialized) {
+              DBWatcher.init();
+              console.log('✅ DBWatcher initialized (fallback)');
+            }
+          } catch (error) {
+            console.error('❌ Error during DBWatcher fallback initialization:', error);
+          }
+        }, 100);
+
+        // Plugin verification
+        setTimeout(() => {
+          if (window.Alpine && !window.Alpine.directive('collapse')) {
+            console.warn('⚠️ Alpine.js Collapse plugin may not be properly loaded');
+          } else if (window.Alpine && window.Alpine.directive('collapse')) {
+            console.log('✅ Alpine.js Collapse plugin verified');
+          }
+        }, 200);
+      });
+    </script>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Custom styles for compact theme -->
-    <style>
-      :root {
-        --navy-dark: #00285D;
-        --blue-light: #96C1E7;
-        --blue-medium: #6CADDF;
-        --gold-dark: #D4A11E;
-        --gold-light: #FFC758;
-      }
-
-      /* Compact table styles */
-      .compact-table {
-        font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
-        font-size: 12px;
-        line-height: 1.2;
-      }
-
-      .compact-table th {
-        padding: 4px 8px;
-        font-weight: 500;
-        text-transform: none;
-        font-size: 11px;
-        background: #f3f3f3;
-        border-bottom: 2px solid #e8e8e8;
-        border-right: 1px solid #e8e8e8;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-      }
-
-      .compact-table td {
-        padding: 2px 8px;
-        border-right: 1px solid #f0f0f0;
-        border-bottom: 1px solid #f0f0f0;
-        max-width: 200px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .compact-table tr:hover {
-        background: #f8f8f8;
-      }
-
-      .compact-table tr.selected {
-        background: #e6f3ff;
-      }
-
-      /* Sidebar styles */
-      .sidebar-item {
-        font-size: 13px;
-        padding: 6px 12px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        border-radius: 3px;
-        transition: all 0.15s;
-      }
-
-      .sidebar-item:hover {
-        background: rgba(108, 173, 223, 0.1);
-        color: #6CADDF;
-      }
-
-      .sidebar-item.active {
-        background: #00285D;
-        color: white;
-      }
-
-      /* Compact form controls */
-      .compact-input {
-        padding: 3px 8px;
-        font-size: 12px;
-        border: 1px solid #d1d5db;
-        border-radius: 3px;
-      }
-
-      .compact-select {
-        padding: 3px 24px 3px 8px;
-        font-size: 12px;
-        border: 1px solid #d1d5db;
-        border-radius: 3px;
-        background-size: 16px;
-      }
-
-      .compact-button {
-        padding: 4px 12px;
-        font-size: 12px;
-        border-radius: 3px;
-        font-weight: 500;
-      }
-
-      /* Tab styles */
-      .tab-bar {
-        background: #f3f3f3;
-        border-bottom: 1px solid #e8e8e8;
-        display: flex;
-        align-items: center;
-        height: 32px;
-        font-size: 12px;
-      }
-
-      .tab-item {
-        padding: 0 16px;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        border-right: 1px solid #e8e8e8;
-        cursor: pointer;
-        transition: all 0.15s;
-      }
-
-      .tab-item:hover {
-        background: #e8e8e8;
-      }
-
-      .tab-item.active {
-        background: white;
-        color: #00285D;
-        font-weight: 500;
-      }
-
-      /* Status badges */
-      .badge-insert { background: #10b981; color: white; }
-      .badge-update { background: #6CADDF; color: white; }
-      .badge-delete { background: #ef4444; color: white; }
-      .badge-select { background: #6b7280; color: white; }
-
-      .badge {
-        padding: 1px 6px;
-        font-size: 10px;
-        border-radius: 2px;
-        font-weight: 500;
-        text-transform: uppercase;
-      }
-
-      /* Highlight colors */
-      .highlight-change { background: rgba(255, 199, 88, 0.3); }
-      .highlight-new { background: rgba(16, 185, 129, 0.2); }
-      .highlight-deleted { background: rgba(239, 68, 68, 0.2); }
-
-      /* Splitter */
-      .splitter {
-        width: 4px;
-        background: #e8e8e8;
-        cursor: col-resize;
-      }
-
-      .splitter:hover {
-        background: #6CADDF;
-      }
-
-      /* Scrollbar styling */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-
-      ::-webkit-scrollbar-track {
-        background: #f3f3f3;
-      }
-
-      ::-webkit-scrollbar-thumb {
-        background: #c8c8c8;
-        border-radius: 4px;
-      }
-
-      ::-webkit-scrollbar-thumb:hover {
-        background: #6CADDF;
-      }
-
-      /* Enhanced table styles for data readability */
-      .table-detailed .compact-table td {
-        max-width: 300px;
-        padding: 4px 8px;
-      }
-
-      .cell-content {
-        position: relative;
-        display: inline-block;
-        max-width: 100%;
-      }
-
-      .cell-compact {
-        max-width: 150px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .cell-detailed {
-        max-width: 300px;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
-
-      .cell-value {
-        cursor: help;
-      }
-
-      /* Column type styling */
-      .column-meta {
-        background-color: rgba(156, 163, 175, 0.1);
-      }
-
-      .column-timestamp {
-        background-color: rgba(59, 130, 246, 0.1);
-        font-family: monospace;
-      }
-
-      .column-id {
-        background-color: rgba(245, 158, 11, 0.1);
-        font-family: monospace;
-      }
-
-      /* Tooltip improvements */
-      .tooltip-content {
-        max-height: 200px;
-        overflow-y: auto;
-        font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
-      }
-
-      /* Essential mode adjustments */
-      .view-essential .compact-table th,
-      .view-essential .compact-table td {
-        font-size: 11px;
-        padding: 2px 6px;
-      }
-
-      /* JSON/Array content indicators */
-      .json-indicator {
-        color: #6366f1;
-        font-style: italic;
-        font-size: 10px;
-      }
-
-      .array-indicator {
-        color: #059669;
-        font-style: italic;
-        font-size: 10px;
-      }
-    </style>
+    <!-- DBWatcher Styles -->
+    <%= stylesheet_link_tag 'dbwatcher/application.css', 'data-turbolinks-track': 'reload' %>
 
     <script>
       tailwind.config = {
@@ -375,17 +208,52 @@
       </main>
     </div>
 
+    <!-- Initialize DBWatcher system -->
     <script>
-      mermaid.initialize({
-        startOnLoad: true,
-        theme: 'neutral',
-        themeVariables: {
-          primaryColor: '#00285D',
-          primaryTextColor: '#fff',
-          primaryBorderColor: '#6CADDF',
-          lineColor: '#96C1E7',
-          secondaryColor: '#FFC758',
-          tertiaryColor: '#D4A11E'
+      document.addEventListener('DOMContentLoaded', function() {
+        // Initialize DBWatcher if available
+        if (window.DBWatcher) {
+          // Ensure BaseComponent is available
+          if (!window.DBWatcher.BaseComponent && typeof DBWatcher.BaseComponent !== 'function') {
+            window.DBWatcher.BaseComponent = function(config = {}) {
+              return {
+                init() {
+                  if (this.componentInit) {
+                    try {
+                      this.componentInit();
+                    } catch (error) {
+                      console.error("Error during component initialization:", error);
+                    }
+                  }
+                }
+              };
+            };
+            console.log('Added fallback BaseComponent');
+          }
+
+          // Register legacy components with Alpine directly if ComponentRegistry isn't available
+          if (!window.DBWatcher.ComponentRegistry) {
+            console.log('ComponentRegistry not available, using direct Alpine registration');
+
+            // Ensure Alpine is available
+            if (window.Alpine) {
+              // Direct registration of components with Alpine
+              if (!window.Alpine.data('changesTable') && window.DBWatcher.components && window.DBWatcher.components.changesTable) {
+                window.Alpine.data('changesTable', (config = {}) => {
+                  const component = window.DBWatcher.components.changesTable(config);
+                  return component;
+                });
+                console.log('Registered changesTable component with Alpine');
+              }
+            }
+          }
+
+          console.log('✅ DBWatcher initialized (fallback)');
+        }
+
+        // Verify Alpine.js plugins
+        if (window.Alpine && window.Alpine.directive && window.Alpine.directive('collapse')) {
+          console.log('✅ Alpine.js Collapse plugin verified');
         }
       });
     </script>

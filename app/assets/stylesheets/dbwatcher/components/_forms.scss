@@ -1,0 +1,27 @@
+/**
+ * Form Controls
+ * Input fields, selects, buttons
+ */
+
+/* Compact form controls */
+.compact-input {
+  padding: 3px 8px;
+  font-size: 12px;
+  border: 1px solid var(--border-dark);
+  border-radius: 3px;
+}
+
+.compact-select {
+  padding: 3px 24px 3px 8px;
+  font-size: 12px;
+  border: 1px solid var(--border-dark);
+  border-radius: 3px;
+  background-size: 16px;
+}
+
+.compact-button {
+  padding: 4px 12px;
+  font-size: 12px;
+  border-radius: 3px;
+  font-weight: 500;
+}

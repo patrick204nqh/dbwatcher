@@ -1,0 +1,88 @@
+<!-- Summary Content - API-First Implementation -->
+<div class="h-full"
+     x-data="summary({ sessionId: '<%= @session.id %>' })">
+
+  <!-- Loading State -->
+  <div x-show="loading" class="flex items-center justify-center h-64">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500"></div>
+    <span class="ml-2 text-gray-600">Loading summary...</span>
+  </div>
+
+  <!-- Error State -->
+  <div x-show="error" class="p-4 bg-red-50 border border-red-200 rounded">
+    <p class="text-red-700" x-text="error"></p>
+    <button @click="loadSummaryData()" class="mt-2 text-red-600 underline">Retry</button>
+  </div>
+
+  <!-- Content when data is loaded -->
+  <template x-if="!loading && !error">
+    <div class="h-full overflow-auto">
+      <!-- Session Overview -->
+      <div class="border-b border-gray-300">
+        <div class="bg-gray-100 px-3 py-2 border-b border-gray-300">
+          <h3 class="text-sm font-medium text-gray-900">Session Overview</h3>
+        </div>
+        <div class="bg-white p-3">
+          <div class="grid grid-cols-4 gap-4 text-xs">
+            <div>
+              <div class="text-gray-500 font-medium mb-1">Started At</div>
+              <div class="text-gray-900 font-mono" x-text="formatStartTime()"></div>
+            </div>
+            <div>
+              <div class="text-gray-500 font-medium mb-1">End Time</div>
+              <div class="text-gray-900 font-mono" x-text="formatEndTime()"></div>
+            </div>
+            <div>
+              <div class="text-gray-500 font-medium mb-1">Duration</div>
+              <div class="text-gray-900 font-mono" x-text="formatDuration()"></div>
+            </div>
+            <div>
+              <div class="text-gray-500 font-medium mb-1">Status</div>
+              <div class="flex items-center">
+                <div class="h-2 w-2 rounded-full mr-2"
+                     :class="formatEndTime() === 'Active' ? 'bg-green-500 animate-pulse' : 'bg-gray-500'"></div>
+                <span class="text-gray-900 font-medium text-xs"
+                      x-text="formatEndTime() === 'Active' ? 'Active' : 'Completed'"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Tables Grid -->
+      <div x-show="summaryData.tables_breakdown && summaryData.tables_breakdown.length > 0" class="border-b border-gray-300">
+        <div class="bg-gray-100 px-3 py-2 border-b border-gray-300">
+          <h3 class="text-sm font-medium text-gray-900">Table Activity Details</h3>
+        </div>
+        <div class="bg-white p-3">
+          <div class="grid grid-cols-4 gap-3">
+            <template x-for="table in summaryData.tables_breakdown" :key="table.table_name">
+              <div class="bg-gray-50 border border-gray-200 p-2 hover:bg-gray-100 cursor-pointer transition-colors"
+                   @click="window.location.href=`/dbwatcher/sessions/${summaryData.session_id}/changes?table=${table.table_name}`">
+                <h4 class="text-xs font-medium text-gray-800 mb-2 truncate" x-text="table.table_name"></h4>
+                <div class="space-y-1">
+                  <template x-for="(count, op) in table.operations" :key="op">
+                    <div class="flex justify-between items-center" x-show="count > 0">
+                      <span class="badge" :class="`badge-${op.toLowerCase()}`" x-text="op.charAt(0)"></span>
+                      <span class="text-xs font-medium text-gray-900" x-text="count"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div x-show="!summaryData.tables_breakdown || summaryData.tables_breakdown.length === 0" class="bg-white p-8 text-center">
+        <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <p class="text-sm font-medium text-gray-500">No Database Changes</p>
+        <p class="text-xs text-gray-400">This session contains no tracked database operations.</p>
+      </div>
+    </div>
+  </template>
+</div>

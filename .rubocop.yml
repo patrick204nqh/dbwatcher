@@ -17,7 +17,7 @@ AllCops:
 Gemspec/DevelopmentDependencies:
   Enabled: false
 
-# Allow longer classes in test controllers (they're comprehensive test suites)
+# Allow longer classes in test controllers and complex analyzers
 Metrics/ClassLength:
   Max: 100
   Exclude:
@@ -25,18 +25,54 @@ Metrics/ClassLength:
     - "spec/dummy/app/controllers/testing/**/*"
     - "spec/dummy/app/controllers/users_controller.rb"
     - "scripts/**/*"
+    - "lib/dbwatcher/services/diagram_analyzers/**/*"
+    - "lib/dbwatcher/services/diagram_error_handler.rb"
+    - "lib/dbwatcher/services/mermaid_syntax_builder.rb"
+    - "lib/dbwatcher/services/api/summary_data_service.rb"
+    - "lib/dbwatcher/services/diagram_data/**/*"
+    - "lib/dbwatcher/services/analyzers/**/*"
 
-# Allow longer methods in test files and migrations
+# Allow longer methods in test files and complex analyzers
 Metrics/MethodLength:
   Max: 15
   Exclude:
     - "spec/**/*"
+    - "lib/dbwatcher/services/diagram_analyzers/**/*"
+    - "lib/dbwatcher/services/diagram_error_handler.rb"
+    - "lib/dbwatcher/services/mermaid_syntax_builder.rb"
+    - "lib/dbwatcher/services/diagram_data/**/*"
+    - "lib/dbwatcher/services/api/**/*"
 
-# Allow higher complexity in test files and migrations  
+# Allow higher complexity in test files and complex analyzers
 Metrics/AbcSize:
   Max: 25
   Exclude:
     - "spec/**/*"
+    - "lib/dbwatcher/services/diagram_analyzers/**/*"
+    - "lib/dbwatcher/services/diagram_error_handler.rb"
+    - "lib/dbwatcher/services/mermaid_syntax_builder.rb"
+    - "lib/dbwatcher/services/diagram_data/**/*"
+
+# Allow higher cyclomatic complexity in analyzers
+Metrics/CyclomaticComplexity:
+  Max: 7
+  Exclude:
+    - "spec/**/*"
+    - "lib/dbwatcher/services/diagram_analyzers/**/*"
+    - "lib/dbwatcher/services/diagram_error_handler.rb"
+    - "lib/dbwatcher/services/mermaid_syntax_builder.rb"
+    - "lib/dbwatcher/services/diagram_data/**/*"
+    - "lib/dbwatcher/services/api/**/*"
+
+# Allow higher perceived complexity in analyzers
+Metrics/PerceivedComplexity:
+  Max: 8
+  Exclude:
+    - "spec/**/*"
+    - "lib/dbwatcher/services/diagram_analyzers/**/*"
+    - "lib/dbwatcher/services/diagram_error_handler.rb"
+    - "lib/dbwatcher/services/mermaid_syntax_builder.rb"
+    - "lib/dbwatcher/services/diagram_data/**/*"
 
 # Style rules
 Style/StringLiterals:
@@ -52,12 +88,14 @@ Style/FrozenStringLiteralComment:
   Enabled: true
   EnforcedStyle: always
 
-# Metrics - be more lenient for tests and demo files
+# Metrics - be more lenient for tests, demo files, and complex blocks
 Metrics/BlockLength:
   Exclude:
     - "spec/**/*"
     - "demo.rb"
     - "*.gemspec"
+    - "config/routes.rb"
+    - "lib/dbwatcher/services/diagram_analyzers/**/*"
 
 # Layout rules
 Layout/LineLength:
