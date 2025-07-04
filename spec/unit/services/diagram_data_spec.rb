@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "rails_helper"
+require "unit/services/diagram_data_helper"
 
 RSpec.describe Dbwatcher::Services::DiagramData do
   describe ".entity" do
