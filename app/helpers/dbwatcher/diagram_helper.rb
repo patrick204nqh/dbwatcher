@@ -39,29 +39,26 @@ module Dbwatcher
     def diagram_button_classes(type = :default)
       base_classes = "compact-button text-xs rounded"
 
-      case type
-      when :primary
-        "#{base_classes} bg-blue-medium text-white px-3 py-1 hover:bg-navy-dark"
-      when :secondary
-        "#{base_classes} bg-navy-dark text-white px-2 py-1 hover:bg-blue-medium"
-      when :toggle
-        "#{base_classes} bg-blue-medium text-white px-2 py-1 hover:bg-navy-dark flex items-center gap-1"
-      when :icon
-        "#{base_classes} bg-white border border-gray-300 hover:bg-gray-50 p-1"
-      when :danger
-        "#{base_classes} bg-red-500 text-white px-2 py-1 hover:bg-red-600"
-      when :success
-        "#{base_classes} bg-green-500 text-white px-2 py-1 hover:bg-green-600"
-      else
-        "#{base_classes} bg-blue-medium text-white px-2 py-1 hover:bg-navy-dark"
-      end
+      button_styles = {
+        primary: "bg-blue-medium text-white px-3 py-1 hover:bg-navy-dark",
+        secondary: "bg-navy-dark text-white px-2 py-1 hover:bg-blue-medium",
+        toggle: "bg-blue-medium text-white px-2 py-1 hover:bg-navy-dark flex items-center gap-1",
+        icon: "bg-white border border-gray-300 hover:bg-gray-50 p-1",
+        danger: "bg-red-500 text-white px-2 py-1 hover:bg-red-600",
+        success: "bg-green-500 text-white px-2 py-1 hover:bg-green-600"
+      }
+
+      style = button_styles[type] || button_styles[:primary]
+      "#{base_classes} #{style}"
     end
 
     # Generate a code view with syntax highlighting for Mermaid code
     def diagram_code_view(content)
       content_tag(:div, class: "diagram-code-view") do
         content_tag(:pre,
-                    class: "text-xs font-mono p-4 bg-gray-50 rounded border border-gray-200 overflow-x-auto whitespace-pre-wrap", style: "max-height: calc(100vh - 220px); overflow-y: auto;") do
+                    class: "text-xs font-mono p-4 bg-gray-50 rounded border border-gray-200 " \
+                           "overflow-x-auto whitespace-pre-wrap",
+                    style: "max-height: calc(100vh - 220px); overflow-y: auto;") do
           content_tag(:code, content)
         end
       end
