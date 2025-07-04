@@ -32,7 +32,38 @@ require_relative "dbwatcher/services/query_filter_processor"
 require_relative "dbwatcher/services/analyzers/session_data_processor"
 require_relative "dbwatcher/services/analyzers/table_summary_builder"
 
+# Diagram data models
+require_relative "dbwatcher/services/diagram_data/attribute"
+require_relative "dbwatcher/services/diagram_data/entity"
+require_relative "dbwatcher/services/diagram_data/relationship"
+require_relative "dbwatcher/services/diagram_data/dataset"
+require_relative "dbwatcher/services/diagram_data"
+
+# Diagram analyzers
+require_relative "dbwatcher/services/diagram_analyzers/base_analyzer"
+require_relative "dbwatcher/services/diagram_analyzers/foreign_key_analyzer"
+require_relative "dbwatcher/services/diagram_analyzers/inferred_relationship_analyzer"
+require_relative "dbwatcher/services/diagram_analyzers/model_association_analyzer"
+
+# Mermaid syntax builders
+require_relative "dbwatcher/services/mermaid_syntax/base_builder"
+require_relative "dbwatcher/services/mermaid_syntax/sanitizer"
+require_relative "dbwatcher/services/mermaid_syntax/cardinality_mapper"
+require_relative "dbwatcher/services/mermaid_syntax/erd_builder"
+require_relative "dbwatcher/services/mermaid_syntax/class_diagram_builder"
+require_relative "dbwatcher/services/mermaid_syntax/flowchart_builder"
+require_relative "dbwatcher/services/mermaid_syntax_builder"
+
+# Diagram strategies
+require_relative "dbwatcher/services/diagram_strategies/base_diagram_strategy"
+require_relative "dbwatcher/services/diagram_strategies/erd_diagram_strategy"
+require_relative "dbwatcher/services/diagram_strategies/class_diagram_strategy"
+require_relative "dbwatcher/services/diagram_strategies/flowchart_diagram_strategy"
+
 # Diagram system
+require_relative "dbwatcher/services/diagram_error_handler"
+require_relative "dbwatcher/services/diagram_type_registry"
+require_relative "dbwatcher/services/diagram_generator"
 require_relative "dbwatcher/services/diagram_system"
 
 # API services

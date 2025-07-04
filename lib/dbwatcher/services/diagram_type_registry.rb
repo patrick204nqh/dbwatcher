@@ -44,7 +44,12 @@ module Dbwatcher
 
       # Initialize registry
       def initialize
-        @logger = Rails.logger || Logger.new($stdout)
+        @logger = if defined?(Rails) && Rails.respond_to?(:logger)
+                    Rails.logger
+                  else
+                    require "logger"
+                    Logger.new($stdout)
+                  end
       end
 
       # Get list of available diagram type keys

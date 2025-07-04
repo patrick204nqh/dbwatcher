@@ -42,9 +42,9 @@ module Dbwatcher
       @diagram_show_methods = false # Hide methods by default
       @diagram_show_cardinality = true
       @diagram_max_attributes = 10
-      @diagram_attribute_types = %w[string integer boolean datetime text]
-      @diagram_relationship_labels = :method_name
-      @diagram_preserve_table_case = true
+      @diagram_attribute_types = true # Changed from array to boolean
+      @diagram_relationship_labels = true # Changed from symbol to boolean
+      @diagram_preserve_table_case = false # Changed from true to false
       @diagram_direction = "LR" # Left to right by default
       @diagram_cardinality_format = :simple # Use simpler 1:N format
       @diagram_show_attribute_count = true

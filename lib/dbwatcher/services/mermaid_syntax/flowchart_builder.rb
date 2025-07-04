@@ -56,48 +56,9 @@ module Dbwatcher
         # @return [String] node definition line
         def build_flowchart_node(entity)
           node_id = Sanitizer.node_id(entity.name)
-          node_content = build_node_content(entity)
+          node_content = entity.name
 
           "    #{node_id}[\"#{node_content}\"]"
-        end
-
-        # Build node content with attributes
-        #
-        # @param entity [DiagramData::Entity] entity to render
-        # @return [String] HTML-formatted node content
-        def build_node_content(entity)
-          lines = [entity.name]
-
-          # Always add attribute count
-          lines << "#{entity.attributes.size} attributes" if entity.attributes.any?
-
-          # Add attributes if enabled and available
-          if show_attributes? && entity.attributes.any?
-            attr_names = entity.attributes.first(max_attributes).map { |attr| attr.name }
-            lines << attr_names.join(", ")
-
-            # Show message if there are more attributes than we're displaying
-            lines << "... #{entity.attributes.size - max_attributes} more" if entity.attributes.size > max_attributes
-          end
-
-          # Always add method count
-          lines << "#{entity.metadata[:methods].size} methods" if entity.metadata[:methods]&.any?
-
-          # Add methods if enabled and available
-          if show_methods? && entity.metadata[:methods]&.any?
-            method_names = entity.metadata[:methods].first(max_methods).map do |method|
-              method[:name].to_s.gsub(/\(\)$/, "")
-            end
-            lines << method_names.join(", ")
-
-            # Show message if there are more methods than we're displaying
-            if entity.metadata[:methods].size > max_methods
-              lines << "... #{entity.metadata[:methods].size - max_methods} more"
-            end
-          end
-
-          # Join with HTML line breaks
-          lines.join("<br/>")
         end
 
         # Build flowchart relationship

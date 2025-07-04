@@ -92,12 +92,16 @@ module Dbwatcher
         # @param hash [Hash] attribute data
         # @return [Attribute] new attribute instance
         def self.from_h(hash)
+          # Convert string keys to symbols for consistent access
+          hash = hash.transform_keys(&:to_sym) if hash.keys.first.is_a?(String)
+
+          # Use fetch with default values to handle missing fields
           new(
-            name: hash[:name] || hash["name"],
-            type: hash[:type] || hash["type"],
-            nullable: hash[:nullable] || hash["nullable"],
-            default: hash[:default] || hash["default"],
-            metadata: hash[:metadata] || hash["metadata"] || {}
+            name: hash[:name],
+            type: hash[:type],
+            nullable: hash.key?(:nullable) ? hash[:nullable] : true,
+            default: hash[:default],
+            metadata: hash[:metadata] || {}
           )
         end
 
@@ -134,7 +138,7 @@ module Dbwatcher
         #
         # @return [String] string representation
         def to_s
-          "#{self.class.name}(name: #{name}, type: #{type})"
+          "#{self.class.name}(name: #{name}, type: #{type}, nullable: #{nullable})"
         end
 
         # Detailed string representation

@@ -44,7 +44,7 @@ module Dbwatcher
       # @option config [Integer] :backtrace_lines number of backtrace lines to log
       def initialize(config = {})
         @config = default_config.merge(config)
-        @logger = @config[:logger] || Rails.logger
+        @logger = @config[:logger] || default_logger
       end
 
       # Handle diagram generation error with categorization and logging
@@ -84,6 +84,19 @@ module Dbwatcher
           include_backtrace: true,
           backtrace_lines: 5
         }
+      end
+
+      # Default logger when no logger is provided
+      #
+      # @return [Logger] default logger instance
+      def default_logger
+        # Use Rails logger if available, otherwise create a simple logger
+        if defined?(Rails) && Rails.respond_to?(:logger)
+          Rails.logger
+        else
+          require "logger"
+          Logger.new($stdout)
+        end
       end
 
       # Categorize error based on type and context
@@ -211,12 +224,12 @@ module Dbwatcher
       def create_error_response(error_info)
         {
           success: false,
-          error: true,
+          error: error_info[:user_message] || error_info[:message],
           error_code: error_info[:code],
           error_type: error_info[:type],
           message: error_info[:user_message] || error_info[:message],
           recoverable: error_info[:recoverable],
-          timestamp: Time.current.iso8601,
+          timestamp: Time.now.iso8601,
           content: nil,
           type: nil
         }

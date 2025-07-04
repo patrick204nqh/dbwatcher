@@ -66,9 +66,6 @@ module Dbwatcher
           class_name = Sanitizer.class_name(entity.name)
           lines = ["    class #{class_name} {"]
 
-          # Add attribute count as a statistical summary
-          lines << "        +Stats: #{entity.attributes.size} attributes" if entity.attributes.any?
-
           # Add attributes section if enabled and available
           if show_attributes? && entity.attributes.any?
             lines << "        %% Attributes"
@@ -82,10 +79,10 @@ module Dbwatcher
             if entity.attributes.size > max_attributes
               lines << "        %% ... #{entity.attributes.size - max_attributes} more attributes"
             end
-          end
 
-          # Add method count as a statistical summary
-          lines << "        +Methods: #{entity.metadata[:methods].size} methods" if entity.metadata[:methods]&.any?
+            # Add a divider after attributes if methods will follow
+            lines << "        %% ----------------------" if show_methods? && entity.metadata[:methods]&.any?
+          end
 
           # Add methods section if enabled and available
           if show_methods? && entity.metadata[:methods]&.any?
@@ -100,6 +97,16 @@ module Dbwatcher
             if entity.metadata[:methods].size > max_methods
               lines << "        %% ... #{entity.metadata[:methods].size - max_methods} more methods"
             end
+
+            # Add a divider before statistics
+            lines << "        %% ----------------------"
+          end
+
+          # Add statistics section at the end
+          if entity.attributes.any? || entity.metadata[:methods]&.any?
+            lines << "        %% Statistics"
+            lines << "        +Stats: #{entity.attributes.size} attributes" if entity.attributes.any?
+            lines << "        +Stats: #{entity.metadata[:methods].size} methods" if entity.metadata[:methods]&.any?
           end
 
           lines << "    }"

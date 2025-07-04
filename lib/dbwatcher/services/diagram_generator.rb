@@ -30,7 +30,7 @@ module Dbwatcher
         @diagram_type = diagram_type
         @registry = dependencies[:registry] || DiagramTypeRegistry.new
         @error_handler = dependencies[:error_handler] || DiagramErrorHandler.new
-        @logger = dependencies[:logger] || Rails.logger || Logger.new($stdout)
+        @logger = dependencies[:logger] || default_logger
         super()
       end
 
@@ -39,7 +39,7 @@ module Dbwatcher
       # @return [Hash] diagram data with content and type
       def call
         @logger.info("Generating diagram for session #{@session_id} with type #{@diagram_type}")
-        start_time = Time.current
+        start_time = Time.now
 
         begin
           result = generate_diagram
@@ -65,6 +65,19 @@ module Dbwatcher
       end
 
       private
+
+      # Default logger when no logger is provided
+      #
+      # @return [Logger] default logger instance
+      def default_logger
+        # Use Rails logger if available, otherwise create a simple logger
+        if defined?(Rails) && Rails.respond_to?(:logger)
+          Rails.logger
+        else
+          require "logger"
+          Logger.new($stdout)
+        end
+      end
 
       # Generate diagram using standardized analyzer-to-strategy flow
       #
@@ -108,7 +121,7 @@ module Dbwatcher
         {
           session_id: @session_id,
           diagram_type: @diagram_type,
-          timestamp: Time.current
+          timestamp: Time.now
         }
       end
 
@@ -122,7 +135,7 @@ module Dbwatcher
           error: message,
           content: nil,
           type: nil,
-          generated_at: Time.current.iso8601
+          generated_at: Time.now.iso8601
         }
       end
 
@@ -131,7 +144,7 @@ module Dbwatcher
       # @param start_time [Time] operation start time
       # @param result [Hash] generation result
       def log_completion(start_time, result)
-        duration = Time.current - start_time
+        duration = Time.now - start_time
         success = result[:success] || false
         @logger.info("Diagram generation completed for session #{@session_id} type #{@diagram_type} " \
                      "in #{(duration * 1000).round(2)}ms - Success: #{success}")

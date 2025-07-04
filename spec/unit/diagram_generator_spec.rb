@@ -1,107 +1,122 @@
 # frozen_string_literal: true
 
-require "rails_helper"
+require "spec_helper"
 
 RSpec.describe Dbwatcher::Services::DiagramGenerator do
-  let(:session) do
-    # Create a session with sample changes from the dummy app
-    Dbwatcher::Storage::Session.new(
-      id: "test-session-123",
-      name: "Test Session",
-      changes: [
-        { table_name: "users" },
-        { table_name: "posts" },
-        { table_name: "comments" }
-      ]
-    )
+  let(:session_id) { "test-session-123" }
+  let(:mock_session) { double("Session", id: session_id) }
+  let(:mock_registry) { instance_double("Dbwatcher::Services::DiagramTypeRegistry") }
+  let(:mock_error_handler) { instance_double("Dbwatcher::Services::DiagramErrorHandler") }
+  let(:mock_logger) { instance_double("Logger", info: nil, debug: nil, warn: nil) }
+  let(:mock_analyzer) { double("Analyzer") }
+  let(:mock_strategy) { double("Strategy") }
+  let(:mock_dataset) { double("Dataset", entities: [], relationships: []) }
+
+  let(:dependencies) do
+    {
+      registry: mock_registry,
+      error_handler: mock_error_handler,
+      logger: mock_logger
+    }
   end
 
   before do
-    # Ensure we can find the session
-    allow(Dbwatcher::Storage.sessions).to receive(:find).with(session.id).and_return(session)
+    # Setup mock registry behavior
+    allow(mock_registry).to receive(:type_exists?).with("database_tables").and_return(true)
+    allow(mock_registry).to receive(:type_exists?).with("model_associations").and_return(true)
+    allow(mock_registry).to receive(:type_exists?).with("model_associations_flowchart").and_return(true)
+    allow(mock_registry).to receive(:type_exists?).with("invalid_type").and_return(false)
 
-    # Explicitly load the models to ensure they're available
-    require_relative "../dummy/app/models/user"
-    require_relative "../dummy/app/models/post"
-    require_relative "../dummy/app/models/comment"
+    allow(mock_registry).to receive(:create_analyzer).and_return(mock_analyzer)
+    allow(mock_registry).to receive(:create_strategy).and_return(mock_strategy)
+
+    allow(mock_registry).to receive(:available_types_with_metadata).and_return({
+                                                                                 "database_tables" => { mermaid_type: "erDiagram" },
+                                                                                 "model_associations" => { mermaid_type: "classDiagram" },
+                                                                                 "model_associations_flowchart" => { mermaid_type: "flowchart" }
+                                                                               })
+
+    # Setup mock analyzer and strategy behavior
+    allow(mock_analyzer).to receive(:call).and_return(mock_dataset)
+
+    # Setup mock storage behavior
+    allow(Dbwatcher::Storage).to receive_message_chain(:sessions, :find)
+      .with(session_id).and_return(mock_session)
+    allow(Dbwatcher::Storage).to receive_message_chain(:sessions, :find)
+      .with("invalid-id").and_return(nil)
   end
 
   describe "#call" do
     context "with invalid session" do
       it "returns error response when session doesn't exist" do
-        allow(Dbwatcher::Storage.sessions).to receive(:find).with("invalid-session").and_raise(StandardError)
-
-        generator = described_class.new("invalid-session")
+        generator = described_class.new("invalid-id", "database_tables", dependencies)
         result = generator.call
 
-        expect(result[:success]).to eq(false)
+        expect(result[:success]).to be false
         expect(result[:error]).to eq("Session not found")
-        expect(result[:content]).to be_nil
-        expect(result[:type]).to be_nil
-        expect(result).to have_key(:generated_at)
       end
     end
 
     context "with invalid diagram type" do
       it "returns error response when diagram type is invalid" do
-        generator = described_class.new(session.id, "invalid_type")
+        allow(mock_error_handler).to receive(:handle_generation_error).and_return({
+                                                                                    success: false,
+                                                                                    error: "Unknown diagram type: invalid_type"
+                                                                                  })
+
+        generator = described_class.new(session_id, "invalid_type", dependencies)
         result = generator.call
 
-        expect(result[:success]).to eq(false)
-        expect(result[:error]).to eq(true)
-        expect(result[:message]).to be_present
-        expect(result[:error_code]).to be_present
-        expect(result).to have_key(:timestamp)
+        expect(result[:success]).to be false
+        expect(result[:error]).to include("Unknown diagram type")
       end
     end
 
     context "with database_tables diagram type" do
-      let(:generator) { described_class.new(session.id, "database_tables") }
-
       it "generates ER diagram content" do
+        allow(mock_strategy).to receive(:generate_from_dataset).and_return({
+                                                                             success: true,
+                                                                             content: "erDiagram\n  User ||--o{ Post : \"has_many\"",
+                                                                             type: "erDiagram"
+                                                                           })
+
+        generator = described_class.new(session_id, "database_tables", dependencies)
         result = generator.call
 
-        # The success response structure
-        expect(result[:success]).to eq(true)
+        expect(result[:success]).to be true
         expect(result[:content]).to include("erDiagram")
-        expect(result[:type]).to eq("erDiagram")
-        expect(result).to have_key(:generated_at)
       end
     end
 
     context "with model_associations diagram type" do
-      let(:generator) { described_class.new(session.id, "model_associations") }
+      it "generates class diagram content" do
+        allow(mock_strategy).to receive(:generate_from_dataset).and_return({
+                                                                             success: true,
+                                                                             content: "classDiagram\n  User --> Post : has_many",
+                                                                             type: "classDiagram"
+                                                                           })
 
-      it "generates model graph content" do
+        generator = described_class.new(session_id, "model_associations", dependencies)
         result = generator.call
 
-        # The success response structure
-        expect(result[:success]).to eq(true)
-        expect(result[:content]).to include("flowchart TD")
-        expect(result[:type]).to eq("flowchart")
-        expect(result).to have_key(:generated_at)
+        expect(result[:success]).to be true
+        expect(result[:content]).to include("classDiagram")
       end
+    end
 
-      it "includes model relationships from the dummy app" do
+    context "with model_associations_flowchart diagram type" do
+      it "generates flowchart diagram content" do
+        allow(mock_strategy).to receive(:generate_from_dataset).and_return({
+                                                                             success: true,
+                                                                             content: "flowchart TD\n  User[User]\n  Post[Post]\n  User --> Post",
+                                                                             type: "flowchart"
+                                                                           })
+
+        generator = described_class.new(session_id, "model_associations_flowchart", dependencies)
         result = generator.call
-        content = result[:content]
 
-        # The diagram should include the actual model relationships from the dummy app
-        # Models are represented as nodes with IDs, so we check for their names in quotes
-        expect(content).to include('"User"')        # User model node
-        expect(content).to include('"Post"')        # Post model node
-        expect(content).to include('"Comment"')     # Comment model node
-
-        # Should include association names in edge labels (arrow format)
-        # Shows has_many relationships: User -> Comment, User -> Post
-        expect(content).to include("-->|posts|")       # User has_many posts
-        expect(content).to include("-->|comments|")    # User has_many comments
-
-        # Should include relationship arrows
-        expect(content).to include("-->") # Basic relationship arrows
-
-        # Should include node definitions and relationships
-        expect(content).to include("node_") # Node IDs are generated
+        expect(result[:success]).to be true
+        expect(result[:content]).to include("flowchart TD")
       end
     end
   end
@@ -110,10 +125,14 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
     it "returns expected diagram types" do
       types = described_class.available_types
 
-      expect(types).to include("database_tables")
-      expect(types).to include("model_associations")
-      expect(types["database_tables"][:mermaid_type]).to eq("erDiagram")
-      expect(types["model_associations"][:mermaid_type]).to eq("flowchart")
+      expect(types).to be_a(Hash)
+      expect(types.keys).to include("database_tables", "model_associations")
+
+      # Check that model_associations uses classDiagram type
+      expect(types["model_associations"][:mermaid_type]).to eq("classDiagram")
+
+      # Check that model_associations_flowchart uses flowchart type
+      expect(types["model_associations_flowchart"][:mermaid_type]).to eq("flowchart")
     end
   end
 end

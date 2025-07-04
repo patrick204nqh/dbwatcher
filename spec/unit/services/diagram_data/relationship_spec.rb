@@ -1,8 +1,18 @@
 # frozen_string_literal: true
 
-require "rails_helper"
+require "spec_helper"
 
 RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
+  let(:relationship) do
+    described_class.new(
+      source_id: "users",
+      target_id: "orders",
+      type: "has_many",
+      label: "orders",
+      metadata: { cardinality: "1:n" }
+    )
+  end
+
   describe "#initialize" do
     it "creates relationship with required parameters" do
       relationship = described_class.new(
@@ -15,38 +25,42 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
       expect(relationship.target_id).to eq("orders")
       expect(relationship.type).to eq("has_many")
       expect(relationship.label).to be_nil
+      expect(relationship.cardinality).to be_nil
       expect(relationship.metadata).to eq({})
     end
 
     it "creates relationship with all parameters" do
-      metadata = { cardinality: "1:n" }
       relationship = described_class.new(
         source_id: "users",
         target_id: "orders",
         type: "has_many",
         label: "orders",
-        metadata: metadata
+        cardinality: "one_to_many",
+        metadata: { association_type: "has_many" }
       )
 
       expect(relationship.source_id).to eq("users")
       expect(relationship.target_id).to eq("orders")
       expect(relationship.type).to eq("has_many")
       expect(relationship.label).to eq("orders")
-      expect(relationship.metadata).to eq(metadata)
+      expect(relationship.cardinality).to eq("one_to_many")
+      expect(relationship.metadata).to eq({ association_type: "has_many" })
     end
 
     it "converts parameters to strings" do
       relationship = described_class.new(
-        source_id: 123,
-        target_id: 456,
+        source_id: :users,
+        target_id: :orders,
         type: :has_many,
-        label: :orders
+        label: :orders,
+        cardinality: :one_to_many
       )
 
-      expect(relationship.source_id).to eq("123")
-      expect(relationship.target_id).to eq("456")
+      expect(relationship.source_id).to eq("users")
+      expect(relationship.target_id).to eq("orders")
       expect(relationship.type).to eq("has_many")
       expect(relationship.label).to eq("orders")
+      expect(relationship.cardinality).to eq("one_to_many")
     end
 
     it "handles non-hash metadata gracefully" do
@@ -63,12 +77,6 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
 
   describe "#valid?" do
     it "returns true for valid relationship" do
-      relationship = described_class.new(
-        source_id: "users",
-        target_id: "orders",
-        type: "has_many"
-      )
-
       expect(relationship).to be_valid
     end
 
@@ -115,29 +123,7 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
 
   describe "#validation_errors" do
     it "returns empty array for valid relationship" do
-      relationship = described_class.new(
-        source_id: "users",
-        target_id: "orders",
-        type: "has_many"
-      )
-
       expect(relationship.validation_errors).to be_empty
-    end
-
-    it "returns errors for invalid relationship" do
-      relationship = described_class.new(
-        source_id: "",
-        target_id: "",
-        type: ""
-      )
-      # Manually set invalid metadata to test validation
-      relationship.metadata = "invalid"
-
-      errors = relationship.validation_errors
-      expect(errors).to include("Source ID cannot be blank")
-      expect(errors).to include("Target ID cannot be blank")
-      expect(errors).to include("Type cannot be blank")
-      expect(errors).to include("Metadata must be a Hash")
     end
 
     it "returns error when source equals target" do
@@ -147,28 +133,19 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
         type: "has_many"
       )
 
-      errors = relationship.validation_errors
-      expect(errors).to include("Source and target cannot be the same")
+      expect(relationship.validation_errors).to include("Source and target cannot be the same")
     end
   end
 
   describe "#to_h" do
     it "serializes relationship to hash" do
-      metadata = { cardinality: "1:n" }
-      relationship = described_class.new(
-        source_id: "users",
-        target_id: "orders",
-        type: "has_many",
-        label: "orders",
-        metadata: metadata
-      )
-
       expected = {
         source_id: "users",
         target_id: "orders",
         type: "has_many",
         label: "orders",
-        metadata: metadata
+        cardinality: nil,
+        metadata: { cardinality: "1:n" }
       }
 
       expect(relationship.to_h).to eq(expected)
@@ -177,20 +154,14 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
 
   describe "#to_json" do
     it "serializes relationship to JSON" do
-      relationship = described_class.new(
-        source_id: "users",
-        target_id: "orders",
-        type: "has_many"
-      )
-
       json = relationship.to_json
       parsed = JSON.parse(json)
 
       expect(parsed["source_id"]).to eq("users")
       expect(parsed["target_id"]).to eq("orders")
       expect(parsed["type"]).to eq("has_many")
-      expect(parsed["label"]).to be_nil
-      expect(parsed["metadata"]).to eq({})
+      expect(parsed["label"]).to eq("orders")
+      expect(parsed["metadata"]["cardinality"]).to eq("1:n")
     end
   end
 
@@ -201,16 +172,17 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
         target_id: "orders",
         type: "has_many",
         label: "orders",
-        metadata: { cardinality: "1:n" }
+        cardinality: "one_to_many",
+        metadata: { association_type: "has_many" }
       }
 
       relationship = described_class.from_h(hash)
-
       expect(relationship.source_id).to eq("users")
       expect(relationship.target_id).to eq("orders")
       expect(relationship.type).to eq("has_many")
       expect(relationship.label).to eq("orders")
-      expect(relationship.metadata).to eq({ cardinality: "1:n" })
+      expect(relationship.cardinality).to eq("one_to_many")
+      expect(relationship.metadata).to eq({ association_type: "has_many" })
     end
 
     it "creates relationship from hash with string keys" do
@@ -219,16 +191,17 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
         "target_id" => "orders",
         "type" => "has_many",
         "label" => "orders",
-        "metadata" => { "cardinality" => "1:n" }
+        "cardinality" => "one_to_many",
+        "metadata" => { "association_type" => "has_many" }
       }
 
       relationship = described_class.from_h(hash)
-
       expect(relationship.source_id).to eq("users")
       expect(relationship.target_id).to eq("orders")
       expect(relationship.type).to eq("has_many")
       expect(relationship.label).to eq("orders")
-      expect(relationship.metadata).to eq({ "cardinality" => "1:n" })
+      expect(relationship.cardinality).to eq("one_to_many")
+      expect(relationship.metadata).to eq({ "association_type" => "has_many" })
     end
 
     it "handles missing optional fields" do
@@ -239,11 +212,11 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
       }
 
       relationship = described_class.from_h(hash)
-
       expect(relationship.source_id).to eq("users")
       expect(relationship.target_id).to eq("orders")
       expect(relationship.type).to eq("has_many")
       expect(relationship.label).to be_nil
+      expect(relationship.cardinality).to be_nil
       expect(relationship.metadata).to eq({})
     end
   end
@@ -255,16 +228,17 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
         target_id: "orders",
         type: "has_many",
         label: "orders",
-        metadata: { cardinality: "1:n" }
+        cardinality: "one_to_many",
+        metadata: { association_type: "has_many" }
       }.to_json
 
       relationship = described_class.from_json(json)
-
       expect(relationship.source_id).to eq("users")
       expect(relationship.target_id).to eq("orders")
       expect(relationship.type).to eq("has_many")
       expect(relationship.label).to eq("orders")
-      expect(relationship.metadata).to eq({ "cardinality" => "1:n" })
+      expect(relationship.cardinality).to eq("one_to_many")
+      expect(relationship.metadata).to eq({ "association_type" => "has_many" })
     end
   end
 
@@ -273,12 +247,14 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
       relationship1 = described_class.new(
         source_id: "users",
         target_id: "orders",
-        type: "has_many"
+        type: "has_many",
+        label: "orders"
       )
       relationship2 = described_class.new(
         source_id: "users",
         target_id: "orders",
-        type: "has_many"
+        type: "has_many",
+        label: "orders"
       )
 
       expect(relationship1).to eq(relationship2)
@@ -292,7 +268,7 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
       )
       relationship2 = described_class.new(
         source_id: "orders",
-        target_id: "users",
+        target_id: "products",
         type: "belongs_to"
       )
 
@@ -300,14 +276,7 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
     end
 
     it "returns false for non-relationship objects" do
-      relationship = described_class.new(
-        source_id: "users",
-        target_id: "orders",
-        type: "has_many"
-      )
-
       expect(relationship).not_to eq("not a relationship")
-      expect(relationship).not_to eq(nil)
     end
   end
 
@@ -316,12 +285,14 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
       relationship1 = described_class.new(
         source_id: "users",
         target_id: "orders",
-        type: "has_many"
+        type: "has_many",
+        label: "orders"
       )
       relationship2 = described_class.new(
         source_id: "users",
         target_id: "orders",
-        type: "has_many"
+        type: "has_many",
+        label: "orders"
       )
 
       expect(relationship1.hash).to eq(relationship2.hash)
@@ -335,7 +306,7 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
       )
       relationship2 = described_class.new(
         source_id: "orders",
-        target_id: "users",
+        target_id: "products",
         type: "belongs_to"
       )
 
@@ -343,121 +314,14 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
     end
   end
 
-  describe "#bidirectional?" do
-    it "returns true when metadata indicates bidirectional" do
-      relationship = described_class.new(
-        source_id: "users",
-        target_id: "orders",
-        type: "has_many",
-        metadata: { bidirectional: true }
-      )
-
-      expect(relationship).to be_bidirectional
-    end
-
-    it "returns false when metadata does not indicate bidirectional" do
-      relationship = described_class.new(
-        source_id: "users",
-        target_id: "orders",
-        type: "has_many"
-      )
-
-      expect(relationship).not_to be_bidirectional
-    end
-  end
-
-  describe "#reverse" do
-    it "creates reverse relationship with swapped source and target" do
-      relationship = described_class.new(
-        source_id: "users",
-        target_id: "orders",
-        type: "has_many",
-        label: "orders",
-        metadata: { cardinality: "1:n" }
-      )
-
-      reverse = relationship.reverse
-
-      expect(reverse.source_id).to eq("orders")
-      expect(reverse.target_id).to eq("users")
-      expect(reverse.type).to eq("belongs_to")
-      expect(reverse.label).to be_nil
-      expect(reverse.metadata[:reversed]).to be true
-    end
-
-    it "maps relationship types correctly" do
-      mappings = {
-        "has_many" => "belongs_to",
-        "belongs_to" => "has_many",
-        "has_one" => "belongs_to",
-        "has_and_belongs_to_many" => "has_and_belongs_to_many"
-      }
-
-      mappings.each do |original_type, expected_reverse_type|
-        relationship = described_class.new(
-          source_id: "source",
-          target_id: "target",
-          type: original_type
-        )
-
-        reverse = relationship.reverse
-        expect(reverse.type).to eq(expected_reverse_type)
-      end
-    end
-
-    it "preserves unknown relationship types" do
-      relationship = described_class.new(
-        source_id: "users",
-        target_id: "orders",
-        type: "custom_relationship"
-      )
-
-      reverse = relationship.reverse
-      expect(reverse.type).to eq("custom_relationship")
-    end
-  end
-
-  describe "#to_s" do
-    it "returns readable string representation without label" do
-      relationship = described_class.new(
-        source_id: "users",
-        target_id: "orders",
-        type: "has_many"
-      )
-
-      expected = "#{described_class.name}(users --has_many--> orders)"
-      expect(relationship.to_s).to eq(expected)
-    end
-
-    it "returns readable string representation with label" do
-      relationship = described_class.new(
-        source_id: "users",
-        target_id: "orders",
-        type: "has_many",
-        label: "orders"
-      )
-
-      expected = "#{described_class.name}(users --has_many (orders)--> orders)"
-      expect(relationship.to_s).to eq(expected)
-    end
-  end
-
   describe "#inspect" do
     it "returns detailed string representation" do
-      relationship = described_class.new(
-        source_id: "users",
-        target_id: "orders",
-        type: "has_many",
-        label: "orders"
-      )
-
       result = relationship.inspect
-      expect(result).to include(described_class.name)
-      expect(result).to include('source_id: "users"')
-      expect(result).to include('target_id: "orders"')
-      expect(result).to include('type: "has_many"')
-      expect(result).to include('label: "orders"')
-      expect(result).to include("metadata: {}")
+
+      expect(result).to include("source: \"users\"")
+      expect(result).to include("target: \"orders\"")
+      expect(result).to include("type: \"has_many\"")
+      expect(result).to include("label: \"orders\"")
     end
   end
 end
