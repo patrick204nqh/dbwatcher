@@ -114,20 +114,20 @@ module Dbwatcher
             # Determine cardinality based on relationship type
             cardinality = determine_cardinality(association[:type])
 
-            relationship = create_relationship(
-              source_id: source_id,
-              target_id: target_id,
-              type: association[:type],
-              label: association[:association_name],
-              cardinality: cardinality,
-              metadata: {
-                association_name: association[:association_name],
-                source_model: association[:source_model],
-                target_model: association[:target_model],
-                original_type: association[:type],
-                self_referential: source_id == target_id
-              }
-            )
+            relationship = create_relationship({
+                                                 source_id: source_id,
+                                                 target_id: target_id,
+                                                 type: association[:type],
+                                                 label: association[:association_name],
+                                                 cardinality: cardinality,
+                                                 metadata: {
+                                                   association_name: association[:association_name],
+                                                   source_model: association[:source_model],
+                                                   target_model: association[:target_model],
+                                                   original_type: association[:type],
+                                                   self_referential: source_id == target_id
+                                                 }
+                                               })
 
             dataset.add_relationship(relationship)
           end

@@ -97,20 +97,21 @@ module Dbwatcher
                                 "(#{relationship[:from_column]} -> #{relationship[:to_column]})"
             end
 
-            relationship_obj = create_relationship(
-              source_id: relationship[:from_table],
-              target_id: relationship[:to_table],
-              type: relationship[:type],
-              label: relationship[:label],
-              metadata: {
-                inference_type: relationship[:inference_type],
-                confidence: relationship[:confidence],
-                from_column: relationship[:from_column],
-                to_column: relationship[:to_column],
-                original_type: relationship[:type],
-                self_referential: relationship[:from_table] == relationship[:to_table]
-              }
-            )
+            relationship_obj = create_relationship({
+                                                     source_id: relationship[:from_table],
+                                                     target_id: relationship[:to_table],
+                                                     type: relationship[:type],
+                                                     label: relationship[:label],
+                                                     metadata: {
+                                                       inference_type: relationship[:inference_type],
+                                                       confidence: relationship[:confidence],
+                                                       from_column: relationship[:from_column],
+                                                       to_column: relationship[:to_column],
+                                                       original_type: relationship[:type],
+                                                       self_referential: relationship[:from_table] ==
+                                  relationship[:to_table]
+                                                     }
+                                                   })
 
             dataset.add_relationship(relationship_obj)
           end

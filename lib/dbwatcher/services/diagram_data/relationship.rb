@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "relationship_params"
+
 module Dbwatcher
   module Services
     module DiagramData
@@ -52,19 +54,17 @@ module Dbwatcher
 
         # Initialize relationship
         #
-        # @param source_id [String] ID of the source entity
-        # @param target_id [String] ID of the target entity
-        # @param type [String] relationship type (has_many, belongs_to, foreign_key, etc.)
-        # @param label [String] optional display label for the relationship
-        # @param cardinality [String] optional cardinality type (one_to_one, one_to_many, etc.)
-        # @param metadata [Hash] additional type-specific information
-        def initialize(source_id:, target_id:, type:, label: nil, cardinality: nil, metadata: {})
-          @source_id = source_id.to_s
-          @target_id = target_id.to_s
-          @type = type.to_s
-          @label = label&.to_s
-          @cardinality = cardinality&.to_s
-          @metadata = metadata.is_a?(Hash) ? metadata : {}
+        # @param params [RelationshipParams, Hash] relationship parameters
+        # @return [Relationship] new relationship instance
+        def initialize(params)
+          params = RelationshipParams.new(params) if params.is_a?(Hash)
+
+          @source_id = params.source_id.to_s
+          @target_id = params.target_id.to_s
+          @type = params.type.to_s
+          @label = params.label&.to_s
+          @cardinality = params.cardinality&.to_s
+          @metadata = params.metadata.is_a?(Hash) ? params.metadata : {}
         end
 
         # Check if relationship is valid
@@ -135,15 +135,7 @@ module Dbwatcher
         # @return [Relationship] new relationship instance
         def self.from_h(hash)
           hash = hash.transform_keys(&:to_sym) if hash.keys.first.is_a?(String)
-
-          new(
-            source_id: hash[:source_id],
-            target_id: hash[:target_id],
-            type: hash[:type],
-            label: hash[:label],
-            cardinality: hash[:cardinality],
-            metadata: hash[:metadata] || {}
-          )
+          new(hash)
         end
 
         # Create relationship from JSON

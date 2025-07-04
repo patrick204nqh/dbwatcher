@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../diagram_data/relationship_params"
+
 module Dbwatcher
   module Services
     module DiagramAnalyzers
@@ -130,22 +132,11 @@ module Dbwatcher
 
         # Helper method to create relationships
         #
-        # @param source_id [String] source entity ID
-        # @param target_id [String] target entity ID
-        # @param type [String] relationship type
-        # @param label [String] relationship label
-        # @param cardinality [String] relationship cardinality
-        # @param metadata [Hash] relationship metadata
+        # @param params [Hash] relationship parameters
         # @return [DiagramData::Relationship] new relationship
-        def create_relationship(source_id:, target_id:, type:, label: nil, cardinality: nil, metadata: {})
-          Dbwatcher::Services::DiagramData::Relationship.new(
-            source_id: source_id,
-            target_id: target_id,
-            type: type,
-            label: label,
-            cardinality: cardinality,
-            metadata: metadata
-          )
+        def create_relationship(params)
+          params_obj = Dbwatcher::Services::DiagramData::RelationshipParams.new(params)
+          Dbwatcher::Services::DiagramData::Relationship.new(params_obj)
         end
 
         # Helper method to create attributes
