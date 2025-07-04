@@ -21,6 +21,9 @@ module Dbwatcher
           # Generate diagram content directly from dataset
           content = if dataset.relationships.empty? && dataset.entities.empty?
                       @syntax_builder.build_empty_class_diagram("No model associations or entities found")
+                    elsif dataset.relationships.empty?
+                      # Show isolated classes if no relationships but entities exist
+                      @syntax_builder.build_class_diagram_from_dataset(dataset)
                     else
                       @syntax_builder.build_class_diagram_from_dataset(dataset)
                     end

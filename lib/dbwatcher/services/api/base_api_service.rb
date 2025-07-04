@@ -42,14 +42,15 @@ module Dbwatcher
         # @yield block to execute if cache miss
         # @return [Object] cached or fresh result
         def with_cache(cache_suffix = nil, expires_in: 1.hour)
-          cache_key(cache_suffix)
+          key = cache_key(cache_suffix)
 
           # Check if caching is enabled
           if defined?(Rails.cache) && Rails.application.config.action_controller.perform_caching
-            Rails.cache.fetch(key, expires_in: expires_in) do
-              log_service_start("Cache miss, generating fresh data")
-              yield
-            end
+            # TODO: Temporarily disable caching for debugging
+            # Rails.cache.fetch(key, expires_in: expires_in) do
+            log_service_start("Cache miss, generating fresh data")
+            yield
+            # end
           else
             log_service_start("Caching disabled, generating fresh data")
             yield

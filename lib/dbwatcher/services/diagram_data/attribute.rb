@@ -31,7 +31,7 @@ module Dbwatcher
         def initialize(name:, type: nil, nullable: true, default: nil, metadata: {})
           @name = name.to_s
           @type = type.to_s
-          @nullable = nullable == true || nullable.nil?
+          @nullable = !!nullable
           @default = default
           @metadata = metadata.is_a?(Hash) ? metadata : {}
         end

@@ -148,6 +148,23 @@ bundle exec brakeman   # Security analysis
 
 [Contributing guidelines →](CONTRIBUTING.md)
 
+## Troubleshooting
+
+### Route Helper Issues
+
+If you see `undefined method 'dbwatcher_sessions_path'`:
+
+1. Restart your Rails server after installing
+2. Verify Rails 6.0+ compatibility
+3. Check engine mounting in routes if needed
+
+### Performance Notes
+
+- Designed for development environments only
+- Disable in production: `config.enabled = false`
+- Use targeted tracking for performance-critical code
+- Enable auto-cleanup to prevent storage bloat
+
 ## License
 
 Released under the [MIT License](https://opensource.org/licenses/MIT).
