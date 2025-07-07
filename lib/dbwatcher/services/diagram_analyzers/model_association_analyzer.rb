@@ -164,7 +164,8 @@ module Dbwatcher
             Rails::Engine.descendants.each do |engine|
               engine.eager_load! if engine.respond_to?(:eager_load!)
             rescue StandardError => e
-              Rails.logger.debug "ModelAssociationAnalyzer: Could not eager load engine #{engine.class.name}: #{e.message}"
+              error_message = "ModelAssociationAnalyzer: Could not eager load engine #{engine.class.name}: #{e.message}"
+              Rails.logger.debug error_message
             end
           rescue StandardError => e
             Rails.logger.debug "ModelAssociationAnalyzer: Could not eager load models: #{e.message}"

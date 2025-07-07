@@ -57,7 +57,7 @@ RSpec.describe Dbwatcher::Services::MermaidSyntax::Sanitizer do
     it "handles table names with configuration" do
       allow(Dbwatcher.configuration).to receive(:diagram_preserve_table_case).and_return(true)
       expect(described_class.table_name("user_profiles")).to eq("user_profiles")
-      
+
       allow(Dbwatcher.configuration).to receive(:diagram_preserve_table_case).and_return(false)
       expect(described_class.table_name("user_profiles")).to eq("USER_PROFILES")
     end
