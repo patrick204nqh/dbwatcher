@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2025-07-08
+### Added
+
+- Enhance Mermaid syntax handling for class names and add display name method
+- Add GitHub Actions workflow for syncing labels
+
+
+### Changed
+
+- Update section headers and formatting in class diagram output
+- Disable RuboCop Naming/PredicateMethod for remove_relationship and process methods
+- Bump the production-dependencies group with 5 updates
+
+
+### Fixed
+
+- Improve error logging for eager loading engines and ensure newline at end of file in tests
+- Correct description formatting for 'needs-triage' label in labels.yml
+- Update GitHub Actions workflow to support master branch and improve label syncing
+
+
 ## [1.1.0] - 2025-07-04
 ### Added
 
