@@ -50,16 +50,16 @@ RSpec.describe Dbwatcher::Services::MermaidSyntax::ClassDiagramBuilder do
         # Basic structure
         expect(result).to include("classDiagram")
         expect(result).to include("direction LR")
-        expect(result).to include("class User {")
+        expect(result).to include("class `User` {")
 
         # Attributes section
-        expect(result).to include("%% Attributes")
+        expect(result).to include("%% === Attributes ===")
         expect(result).to include("+integer id")
         expect(result).to include("+string name")
 
         # Statistics section
-        expect(result).to include("%% Statistics")
-        expect(result).to include("+Stats: 2 attributes")
+        expect(result).to include("%% === Statistics ===")
+        expect(result).to include("%% 2 attributes")
       end
     end
 
@@ -69,11 +69,11 @@ RSpec.describe Dbwatcher::Services::MermaidSyntax::ClassDiagramBuilder do
       it "does not include attributes but still shows statistics" do
         result = builder.build_from_dataset(simple_dataset)
 
-        expect(result).to include("class User {")
-        expect(result).not_to include("%% Attributes")
+        expect(result).to include("class `User` {")
+        expect(result).not_to include("%% === Attributes ===")
         expect(result).not_to include("+integer id")
-        expect(result).to include("%% Statistics")
-        expect(result).to include("+Stats: 2 attributes")
+        expect(result).to include("%% === Statistics ===")
+        expect(result).to include("%% 2 attributes")
       end
     end
 
@@ -84,17 +84,16 @@ RSpec.describe Dbwatcher::Services::MermaidSyntax::ClassDiagramBuilder do
         result = builder.build_from_dataset(dataset_with_methods)
 
         # Methods section
-        expect(result).to include("%% Methods")
+        expect(result).to include("%% === Methods ===")
         expect(result).to include("+full_name()")
 
-        # Dividers and statistics
-        expect(result).to include("%% ----------------------")
-        expect(result).to include("%% Statistics")
-        expect(result).to include("+Stats: 1 methods")
+        # Statistics section
+        expect(result).to include("%% === Statistics ===")
+        expect(result).to include("%% 1 attributes | 1 methods")
 
         # Check that statistics appears after methods
-        methods_index = result.index("%% Methods")
-        statistics_index = result.index("%% Statistics")
+        methods_index = result.index("%% === Methods ===")
+        statistics_index = result.index("%% === Statistics ===")
         expect(methods_index).to be < statistics_index
       end
     end

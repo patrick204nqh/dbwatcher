@@ -69,12 +69,12 @@ module Dbwatcher
         def build_attributes_section(entity)
           return [] unless show_attributes? && entity.attributes.any?
 
-          lines = ["        %% Attributes"]
+          lines = ["        %% === Attributes ==="]
           entity.attributes.first(max_attributes).each do |attr|
             lines << format_attribute_line(attr)
           end
           add_attributes_overflow_message(lines, entity)
-          add_section_divider(lines, entity)
+          lines << ""
           lines
         end
 
@@ -82,14 +82,14 @@ module Dbwatcher
         def build_methods_section(entity)
           return [] unless show_methods? && entity.metadata[:methods]&.any?
 
-          lines = ["        %% Methods"]
+          lines = ["        %% === Methods ==="]
           entity.metadata[:methods].first(max_methods).each do |method|
             lines << format_method_line(method)
           end
           if entity.metadata[:methods].size > max_methods
             lines << "        %% ... #{entity.metadata[:methods].size - max_methods} more methods"
           end
-          lines << "        %% ----------------------"
+          lines << ""
           lines
         end
 
@@ -97,16 +97,20 @@ module Dbwatcher
         def build_statistics_section(entity)
           return [] unless entity.attributes.any? || entity.metadata[:methods]&.any?
 
-          lines = ["        %% Statistics"]
-          lines << "        +Stats: #{entity.attributes.size} attributes" if entity.attributes.any?
-          lines << "        +Stats: #{entity.metadata[:methods].size} methods" if entity.metadata[:methods]&.any?
+          lines = ["        %% === Statistics ==="]
+          stats_parts = []
+          stats_parts << "#{entity.attributes.size} attributes" if entity.attributes.any?
+          stats_parts << "#{entity.metadata[:methods].size} methods" if entity.metadata[:methods]&.any?
+          lines << "        %% #{stats_parts.join(" | ")}"
           lines
         end
 
         # Build class definition
         def build_class_definition(entity)
-          class_name = Sanitizer.class_name(entity.name)
-          lines = ["    class #{class_name} {"]
+          display_name = Sanitizer.display_name(entity.name)
+
+          # Use display name (with ::) for class definition instead of sanitized version
+          lines = ["    class `#{display_name}` {"]
           lines += build_attributes_section(entity)
           lines += build_methods_section(entity)
           lines += build_statistics_section(entity)

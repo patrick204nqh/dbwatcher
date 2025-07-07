@@ -6,7 +6,14 @@ module Dbwatcher
       # Analyzes relationships based on ActiveRecord model associations
       #
       # This service examines ActiveRecord models to detect associations between
-      # models that were involved in a session.
+      # models that were involved in a session. It uses direct model enumeration
+      # from ActiveRecord::Base.descendants to ensure reliable model discovery.
+      #
+      # Supported model scenarios:
+      # - Regular models with standard table names
+      # - Namespaced models (e.g., Admin::User)
+      # - Models with custom table names (using self.table_name)
+      # - Models from external gems and complex inheritance hierarchies
       #
       # @example
       #   analyzer = ModelAssociationAnalyzer.new(session)
@@ -31,21 +38,9 @@ module Dbwatcher
 
           Rails.logger.debug "ModelAssociationAnalyzer: Starting analysis with #{models.length} models"
           associations = extract_model_associations
-
-          # Add placeholder nodes for models without associations
           associations = generate_placeholder_associations if associations.empty? && models.any?
 
-          # Log some sample data to help with debugging
-          if associations.any?
-            sample_association = associations.first
-            Rails.logger.debug "ModelAssociationAnalyzer: Sample association - " \
-                               "source_model: #{sample_association[:source_model]}, " \
-                               "target_model: #{sample_association[:target_model]}, " \
-                               "type: #{sample_association[:type]}"
-          else
-            Rails.logger.info "ModelAssociationAnalyzer: No associations found"
-          end
-
+          log_analysis_results(associations)
           associations
         end
 
@@ -61,55 +56,53 @@ module Dbwatcher
                                     model_names: models.map(&:name)
                                   })
 
-          # Create entities for each unique model
-          model_entities = {}
+          # Create entities from actual discovered models (no inference)
+          create_entities_from_models(dataset)
 
-          # First, collect all unique models from the associations
-          models_to_process = []
-          raw_data.each do |association|
-            models_to_process << association[:source_model] if association[:source_model]
-            models_to_process << association[:target_model] if association[:target_model]
-          end
-          models_to_process.uniq!
+          # Create relationships from association data
+          create_relationships_from_associations(dataset, raw_data)
 
-          # Create entities for all models
-          models_to_process.each do |model_name|
-            # Find the model class to extract attributes
-            model_class = find_model_class(model_name)
+          dataset
+        end
+
+        # Create entities from discovered model classes
+        #
+        # @param dataset [DiagramData::Dataset] dataset to add entities to
+        # @return [void]
+        def create_entities_from_models(dataset)
+          models.each do |model_class|
             attributes = extract_model_attributes(model_class)
             methods = extract_model_methods(model_class)
 
-            # Get table name if available
-            table_name = model_class.respond_to?(:table_name) ? model_class.table_name : model_name.downcase
-
             entity = create_entity(
-              id: table_name || model_name.downcase,
-              name: model_name,
+              id: model_class.table_name,
+              name: model_class.name,
               type: "model",
               attributes: attributes,
               metadata: {
-                table_name: table_name,
-                model_class: model_name,
+                table_name: model_class.table_name,
+                model_class: model_class.name,
                 methods: methods
               }
             )
             dataset.add_entity(entity)
-            model_entities[model_name] = entity
           end
+        end
 
-          # Create relationships in a separate loop
+        # Create relationships from association data
+        #
+        # @param dataset [DiagramData::Dataset] dataset to add relationships to
+        # @param raw_data [Array<Hash>] raw association data
+        # @return [void]
+        def create_relationships_from_associations(dataset, raw_data)
           raw_data.each do |association|
             next if association[:type] == "node_only" || !association[:target_model]
 
-            source_id = association[:source_table] || association[:source_model].downcase
-            target_id = association[:target_table] || association[:target_model].downcase
+            source_id = association[:source_table]
+            target_id = association[:target_table]
 
-            # Include self-referential relationships (source and target are the same)
-            # but log them for debugging
-            if source_id == target_id
-              Rails.logger.info "ModelAssociationAnalyzer: Including self-referential relationship for " \
-                                "#{source_id} (#{association[:association_name]})"
-            end
+            # Skip if we don't have valid table IDs
+            next unless source_id && target_id
 
             # Determine cardinality based on relationship type
             cardinality = determine_cardinality(association[:type])
@@ -131,8 +124,6 @@ module Dbwatcher
 
             dataset.add_relationship(relationship)
           end
-
-          dataset
         end
 
         # Get analyzer type
@@ -159,6 +150,28 @@ module Dbwatcher
 
         attr_reader :session, :session_tables, :models
 
+        # Eagerly load all models including those from gems
+        #
+        # @return [void]
+        def eager_load_models
+          return unless defined?(Rails) && Rails.respond_to?(:application)
+
+          begin
+            # Force eager loading of application models
+            Rails.application.eager_load!
+
+            # Also load models from engines/gems if any are configured
+            Rails::Engine.descendants.each do |engine|
+              engine.eager_load! if engine.respond_to?(:eager_load!)
+            rescue StandardError => e
+              error_message = "ModelAssociationAnalyzer: Could not eager load engine #{engine.class.name}: #{e.message}"
+              Rails.logger.debug error_message
+            end
+          rescue StandardError => e
+            Rails.logger.debug "ModelAssociationAnalyzer: Could not eager load models: #{e.message}"
+          end
+        end
+
         # Generate placeholder associations for models without associations
         #
         # @return [Array<Hash>] placeholder associations
@@ -183,7 +196,7 @@ module Dbwatcher
         #
         # @return [Boolean] true if models can be analyzed
         def models_available?
-          unless defined?(ActiveRecord::Base)
+          unless activerecord_available?
             Rails.logger.warn "ModelAssociationAnalyzer: ActiveRecord not available"
             return false
           end
@@ -211,66 +224,85 @@ module Dbwatcher
         #
         # @return [Array<Class>] ActiveRecord model classes
         def discover_session_models
-          return [] unless defined?(ActiveRecord::Base)
+          return [] unless activerecord_available?
 
-          # Get all ActiveRecord models
           begin
-            all_models = ActiveRecord::Base.descendants.select do |model|
-              model_has_table?(model)
+            all_models = load_all_models
+            discovered_models = filter_models_by_session(all_models)
+
+            # Log the discovered models and their table names for debugging
+            if discovered_models.any?
+              model_table_info = discovered_models.map { |m| "#{m.name} (#{m.table_name})" }
+              Rails.logger.debug "ModelAssociationAnalyzer: Discovered models: #{model_table_info.join(", ")}"
             end
 
-            # If no models found (e.g., in test environment), try to load them explicitly
-            if all_models.empty? && session_tables.any?
-              Rails.logger.debug "ModelAssociationAnalyzer: No models found via descendants, " \
-                                 "attempting explicit loading"
-              all_models = attempt_explicit_model_loading
-            end
-
-            Rails.logger.debug "ModelAssociationAnalyzer: Found #{all_models.size} total ActiveRecord models"
-
-            # Filter to models whose tables are in session (if session provided)
-            if session_tables.any?
-              filtered_models = all_models.select { |model| session_tables.include?(model.table_name) }
-              Rails.logger.debug "ModelAssociationAnalyzer: Filtered to #{filtered_models.size} " \
-                                 "models matching session tables"
-              filtered_models
-            else
-              all_models
-            end
+            discovered_models
           rescue StandardError => e
             Rails.logger.error "ModelAssociationAnalyzer: Error discovering models: #{e.message}"
             []
           end
         end
 
-        # Attempt to explicitly load models based on table names
+        # Log analysis results for debugging
+        #
+        # @param associations [Array<Hash>] found associations
+        # @return [void]
+        def log_analysis_results(associations)
+          Rails.logger.debug "ModelAssociationAnalyzer: Found #{associations.length} associations"
+
+          if associations.any?
+            sample_association = associations.first
+            Rails.logger.debug "ModelAssociationAnalyzer: Sample association - " \
+                               "source_model: #{sample_association[:source_model]}, " \
+                               "target_model: #{sample_association[:target_model]}, " \
+                               "type: #{sample_association[:type]}"
+          else
+            Rails.logger.info "ModelAssociationAnalyzer: No associations found"
+          end
+        end
+
+        # === Model Discovery Methods ===
+
+        # Check if ActiveRecord is available
+        #
+        # @return [Boolean]
+        def activerecord_available?
+          defined?(ActiveRecord::Base)
+        end
+
+        # Load all available ActiveRecord models including from gems
         #
         # @return [Array<Class>] ActiveRecord model classes
-        def attempt_explicit_model_loading
-          models = []
+        def load_all_models
+          eager_load_models
 
-          session_tables.each do |table_name|
-            # Try to infer model name from table name
-            model_names = [
-              table_name.classify,
-              table_name.singularize.classify,
-              table_name.pluralize.classify
-            ].uniq
+          # Get all model classes directly from ActiveRecord descendants
+          all_models = ActiveRecord::Base.descendants
+                                         .select { |model| valid_model_class?(model) }
+                                         .uniq
 
-            model_names.each do |model_name|
-              model_class = model_name.constantize
-              if model_class.respond_to?(:table_name) && model_class.table_name == table_name
-                models << model_class
-                Rails.logger.debug "ModelAssociationAnalyzer: Loaded model #{model_name} for table #{table_name}"
-                break
-              end
-            rescue NameError
-              # Model doesn't exist, try the next one
-              next
-            end
-          end
+          Rails.logger.debug "ModelAssociationAnalyzer: Found #{all_models.size} total ActiveRecord models"
+          all_models
+        end
 
-          models
+        # Check if a model class is valid for analysis
+        #
+        # @param model [Class] ActiveRecord model class
+        # @return [Boolean] true if model is valid
+        def valid_model_class?(model)
+          # Must be a proper class with a name (not anonymous)
+          return false unless model.name
+
+          # Must have a table that exists
+          return false unless model_has_table?(model)
+
+          # Skip abstract models
+          return false if model.abstract_class?
+
+          true
+        rescue StandardError => e
+          Rails.logger.debug "ModelAssociationAnalyzer: Error validating model #{model}: #{e.message}"
+          false
         end
 
         # Check if model has a database table
@@ -282,6 +314,38 @@ module Dbwatcher
         rescue StandardError
           false
         end
+
+        # Filter models based on session tables
+        #
+        # @param all_models [Array<Class>] all available models
+        # @return [Array<Class>] filtered models
+        def filter_models_by_session(all_models)
+          return all_models if session_tables.empty?
+
+          # Build a hash of table_name -> model for efficient lookup
+          table_to_models = {}
+          all_models.each do |model|
+            table_name = model.table_name
+            table_to_models[table_name] ||= []
+            table_to_models[table_name] << model
+          rescue StandardError => e
+            Rails.logger.warn "ModelAssociationAnalyzer: Error checking table_name for " \
+                              "#{model.name}: #{e.message}"
+          end
+
+          # Select models whose tables are in the session
+          filtered_models = []
+          session_tables.each do |table_name|
+            models_for_table = table_to_models[table_name]
+            filtered_models.concat(models_for_table) if models_for_table
+          end
+
+          Rails.logger.debug "ModelAssociationAnalyzer: Filtered to #{filtered_models.size} " \
+                             "models matching session tables (from #{session_tables.size} tables)"
+          filtered_models
+        end
+
+        # === Association Analysis Methods ===
 
         # Extract associations from all models
         #
@@ -367,20 +431,32 @@ module Dbwatcher
           end
         end
 
+        # Build a standardized relationship hash
+        #
+        # @param model [Class] source model class
+        # @param association [Object] association object
+        # @param type [String] relationship type
+        # @return [Hash] relationship data
+        def build_relationship_hash(model, association, type)
+          return nil unless association&.class_name
+
+          {
+            source_model: model.name,
+            source_table: model.table_name,
+            target_model: association.class_name,
+            target_table: get_association_table_name(association),
+            type: type,
+            association_name: association.name.to_s
+          }
+        end
+
         # Build belongs_to relationship
         #
         # @param model [Class] source model class
         # @param association [Object] association object
         # @return [Hash] relationship data
         def build_belongs_to_relationship(model, association)
-          {
-            source_model: model.name,
-            source_table: model.table_name,
-            target_model: association.class_name,
-            target_table: get_association_table_name(association),
-            type: "belongs_to",
-            association_name: association.name.to_s
-          }
+          build_relationship_hash(model, association, "belongs_to")
         end
 
         # Build has_one relationship
@@ -389,14 +465,7 @@ module Dbwatcher
         # @param association [Object] association object
         # @return [Hash] relationship data
         def build_has_one_relationship(model, association)
-          {
-            source_model: model.name,
-            source_table: model.table_name,
-            target_model: association.class_name,
-            target_table: get_association_table_name(association),
-            type: "has_one",
-            association_name: association.name.to_s
-          }
+          build_relationship_hash(model, association, "has_one")
         end
 
         # Build has_many relationship
@@ -405,14 +474,7 @@ module Dbwatcher
         # @param association [Object] association object
         # @return [Hash] relationship data
         def build_has_many_relationship(model, association)
-          {
-            source_model: model.name,
-            source_table: model.table_name,
-            target_model: association.class_name,
-            target_table: get_association_table_name(association),
-            type: "has_many",
-            association_name: association.name.to_s
-          }
+          build_relationship_hash(model, association, "has_many")
         end
 
         # Build has_many :through relationship
@@ -421,14 +483,9 @@ module Dbwatcher
         # @param association [Object] association object
         # @return [Hash] relationship data
         def build_has_many_through_relationship(model, association)
-          {
-            source_model: model.name,
-            source_table: model.table_name,
-            target_model: association.class_name,
-            target_table: get_association_table_name(association),
-            type: "has_many_through",
-            association_name: "#{association.name} (through #{association.options[:through]})"
-          }
+          relationship = build_relationship_hash(model, association, "has_many_through")
+          relationship[:association_name] = "#{association.name} (through #{association.options[:through]})"
+          relationship
         end
 
         # Build has_and_belongs_to_many relationship
@@ -437,14 +494,7 @@ module Dbwatcher
         # @param association [Object] association object
         # @return [Hash] relationship data
         def build_habtm_relationship(model, association)
-          {
-            source_model: model.name,
-            source_table: model.table_name,
-            target_model: association.class_name,
-            target_table: get_association_table_name(association),
-            type: "has_and_belongs_to_many",
-            association_name: association.name.to_s
-          }
+          build_relationship_hash(model, association, "has_and_belongs_to_many")
         end
 
         # Build Active Storage relationship
@@ -471,17 +521,6 @@ module Dbwatcher
           association.table_name
         rescue StandardError => e
           Rails.logger.warn "ModelAssociationAnalyzer: Could not get table name for #{association.name}: #{e.message}"
-          nil
-        end
-
-        # Find model class by name
-        #
-        # @param model_name [String] model class name
-        # @return [Class, nil] model class
-        def find_model_class(model_name)
-          model_name.constantize
-        rescue StandardError => e
-          Rails.logger.warn "ModelAssociationAnalyzer: Could not find model class #{model_name}: #{e.message}"
           nil
         end
 

@@ -38,7 +38,9 @@ module Dbwatcher
         # Format class name for diagram
         def format_class_name(entity_id, dataset)
           entity_name = dataset.get_entity(entity_id)&.name || entity_id
-          Sanitizer.class_name(entity_name)
+          display_name = Sanitizer.display_name(entity_name)
+          # Use backticks to allow :: in class names for Mermaid
+          "`#{display_name}`"
         end
       end
     end
