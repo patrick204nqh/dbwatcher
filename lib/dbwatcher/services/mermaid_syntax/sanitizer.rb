@@ -16,7 +16,12 @@ module Dbwatcher
           def class_name(name)
             return "UnknownClass" unless name.is_a?(String) && !name.empty?
 
-            name.to_s.gsub(/[^a-zA-Z0-9_]/, "_").capitalize
+            # For namespaced models, preserve the namespace structure
+            # Convert :: to underscore for Mermaid syntax while maintaining readability
+            sanitized = name.to_s.gsub("::", "__")
+
+            # Only replace other special characters with underscores
+            sanitized.gsub(/[^a-zA-Z0-9_]/, "_")
           end
 
           # Sanitize node name for Mermaid flowcharts
@@ -84,6 +89,17 @@ module Dbwatcher
             # For Mermaid, we need to escape quotes but not remove them completely
             # We'll escape backslashes and double quotes, and replace newlines with spaces
             label.to_s.gsub("\\", "\\\\").gsub('"', '\\"').gsub(/[\n\r]/, " ").strip
+          end
+
+          # Get display name for class (preserves namespace format for labels)
+          #
+          # @param name [String] raw class name
+          # @return [String] display name with proper namespace format
+          def display_name(name)
+            return "UnknownClass" unless name.is_a?(String) && !name.empty?
+
+            # Return the original name for display purposes (preserves :: for namespaces)
+            name.to_s
           end
 
           # Sanitize attribute type for Mermaid ERD

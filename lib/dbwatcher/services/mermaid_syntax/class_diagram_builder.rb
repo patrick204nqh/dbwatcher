@@ -105,8 +105,10 @@ module Dbwatcher
 
         # Build class definition
         def build_class_definition(entity)
-          class_name = Sanitizer.class_name(entity.name)
-          lines = ["    class #{class_name} {"]
+          display_name = Sanitizer.display_name(entity.name)
+
+          # Use display name (with ::) for class definition instead of sanitized version
+          lines = ["    class `#{display_name}` {"]
           lines += build_attributes_section(entity)
           lines += build_methods_section(entity)
           lines += build_statistics_section(entity)
