@@ -28,6 +28,7 @@ class UserCreationForm < ApplicationForm
 
   protected
 
+  # rubocop:disable Naming/PredicateMethod
   def process
     result = Users::CreationService.call(user_params)
 
@@ -39,6 +40,7 @@ class UserCreationForm < ApplicationForm
 
     result.success?
   end
+  # rubocop:enable Naming/PredicateMethod
 
   private
 
