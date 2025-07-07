@@ -54,8 +54,6 @@ Then(/^an error warning should be logged$/) do
   expect(@error_logged).to be true
 end
 
-private
-
 def make_request(method, path, query_string)
   reset_tracking_state
   env = build_rack_environment(method, path, query_string)
@@ -146,8 +144,6 @@ def setup_mocks(middleware)
   setup_tracking_mock
   setup_warning_mock(middleware)
 end
-
-private
 
 def setup_tracking_mock
   if @force_tracking_error

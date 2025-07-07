@@ -96,9 +96,11 @@ module Dbwatcher
         #
         # @param relationship [Relationship] relationship to remove
         # @return [Boolean] true if relationship was removed
+        # rubocop:disable Naming/PredicateMethod
         def remove_relationship(relationship)
           !@relationships.delete(relationship).nil?
         end
+        # rubocop:enable Naming/PredicateMethod
 
         # Get relationships for an entity
         #
