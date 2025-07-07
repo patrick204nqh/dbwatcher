@@ -69,12 +69,12 @@ module Dbwatcher
         def build_attributes_section(entity)
           return [] unless show_attributes? && entity.attributes.any?
 
-          lines = ["        %% Attributes"]
+          lines = ["        %% === Attributes ==="]
           entity.attributes.first(max_attributes).each do |attr|
             lines << format_attribute_line(attr)
           end
           add_attributes_overflow_message(lines, entity)
-          add_section_divider(lines, entity)
+          lines << ""
           lines
         end
 
@@ -82,14 +82,14 @@ module Dbwatcher
         def build_methods_section(entity)
           return [] unless show_methods? && entity.metadata[:methods]&.any?
 
-          lines = ["        %% Methods"]
+          lines = ["        %% === Methods ==="]
           entity.metadata[:methods].first(max_methods).each do |method|
             lines << format_method_line(method)
           end
           if entity.metadata[:methods].size > max_methods
             lines << "        %% ... #{entity.metadata[:methods].size - max_methods} more methods"
           end
-          lines << "        %% ----------------------"
+          lines << ""
           lines
         end
 
@@ -97,9 +97,11 @@ module Dbwatcher
         def build_statistics_section(entity)
           return [] unless entity.attributes.any? || entity.metadata[:methods]&.any?
 
-          lines = ["        %% Statistics"]
-          lines << "        +Stats: #{entity.attributes.size} attributes" if entity.attributes.any?
-          lines << "        +Stats: #{entity.metadata[:methods].size} methods" if entity.metadata[:methods]&.any?
+          lines = ["        %% === Statistics ==="]
+          stats_parts = []
+          stats_parts << "#{entity.attributes.size} attributes" if entity.attributes.any?
+          stats_parts << "#{entity.metadata[:methods].size} methods" if entity.metadata[:methods]&.any?
+          lines << "        %% #{stats_parts.join(" | ")}"
           lines
         end
 
