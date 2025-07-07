@@ -276,4 +276,4 @@
 
 - name: "needs-triage"
   color: "ededed"
-  description: "🏷️ Needs initial triage and labeling"help
+  description: "🏷️ Needs initial triage and labeling"
