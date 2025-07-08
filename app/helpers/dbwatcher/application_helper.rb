@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Dbwatcher
+  # rubocop:disable Metrics/ModuleLength
   module ApplicationHelper
     include FormattingHelper
     include SessionHelper
@@ -141,4 +142,5 @@ module Dbwatcher
       end
     end
   end
+  # rubocop:enable Metrics/ModuleLength
 end

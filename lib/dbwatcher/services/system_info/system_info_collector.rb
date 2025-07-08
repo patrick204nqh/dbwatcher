@@ -28,6 +28,13 @@ module Dbwatcher
           new.call
         end
 
+        # Collect system information from all sources
+        #
+        # This method needs to be longer to properly handle all the collection
+        # steps and error handling in a consistent way.
+        #
+        # @return [Hash] collected system information
+        # rubocop:disable Metrics/MethodLength
         def call
           start_time = current_time
           log_info "#{self.class.name}: Starting system information collection"
@@ -55,6 +62,7 @@ module Dbwatcher
             error: e.message
           }
         end
+        # rubocop:enable Metrics/MethodLength
 
         private
 

@@ -7,6 +7,7 @@ module Dbwatcher
       #
       # Provides RESTful API endpoints for system information access.
       # Supports JSON responses for programmatic access to system data.
+      # rubocop:disable Metrics/ClassLength
       class SystemInfoController < BaseController
         before_action :ensure_system_info_enabled
 
@@ -130,6 +131,7 @@ module Dbwatcher
         # Get cache status and metadata
         #
         # @return [void]
+        # rubocop:disable Metrics/MethodLength
         def cache_status
           info_available = system_info_storage.info_available?
           cache_age = system_info_storage.info_age
@@ -149,6 +151,7 @@ module Dbwatcher
           log_error "API: Failed to get cache status: #{e.message}"
           render json: { error: e.message }, status: :internal_server_error
         end
+        # rubocop:enable Metrics/MethodLength
 
         private
 
@@ -171,6 +174,7 @@ module Dbwatcher
           }, status: :forbidden
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end

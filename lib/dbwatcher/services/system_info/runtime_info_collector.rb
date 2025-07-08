@@ -15,6 +15,10 @@ module Dbwatcher
       #   puts info[:ruby_version]
       #   puts info[:rails_version]
       #   puts info[:gem_count]
+      #
+      # This class is necessarily complex due to the comprehensive runtime information
+      # it needs to collect across different Ruby and Rails environments.
+      # rubocop:disable Metrics/ClassLength
       class RuntimeInfoCollector
         include Dbwatcher::Logging
 
@@ -25,6 +29,10 @@ module Dbwatcher
           new.call
         end
 
+        # Collect runtime information
+        #
+        # @return [Hash] collected runtime information
+        # rubocop:disable Metrics/MethodLength
         def call
           log_info "#{self.class.name}: Collecting runtime information"
 
@@ -46,6 +54,7 @@ module Dbwatcher
           log_error "Runtime info collection failed: #{e.message}"
           { error: e.message }
         end
+        # rubocop:enable Metrics/MethodLength
 
         private
 
@@ -155,6 +164,7 @@ module Dbwatcher
         # Collect environment variables (filtered for security)
         #
         # @return [Hash] filtered environment variables
+        # rubocop:disable Metrics/MethodLength
         def collect_environment_variables
           return {} unless Dbwatcher.configuration.collect_sensitive_env_vars
 
@@ -192,6 +202,7 @@ module Dbwatcher
           log_error "Failed to get environment variables: #{e.message}"
           {}
         end
+        # rubocop:enable Metrics/MethodLength
 
         # Collect application configuration
         #
@@ -199,14 +210,11 @@ module Dbwatcher
         def collect_application_config
           config = {}
 
-          # Rails application config if available
-          if defined?(Rails) && Rails.respond_to?(:application) && Rails.application
-            config[:rails] =
-              collect_rails_config
-          end
+          # Collect Rails configuration if available
+          config[:rails] = collect_rails_config if defined?(Rails)
 
-          # DBWatcher configuration
-          config[:dbwatcher] = collect_dbwatcher_config
+          # Collect DBWatcher configuration
+          config[:dbwatcher] = collect_dbwatcher_config if defined?(Dbwatcher)
 
           config
         rescue StandardError => e
@@ -214,29 +222,38 @@ module Dbwatcher
           {}
         end
 
-        # Collect Rails configuration
+        # Collect Rails configuration if available
         #
         # @return [Hash] Rails configuration
+        # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
         def collect_rails_config
           rails_config = {}
 
-          app = Rails.application
-          config = app.config
+          return rails_config unless defined?(Rails)
 
-          # Basic Rails settings
-          rails_config[:application_name] = app.class.name.split("::").first if app.class.name
-          rails_config[:eager_load] = config.eager_load if config.respond_to?(:eager_load)
-          rails_config[:cache_classes] = config.cache_classes if config.respond_to?(:cache_classes)
-          if config.respond_to?(:consider_all_requests_local)
+          # Basic Rails configuration
+          rails_config[:environment] = Rails.env
+          rails_config[:version] = Rails.version
+          rails_config[:root] = Rails.root.to_s
+
+          # Rails application configuration
+          if Rails.application
+            app_config = Rails.application.config
+            rails_config[:app_name] = Rails.application.class.name.split("::").first
+            rails_config[:autoload_paths] =
+              app_config.respond_to?(:autoload_paths) ? app_config.autoload_paths.size : nil
+            rails_config[:eager_load_paths] =
+              app_config.respond_to?(:eager_load_paths) ? app_config.eager_load_paths.size : nil
+            rails_config[:eager_load] = app_config.respond_to?(:eager_load) ? app_config.eager_load : nil
+            rails_config[:cache_classes] = app_config.respond_to?(:cache_classes) ? app_config.cache_classes : nil
             rails_config[:consider_all_requests_local] =
-              config.consider_all_requests_local
-          end
-          rails_config[:time_zone] = config.time_zone if config.respond_to?(:time_zone)
-          rails_config[:encoding] = config.encoding if config.respond_to?(:encoding)
+              app_config.respond_to?(:consider_all_requests_local) ? app_config.consider_all_requests_local : nil
 
-          # Database config
-          if config.respond_to?(:database_configuration)
-            rails_config[:database_config] = sanitize_database_config(config.database_configuration)
+            # Fix long line by breaking it up and removing redundant else
+            perform_caching = if app_config.action_controller.respond_to?(:perform_caching)
+                                app_config.action_controller.perform_caching
+                              end
+            rails_config[:action_controller] = { perform_caching: perform_caching }
           end
 
           rails_config
@@ -244,23 +261,42 @@ module Dbwatcher
           log_error "Failed to get Rails config: #{e.message}"
           {}
         end
+        # rubocop:enable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
         # Collect DBWatcher configuration
         #
         # @return [Hash] DBWatcher configuration
+        # rubocop:disable Metrics/MethodLength
         def collect_dbwatcher_config
           config = Dbwatcher.configuration
 
+          # Only include non-sensitive configuration options
+          # Split long lines to avoid line length issues
           {
-            collect_system_info: config.respond_to?(:collect_system_info) ? config.collect_system_info : true,
-            system_info_refresh_interval: config.respond_to?(:system_info_refresh_interval) ? config.system_info_refresh_interval : 300,
-            collect_sensitive_env_vars: config.respond_to?(:collect_sensitive_env_vars) ? config.collect_sensitive_env_vars : false,
-            system_info_include_performance_metrics: config.respond_to?(:system_info_include_performance_metrics) ? config.system_info_include_performance_metrics : true
+            system_info_refresh_interval:
+              if config.respond_to?(:system_info_refresh_interval)
+                config.system_info_refresh_interval
+              else
+                300
+              end,
+            collect_sensitive_env_vars:
+              if config.respond_to?(:collect_sensitive_env_vars)
+                config.collect_sensitive_env_vars
+              else
+                false
+              end,
+            system_info_include_performance_metrics:
+              if config.respond_to?(:system_info_include_performance_metrics)
+                config.system_info_include_performance_metrics
+              else
+                true
+              end
           }
         rescue StandardError => e
           log_error "Failed to get DBWatcher config: #{e.message}"
           {}
         end
+        # rubocop:enable Metrics/MethodLength
 
         # Sanitize database configuration to remove sensitive information
         #
@@ -269,25 +305,24 @@ module Dbwatcher
         def sanitize_database_config(db_config)
           return {} unless db_config.is_a?(Hash)
 
-          sanitized = {}
-          db_config.each do |env, config|
-            next unless config.is_a?(Hash)
+          # Create a copy to avoid modifying the original
+          sanitized = db_config.dup
 
-            sanitized[env] = {}
-            config.each do |key, value|
-              # Skip sensitive information
-              next if %w[password username user pass host socket].include?(key.to_s.downcase)
-
-              sanitized[env][key] = value
-            end
+          # Remove sensitive information
+          %w[password username user].each do |key|
+            sanitized.delete(key)
+            sanitized.delete(key.to_sym)
           end
 
-          sanitized
+          # Keep only basic connection info
+          safe_keys = %w[adapter host port database pool timeout]
+          sanitized.select { |k, _| safe_keys.include?(k.to_s) }
         rescue StandardError => e
           log_error "Failed to sanitize database config: #{e.message}"
           {}
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end

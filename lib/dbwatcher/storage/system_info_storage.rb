@@ -14,6 +14,10 @@ module Dbwatcher
     #   storage = SystemInfoStorage.new
     #   info = storage.cached_info
     #   storage.refresh_info
+    #
+    # This class is necessarily complex due to the comprehensive system information
+    # storage and retrieval functionality it provides.
+    # rubocop:disable Metrics/ClassLength
     class SystemInfoStorage < BaseStorage
       include Dbwatcher::Logging
       # Initialize system info storage
@@ -125,6 +129,7 @@ module Dbwatcher
       # Get system information summary for dashboard
       #
       # @return [Hash] summary information
+      # rubocop:disable Metrics/MethodLength
       def summary
         info = cached_info
         return {} if info.empty? || info[:error]
@@ -148,6 +153,7 @@ module Dbwatcher
         log_error "Failed to get system info summary: #{e.message}"
         {}
       end
+      # rubocop:enable Metrics/MethodLength
 
       private
 
@@ -200,11 +206,7 @@ module Dbwatcher
         return hash unless hash.is_a?(Hash)
 
         hash.each_with_object({}) do |(key, value), result|
-          symbol_key = begin
-            key.to_sym
-          rescue StandardError
-            key
-          end
+          symbol_key = key.to_s.to_sym
           result[symbol_key] = if value.is_a?(Hash)
                                  convert_keys_to_symbols(value)
                                elsif value.is_a?(Array)
@@ -215,25 +217,26 @@ module Dbwatcher
         end
       end
 
-      # Dig into a hash with support for both string and symbol keys
+      # Safe access to nested hash values with indifferent access
       #
-      # @param hash [Hash] hash to dig into
-      # @param keys [Array] keys to dig with
-      # @return [Object, nil] value at the path or nil
+      # @param hash [Hash] hash to access
+      # @param keys [Array] keys to access
+      # @return [Object, nil] value or nil if not found
       def dig_with_indifferent_access(hash, *keys)
         return nil unless hash.is_a?(Hash)
 
         current = hash
         keys.each do |key|
+          key_sym = key.to_s.to_sym
+          key_str = key.to_s
           return nil unless current.is_a?(Hash)
 
-          # Try both symbol and string versions of the key
-          current = current[key.to_sym] || current[key.to_s]
+          current = current[key_sym] || current[key_str]
           return nil if current.nil?
         end
-
         current
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end

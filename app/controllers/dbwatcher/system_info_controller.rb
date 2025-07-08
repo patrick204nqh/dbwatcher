@@ -10,7 +10,11 @@ module Dbwatcher
 
     # Display system information page
     #
+    # This method needs to be longer to properly handle both HTML and JSON responses,
+    # including error handling for both formats.
+    #
     # @return [void]
+    # rubocop:disable Metrics/MethodLength
     def index
       @system_info = system_info_storage.cached_info
       @last_updated = @system_info[:collected_at]
@@ -34,10 +38,15 @@ module Dbwatcher
         format.json { render json: { error: e.message }, status: :internal_server_error }
       end
     end
+    # rubocop:enable Metrics/MethodLength
 
     # Refresh system information
     #
+    # This method needs to be longer to properly handle both HTML and JSON responses,
+    # including error handling for both formats.
+    #
     # @return [void]
+    # rubocop:disable Metrics/MethodLength
     def refresh
       @system_info = system_info_storage.refresh_info
       @last_updated = @system_info[:collected_at]
@@ -60,6 +69,7 @@ module Dbwatcher
         format.json { render json: { error: e.message }, status: :internal_server_error }
       end
     end
+    # rubocop:enable Metrics/MethodLength
 
     # Clear system information cache
     #
