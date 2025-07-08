@@ -1,5 +1,7 @@
 # DBWatcher
 
+[![CI](https://github.com/patrick204nqh/dbwatcher/actions/workflows/ci.yml/badge.svg)](https://github.com/patrick204nqh/dbwatcher/actions/workflows/ci.yml)
+[![Release Gem](https://github.com/patrick204nqh/dbwatcher/actions/workflows/release.yml/badge.svg)](https://github.com/patrick204nqh/dbwatcher/actions/workflows/release.yml)
 [![Gem Version](https://badge.fury.io/rb/dbwatcher.svg)](https://badge.fury.io/rb/dbwatcher)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
