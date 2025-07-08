@@ -9,6 +9,7 @@ require_relative "storage/session_storage"
 require_relative "storage/query_storage"
 require_relative "storage/table_storage"
 require_relative "storage/session_query"
+require_relative "storage/system_info_storage"
 require_relative "storage/api/base_api"
 require_relative "storage/api/query_api"
 require_relative "storage/api/table_api"
@@ -68,6 +69,16 @@ module Dbwatcher
         @tables ||= Api::TableAPI.new(table_storage)
       end
 
+      # Provides access to system information operations
+      #
+      # @return [SystemInfoStorage] system info storage instance
+      # @example
+      #   Dbwatcher::Storage.system_info.cached_info
+      #   Dbwatcher::Storage.system_info.refresh_info
+      def system_info
+        @system_info ||= SystemInfoStorage.new
+      end
+
       # Resets all cached storage instances (primarily for testing)
       #
       # This method clears all memoized storage instances, forcing them
@@ -80,6 +91,7 @@ module Dbwatcher
         @session_storage = nil
         @query_storage = nil
         @table_storage = nil
+        @system_info = nil
         @sessions = nil
         @queries = nil
         @tables = nil

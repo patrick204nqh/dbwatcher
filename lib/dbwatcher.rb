@@ -13,12 +13,12 @@ require_relative "dbwatcher/logging"
 
 # Storage layer
 require_relative "dbwatcher/storage"
+require_relative "dbwatcher/middleware"
 
 # Tracking and SQL monitoring
 require_relative "dbwatcher/tracker"
 require_relative "dbwatcher/sql_logger"
 require_relative "dbwatcher/model_extension"
-require_relative "dbwatcher/middleware"
 
 # Base services
 require_relative "dbwatcher/services/base_service"
@@ -27,6 +27,12 @@ require_relative "dbwatcher/services/base_service"
 require_relative "dbwatcher/services/table_statistics_collector"
 require_relative "dbwatcher/services/dashboard_data_aggregator"
 require_relative "dbwatcher/services/query_filter_processor"
+
+# System info services
+require_relative "dbwatcher/services/system_info/machine_info_collector"
+require_relative "dbwatcher/services/system_info/database_info_collector"
+require_relative "dbwatcher/services/system_info/runtime_info_collector"
+require_relative "dbwatcher/services/system_info/system_info_collector"
 
 # General analyzers
 require_relative "dbwatcher/services/analyzers/session_data_processor"
@@ -75,16 +81,24 @@ require_relative "dbwatcher/services/api/diagram_data_service"
 # Rails engine
 require_relative "dbwatcher/engine" if defined?(Rails)
 
+# DBWatcher module
 module Dbwatcher
   class Error < StandardError; end
 
   class << self
     attr_writer :configuration
 
+    # Get configuration
+    #
+    # @return [Configuration] configuration
     def configuration
       @configuration ||= Configuration.new
     end
 
+    # Configure DBWatcher
+    #
+    # @yield [configuration] configuration
+    # @return [Configuration] configuration
     def configure
       yield(configuration)
     end

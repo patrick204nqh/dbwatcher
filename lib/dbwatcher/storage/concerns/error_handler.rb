@@ -28,16 +28,16 @@ module Dbwatcher
         def safe_operation(operation_name, default_value = nil, &block)
           block.call
         rescue JSON::ParserError => e
-          log_error("JSON parsing failed in #{operation_name}", e)
+          log_error_with_exception("JSON parsing failed in #{operation_name}", e)
           default_value
         rescue Errno::ENOENT => e
-          log_error("File not found in #{operation_name}", e)
+          log_error_with_exception("File not found in #{operation_name}", e)
           default_value
         rescue Errno::EACCES => e
-          log_error("Permission denied in #{operation_name}", e)
+          log_error_with_exception("Permission denied in #{operation_name}", e)
           raise StorageError, "Permission denied: #{e.message}"
         rescue StandardError => e
-          log_error("#{operation_name} failed", e)
+          log_error_with_exception("#{operation_name} failed", e)
           default_value
         end
 
@@ -51,7 +51,7 @@ module Dbwatcher
           block.call
         rescue StandardError => e
           error_message = "Storage #{operation} failed: #{e.message}"
-          log_error(error_message, e)
+          log_error_with_exception(error_message, e)
           raise StorageError, error_message
         end
 
@@ -62,7 +62,7 @@ module Dbwatcher
         # @param message [String] the error message
         # @param error [Exception] the exception that occurred
         # @return [void]
-        def log_error(message, error)
+        def log_error_with_exception(message, error)
           if defined?(Rails) && Rails.logger
             Rails.logger.warn("#{message}: #{error.message}")
           else

@@ -32,6 +32,19 @@ Dbwatcher::Engine.routes.draw do
           get :diagram_types
         end
       end
+
+      # System information API routes
+      resources :system_info, only: [:index] do
+        collection do
+          post :refresh
+          get :machine
+          get :database
+          get :runtime
+          get :summary
+          delete :clear_cache
+          get :cache_status
+        end
+      end
     end
   end
 
@@ -47,4 +60,10 @@ Dbwatcher::Engine.routes.draw do
       delete :clear
     end
   end
+
+  # System information routes
+  get "system_info", to: "system_info#index", as: :system_info
+  post "system_info/refresh", to: "system_info#refresh", as: :refresh_system_info
+  delete "system_info/clear_cache", to: "system_info#clear_cache", as: :clear_cache_system_info
+  get "system_info/summary", to: "system_info#summary", as: :summary_system_info
 end
