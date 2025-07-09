@@ -21,6 +21,11 @@ module Dbwatcher
                   :diagram_preserve_table_case, :diagram_direction, :diagram_cardinality_format,
                   :diagram_show_attribute_count, :diagram_show_method_count
 
+    # System information configuration
+    attr_accessor :collect_system_info, :system_info_refresh_interval,
+                  :collect_sensitive_env_vars, :system_info_cache_duration,
+                  :system_info_include_performance_metrics
+
     # Initialize with default values
     def initialize
       # Storage configuration defaults
@@ -39,6 +44,9 @@ module Dbwatcher
 
       # Initialize diagram configuration with defaults
       initialize_diagram_config
+
+      # Initialize system information configuration with defaults
+      initialize_system_info_config
     end
 
     # Initialize diagram configuration with default values
@@ -54,6 +62,15 @@ module Dbwatcher
       @diagram_cardinality_format = :simple # Use simpler 1:N format
       @diagram_show_attribute_count = true
       @diagram_show_method_count = true
+    end
+
+    # Initialize system information configuration with default values
+    def initialize_system_info_config
+      @collect_system_info = true
+      @system_info_refresh_interval = 5 * 60 # 5 minutes in seconds
+      @collect_sensitive_env_vars = false
+      @system_info_cache_duration = 60 * 60 # 1 hour in seconds
+      @system_info_include_performance_metrics = true
     end
 
     # Validate configuration

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../logging"
+
 module Dbwatcher
   module Services
     # Base class for all service objects

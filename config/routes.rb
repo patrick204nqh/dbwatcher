@@ -6,6 +6,16 @@ Dbwatcher::Engine.routes.draw do
   # Dashboard clear all action
   delete :clear_all, to: "dashboard#clear_all"
 
+  # Dashboard system info actions
+  namespace :dashboard do
+    resources :system_info, only: [:index] do
+      collection do
+        post :refresh
+        delete :clear_cache
+      end
+    end
+  end
+
   resources :sessions do
     member do
       get :changes
@@ -30,6 +40,19 @@ Dbwatcher::Engine.routes.draw do
 
         collection do
           get :diagram_types
+        end
+      end
+
+      # System information API routes
+      resources :system_info, only: [:index] do
+        collection do
+          post :refresh
+          get :machine
+          get :database
+          get :runtime
+          get :summary
+          delete :clear_cache
+          get :cache_status
         end
       end
     end
