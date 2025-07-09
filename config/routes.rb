@@ -3,12 +3,13 @@
 Dbwatcher::Engine.routes.draw do
   root to: "dashboard#index"
 
-  # Dashboard clear all action
+  # Dashboard actions
+  get :system_info, to: "dashboard#system_info"
   delete :clear_all, to: "dashboard#clear_all"
 
   # Dashboard system info actions
   namespace :dashboard do
-    resources :system_info, only: [:index] do
+    resources :system_info, only: [] do
       collection do
         post :refresh
         delete :clear_cache

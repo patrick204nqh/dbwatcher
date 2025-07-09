@@ -10,9 +10,11 @@
 
   <!-- Tab Bar -->
   <div class="tab-bar">
-    <div class="tab-item active" data-tab="overview">Overview</div>
+    <div class="tab-item active">Overview</div>
     <% if @system_info_summary && !@system_info_summary.empty? %>
-      <div class="tab-item" data-tab="system-info">System Info</div>
+      <%= link_to system_info_path, class: "tab-item" do %>
+        System Info
+      <% end %>
     <% end %>
   </div>
 
@@ -208,7 +210,7 @@
           <%= link_to "SQL Logs", queries_path,
               class: "px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700" %>
           <% if @system_info_summary && !@system_info_summary.empty? %>
-            <%= link_to "System Information", dashboard_system_info_index_path,
+            <%= link_to "System Information", system_info_path,
                 class: "px-3 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-700" %>
           <% end %>
         </div>
