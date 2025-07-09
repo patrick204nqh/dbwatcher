@@ -2,39 +2,6 @@
 
 module Dbwatcher
   module DiagramHelper
-    # Generate diagram configuration for Alpine.js
-    def diagram_config(session, active_tab)
-      {
-        auto_generate: active_tab == "diagrams",
-        default_type: "database_tables",
-        endpoint: diagram_data_api_v1_session_path(session),
-        container_id: "diagram-container"
-      }.to_json
-    end
-
-    # Generate diagram type options dynamically from registry
-    def diagram_type_options
-      registry = Dbwatcher::Services::DiagramTypeRegistry.new
-      options = registry.available_types_with_metadata.map do |type, metadata|
-        [metadata[:display_name], type]
-      end
-
-      options_for_select(options)
-    end
-
-    # Generate CSS variables for diagram container height calculation
-    def diagram_container_css_variables
-      {
-        "--header-height": "64px",
-        "--tab-bar-height": "40px",
-        "--toolbar-height": "72px",
-        "--footer-height": "0px",
-        "--diagram-height": "calc(100vh - var(--header-height) - var(--tab-bar-height) - " \
-                            "var(--toolbar-height) - var(--footer-height) - 2rem)",
-        "--diagram-min-height": "500px"
-      }.map { |key, value| "#{key}: #{value}" }.join("; ")
-    end
-
     # Generate button classes for diagram controls
     def diagram_button_classes(type = :default)
       base_classes = "compact-button text-xs rounded"
