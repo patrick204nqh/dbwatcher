@@ -8,10 +8,12 @@ module Dbwatcher
       @active_tables = dashboard_data[:active_tables]
       @query_stats = dashboard_data[:query_stats]
 
-      # Add system information summary if enabled
+      # Add system information if enabled
       return unless Dbwatcher.configuration.collect_system_info
 
       @system_info_summary = system_info_storage.summary
+      @system_info = system_info_storage.cached_info
+      @info_age = system_info_storage.info_age
     end
 
     def clear_all

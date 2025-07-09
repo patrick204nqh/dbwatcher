@@ -313,6 +313,15 @@
   font-weight: 500;
 }
 
+/* Tab content styles */
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
 /**
  * Form Controls
  * Input fields, selects, buttons

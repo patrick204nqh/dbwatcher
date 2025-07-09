@@ -10,14 +10,17 @@
 
   <!-- Tab Bar -->
   <div class="tab-bar">
-    <div class="tab-item active">Overview</div>
-    <div class="tab-item">Statistics</div>
-    <div class="tab-item">Recent Activity</div>
+    <div class="tab-item active" data-tab="overview">Overview</div>
+    <% if @system_info_summary && !@system_info_summary.empty? %>
+      <div class="tab-item" data-tab="system-info">System Info</div>
+    <% end %>
   </div>
 
   <!-- Content Area -->
   <div class="flex-1 overflow-auto p-4">
-    <!-- Compact Stats Grid -->
+    <!-- Overview Tab Content -->
+    <div class="tab-content active" data-tab-content="overview">
+      <!-- Compact Stats Grid -->
     <div class="grid grid-cols-4 gap-3 mb-4">
       <!-- Sessions Card -->
       <%= render 'dbwatcher/shared/stats_card',
@@ -205,11 +208,12 @@
           <%= link_to "SQL Logs", queries_path,
               class: "px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700" %>
           <% if @system_info_summary && !@system_info_summary.empty? %>
-            <%= link_to "System Info", system_info_path,
-                class: "px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700" %>
+            <%= link_to "System Information", dashboard_system_info_index_path,
+                class: "px-3 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-700" %>
           <% end %>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </div>

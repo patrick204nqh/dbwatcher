@@ -29,6 +29,7 @@
     <%= javascript_include_tag "dbwatcher/components/changes_table_hybrid" %>
     <%= javascript_include_tag "dbwatcher/components/diagrams" %>
     <%= javascript_include_tag "dbwatcher/components/summary" %>
+    <%= javascript_include_tag "dbwatcher/components/dashboard" %>
 
     <!-- DBWatcher Services -->
     <%= javascript_include_tag "dbwatcher/core/alpine_store" %>
@@ -56,9 +57,9 @@
         }
       });
 
-      // Fallback initialization with better error handling
+      // Improved initialization with safety checks
       document.addEventListener('DOMContentLoaded', function() {
-        // Small delay to ensure Alpine is available
+        // Prevent immediate DOM access conflicts
         setTimeout(() => {
           try {
             if (window.DBWatcher && !DBWatcher.initialized) {
@@ -68,16 +69,22 @@
           } catch (error) {
             console.error('❌ Error during DBWatcher fallback initialization:', error);
           }
-        }, 100);
+        }, 150);
 
-        // Plugin verification
+        // Plugin verification with safety checks
         setTimeout(() => {
-          if (window.Alpine && !window.Alpine.directive('collapse')) {
-            console.warn('⚠️ Alpine.js Collapse plugin may not be properly loaded');
-          } else if (window.Alpine && window.Alpine.directive('collapse')) {
-            console.log('✅ Alpine.js Collapse plugin verified');
+          try {
+            if (window.Alpine && typeof window.Alpine.directive === 'function') {
+              if (!window.Alpine.directive('collapse')) {
+                console.warn('⚠️ Alpine.js Collapse plugin may not be properly loaded');
+              } else {
+                console.log('✅ Alpine.js Collapse plugin verified');
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ Alpine.js plugin verification failed:', error);
           }
-        }, 200);
+        }, 300);
       });
     </script>
 
@@ -129,7 +136,7 @@
 
           <!-- Navigation -->
           <nav class="flex-1 py-2 overflow-y-auto">
-            <%= link_to root_path, class: "sidebar-item #{current_page?(root_path) ? 'active' : ''}" do %>
+            <%= link_to root_path, class: "sidebar-item #{current_page?(root_path) || current_page?(dashboard_system_info_index_path) ? 'active' : ''}" do %>
               <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
@@ -161,13 +168,7 @@
               <span x-show="!sidebarCollapsed">SQL Logs</span>
             <% end %>
 
-            <%= link_to system_info_path, class: "sidebar-item #{current_page?(system_info_path) ? 'active' : ''}" do %>
-              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
-              </svg>
-              <span x-show="!sidebarCollapsed">System Info</span>
-            <% end %>
+
           </nav>
 
           <!-- Actions -->
@@ -219,50 +220,57 @@
     <!-- Initialize DBWatcher system -->
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        // Initialize DBWatcher if available
-        if (window.DBWatcher) {
-          // Ensure BaseComponent is available
-          if (!window.DBWatcher.BaseComponent && typeof DBWatcher.BaseComponent !== 'function') {
-            window.DBWatcher.BaseComponent = function(config = {}) {
-              return {
-                init() {
-                  if (this.componentInit) {
-                    try {
-                      this.componentInit();
-                    } catch (error) {
-                      console.error("Error during component initialization:", error);
+        // Add delay to prevent timing conflicts
+        setTimeout(() => {
+          try {
+            // Initialize DBWatcher if available
+            if (window.DBWatcher) {
+              // Ensure BaseComponent is available
+              if (!window.DBWatcher.BaseComponent && typeof DBWatcher.BaseComponent !== 'function') {
+                window.DBWatcher.BaseComponent = function(config = {}) {
+                  return {
+                    init() {
+                      if (this.componentInit) {
+                        try {
+                          this.componentInit();
+                        } catch (error) {
+                          console.error("Error during component initialization:", error);
+                        }
+                      }
                     }
+                  };
+                };
+                console.log('Added fallback BaseComponent');
+              }
+
+              // Register legacy components with Alpine directly if ComponentRegistry isn't available
+              if (!window.DBWatcher.ComponentRegistry) {
+                console.log('ComponentRegistry not available, using direct Alpine registration');
+
+                // Ensure Alpine is available with safety checks
+                if (window.Alpine && typeof window.Alpine.data === 'function') {
+                  // Direct registration of components with Alpine
+                  if (!window.Alpine.data('changesTable') && window.DBWatcher.components && window.DBWatcher.components.changesTable) {
+                    window.Alpine.data('changesTable', (config = {}) => {
+                      const component = window.DBWatcher.components.changesTable(config);
+                      return component;
+                    });
+                    console.log('Registered changesTable component with Alpine');
                   }
                 }
-              };
-            };
-            console.log('Added fallback BaseComponent');
-          }
-
-          // Register legacy components with Alpine directly if ComponentRegistry isn't available
-          if (!window.DBWatcher.ComponentRegistry) {
-            console.log('ComponentRegistry not available, using direct Alpine registration');
-
-            // Ensure Alpine is available
-            if (window.Alpine) {
-              // Direct registration of components with Alpine
-              if (!window.Alpine.data('changesTable') && window.DBWatcher.components && window.DBWatcher.components.changesTable) {
-                window.Alpine.data('changesTable', (config = {}) => {
-                  const component = window.DBWatcher.components.changesTable(config);
-                  return component;
-                });
-                console.log('Registered changesTable component with Alpine');
               }
+
+              console.log('✅ DBWatcher initialized (fallback)');
             }
+
+            // Verify Alpine.js plugins with safety checks
+            if (window.Alpine && typeof window.Alpine.directive === 'function' && window.Alpine.directive('collapse')) {
+              console.log('✅ Alpine.js Collapse plugin verified');
+            }
+          } catch (error) {
+            console.error('❌ Error during DBWatcher system initialization:', error);
           }
-
-          console.log('✅ DBWatcher initialized (fallback)');
-        }
-
-        // Verify Alpine.js plugins
-        if (window.Alpine && window.Alpine.directive && window.Alpine.directive('collapse')) {
-          console.log('✅ Alpine.js Collapse plugin verified');
-        }
+        }, 200);
       });
     </script>
   </body>

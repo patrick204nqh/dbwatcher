@@ -1,0 +1,247 @@
+<% if @system_info&.dig(:error) %>
+  <!-- Error State -->
+  <div class="bg-red-50 border border-red-200 rounded p-3 mb-3">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="ml-3">
+        <h3 class="text-sm font-medium text-red-800">Error Loading System Information</h3>
+        <p class="text-sm text-red-700 mt-1"><%= @system_info[:error] %></p>
+      </div>
+    </div>
+  </div>
+<% else %>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+    <!-- Machine Information Section -->
+    <div class="border border-gray-200 rounded shadow-sm">
+      <div class="bg-gray-50 px-3 py-2 border-b border-gray-200 flex items-center">
+        <svg class="h-4 w-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+        </svg>
+        <h3 class="text-xs font-medium text-gray-700">Machine Information</h3>
+      </div>
+      <div class="p-3">
+        <% if @system_info&.dig(:machine) %>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Hostname:</span>
+              <span class="text-gray-900"><%= @system_info[:machine][:hostname] || "N/A" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">OS:</span>
+              <span class="text-gray-900"><%= @system_info[:machine][:os].is_a?(Hash) ? @system_info[:machine][:os][:name] : @system_info[:machine][:os] || "N/A" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Architecture:</span>
+              <span class="text-gray-900"><%= @system_info[:machine][:architecture] || "N/A" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">CPU Cores:</span>
+              <span class="text-gray-900"><%= @system_info[:machine][:cpu][:cores] || "N/A" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Process ID:</span>
+              <span class="text-gray-900"><%= @system_info[:machine][:process][:pid] || "N/A" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Load Avg (1m):</span>
+              <span class="text-gray-900">
+                <%
+                  load_avg = nil
+                  if @system_info[:machine][:load]
+                    load_avg = @system_info[:machine][:load][:one_minute]
+                  elsif @system_info[:machine][:cpu][:load_average].is_a?(Hash)
+                    load_avg = @system_info[:machine][:cpu][:load_average][:"1min"] ||
+                              (@system_info[:machine][:cpu][:load_average]["1min"] rescue nil)
+                  elsif @system_info[:machine][:cpu][:load_average].is_a?(Array) && @system_info[:machine][:cpu][:load_average].size > 0
+                    load_avg = @system_info[:machine][:cpu][:load_average][0]
+                  end
+                %>
+                <%= load_avg || "N/A" %>
+              </span>
+            </div>
+          </div>
+
+          <!-- Memory Information -->
+          <% if @system_info[:machine][:memory] %>
+            <div class="mt-3 pt-3 border-t border-gray-100">
+              <h4 class="text-xs font-medium text-gray-600 mb-2">Memory Usage</h4>
+              <div class="grid grid-cols-4 gap-2">
+                <div class="text-center bg-gray-50 rounded p-2">
+                  <div class="text-sm font-bold text-navy-dark">
+                    <%= number_to_human_size(@system_info[:machine][:memory][:total] || 0) %>
+                  </div>
+                  <div class="text-xs text-gray-500">Total</div>
+                </div>
+                <div class="text-center bg-orange-50 rounded p-2">
+                  <div class="text-sm font-bold text-orange-600">
+                    <%= number_to_human_size(@system_info[:machine][:memory][:used] || 0) %>
+                  </div>
+                  <div class="text-xs text-gray-500">Used</div>
+                </div>
+                <div class="text-center bg-green-50 rounded p-2">
+                  <div class="text-sm font-bold text-green-600">
+                    <%= number_to_human_size(@system_info[:machine][:memory][:available] || 0) %>
+                  </div>
+                  <div class="text-xs text-gray-500">Available</div>
+                </div>
+                <div class="text-center bg-blue-50 rounded p-2">
+                  <div class="text-sm font-bold text-blue-600">
+                    <%= @system_info[:machine][:memory][:usage_percent] ? "#{@system_info[:machine][:memory][:usage_percent]}%" : "N/A" %>
+                  </div>
+                  <div class="text-xs text-gray-500">Usage</div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="text-center text-gray-500 text-sm py-4">
+            Machine information not available
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Database Information Section -->
+    <div class="border border-gray-200 rounded shadow-sm">
+      <div class="bg-gray-50 px-3 py-2 border-b border-gray-200 flex items-center">
+        <svg class="h-4 w-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+        </svg>
+        <h3 class="text-xs font-medium text-gray-700">Database Information</h3>
+      </div>
+      <div class="p-3">
+        <% if @system_info&.dig(:database) && !@system_info[:database].empty? %>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Adapter:</span>
+              <span class="text-gray-900">
+                <% adapter = @system_info[:database][:adapter].is_a?(Hash) ? @system_info[:database][:adapter][:name] : @system_info[:database][:adapter] %>
+                <%= adapter || "N/A" %>
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Database:</span>
+              <span class="text-gray-900"><%= @system_info[:database][:database] || "N/A" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Version:</span>
+              <span class="text-gray-900"><%= @system_info[:database][:version] || "N/A" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Pool Size:</span>
+              <span class="text-gray-900"><%= @system_info[:database][:pool_size] || @system_info[:database][:connection_pool]&.[](:size) || "N/A" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Active Connections:</span>
+              <span class="text-gray-900">
+                <% active_conn = @system_info[:database][:active_connections] ||
+                                @system_info[:database][:connection_pool]&.[](:connections) ||
+                                @system_info[:database][:connection_pool]&.[](:checked_out) %>
+                <%= active_conn || "N/A" %>
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Tables Count:</span>
+              <span class="text-gray-900"><%= @system_info[:database][:tables_count] || @system_info[:database][:tables]&.[](:count) || "N/A" %></span>
+            </div>
+          </div>
+        <% else %>
+          <div class="text-center text-gray-500 text-sm py-4">
+            Database information not available
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Runtime Information Section -->
+    <div class="border border-gray-200 rounded shadow-sm">
+      <div class="bg-gray-50 px-3 py-2 border-b border-gray-200 flex items-center">
+        <svg class="h-4 w-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <h3 class="text-xs font-medium text-gray-700">Runtime Information</h3>
+      </div>
+      <div class="p-3">
+        <% if @system_info&.dig(:runtime) %>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Ruby Version:</span>
+              <span class="text-gray-900"><%= @system_info[:runtime][:ruby_version] || "N/A" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Ruby Engine:</span>
+              <span class="text-gray-900"><%= @system_info[:runtime][:ruby_engine] || "N/A" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Rails Version:</span>
+              <span class="text-gray-900"><%= @system_info[:runtime][:rails_version] || "N/A" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Environment:</span>
+              <span class="text-gray-900"><%= @system_info[:runtime][:environment] || "N/A" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Process ID:</span>
+              <span class="text-gray-900"><%= @system_info[:runtime][:pid] || "N/A" %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Loaded Gems:</span>
+              <span class="text-gray-900"><%= @system_info[:runtime][:gem_count] || "N/A" %></span>
+            </div>
+          </div>
+        <% else %>
+          <div class="text-center text-gray-500 text-sm py-4">
+            Runtime information not available
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Collection Metadata -->
+    <div class="border border-gray-200 rounded shadow-sm">
+      <div class="bg-gray-50 px-3 py-2 border-b border-gray-200 flex items-center">
+        <svg class="h-4 w-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3 class="text-xs font-medium text-gray-700">Collection Metadata</h3>
+      </div>
+      <div class="p-3">
+        <div class="grid grid-cols-2 gap-2 text-sm">
+          <div class="flex justify-between">
+            <span class="font-medium text-gray-600">Collected At:</span>
+            <span class="text-gray-900">
+              <% if @system_info&.dig(:collected_at) %>
+                <%= Time.parse(@system_info[:collected_at]).strftime("%Y-%m-%d %H:%M:%S") %>
+              <% else %>
+                N/A
+              <% end %>
+            </span>
+          </div>
+          <div class="flex justify-between">
+            <span class="font-medium text-gray-600">Collection Duration:</span>
+            <span class="text-gray-900"><%= @system_info&.dig(:collection_duration) ? "#{@system_info[:collection_duration]}s" : "N/A" %></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="font-medium text-gray-600">Cache Age:</span>
+            <span class="text-gray-900"><%= @info_age ? "#{@info_age.round(2)}s" : "N/A" %></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="font-medium text-gray-600">Cache TTL:</span>
+            <span class="text-gray-900">
+              <% if @system_info&.dig(:application_config, :dbwatcher) %>
+                <%= @system_info[:application_config][:dbwatcher][:system_info_cache_duration] || "N/A" %>s
+              <% else %>
+                N/A
+              <% end %>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
