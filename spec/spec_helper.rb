@@ -3,6 +3,8 @@
 # Configure SimpleCov for test coverage
 if ENV["COVERAGE"] || ENV["CI"]
   require "simplecov"
+  require "simplecov_json_formatter"
+
   SimpleCov.start "rails" do
     add_filter "/spec/"
     add_filter "/features/"

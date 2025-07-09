@@ -20,11 +20,11 @@ A Rails gem that tracks and visualizes database operations in your application. 
 
 ### Dashboard Interface
 
-![image](https://github.com/user-attachments/assets/1ea48717-0251-4d2b-95ea-87e00e6b89c3)
+![image](https://github.com/user-attachments/assets/92c94bdc-06fd-463e-a11f-f931a8ff5346)
 
 ### Session View
 
-![image](https://github.com/user-attachments/assets/411423aa-341f-4112-9d10-1dd9e0a4d409)
+![image](https://github.com/user-attachments/assets/cae4c820-d7d9-4d16-b8fa-5978e0578ff8)
 
 [View more screenshots in here →](docs/screenshots.md)
 
