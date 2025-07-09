@@ -3,14 +3,6 @@
 module Dbwatcher
   module Dashboard
     class SystemInfoController < BaseController
-      def index
-        return redirect_to root_path unless Dbwatcher.configuration.collect_system_info
-
-        @system_info_summary = system_info_storage.summary
-        @system_info = system_info_storage.cached_info
-        @info_age = system_info_storage.info_age
-      end
-
       def refresh
         system_info_storage.refresh_info
 

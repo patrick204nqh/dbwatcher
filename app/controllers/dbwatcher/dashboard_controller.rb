@@ -16,6 +16,14 @@ module Dbwatcher
       @info_age = system_info_storage.info_age
     end
 
+    def system_info
+      return redirect_to root_path unless Dbwatcher.configuration.collect_system_info
+
+      @system_info_summary = system_info_storage.summary
+      @system_info = system_info_storage.cached_info
+      @info_age = system_info_storage.info_age
+    end
+
     def clear_all
       clear_storage_with_message(
         -> { Storage.clear_all },

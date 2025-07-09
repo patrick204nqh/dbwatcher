@@ -20,7 +20,7 @@
       refresh: '/dbwatcher/dashboard/system_info/refresh',
       clearCache: '/dbwatcher/dashboard/system_info/clear_cache',
       dashboard: '/dbwatcher',
-      systemInfo: '/dbwatcher/dashboard/system_info'
+      systemInfo: '/dbwatcher/system_info'
     }
   };
 
@@ -44,9 +44,6 @@
 
     // Setup event listeners
     function setupEventListeners() {
-      // Tab switching
-      document.addEventListener('click', handleTabClick);
-      
       // System info refresh
       document.addEventListener('click', handleRefreshClick);
       
@@ -54,34 +51,6 @@
       document.addEventListener('click', handleClearCacheClick);
     }
     
-    // Handle tab click
-    function handleTabClick(event) {
-      const target = event.target;
-      
-      if (!target.matches(settings.tab)) {
-        return;
-      }
-      
-      event.preventDefault();
-      const tabId = target.getAttribute('data-tab');
-      
-      console.log('Tab clicked:', tabId);
-      
-      // Handle system info tab - redirect to dedicated page
-      if (tabId === 'system-info') {
-        window.location.href = CONFIG.ENDPOINTS.systemInfo;
-        return;
-      }
-      
-      // Handle overview tab - redirect to dashboard
-      if (tabId === 'overview') {
-        window.location.href = CONFIG.ENDPOINTS.dashboard;
-        return;
-      }
-    }
-
-
-
 
     // Handle refresh button click
     function handleRefreshClick(event) {
