@@ -122,6 +122,24 @@ bundle exec rake unit        # Unit tests only
 bundle exec rake acceptance  # Feature tests only
 ```
 
+### Code Coverage
+
+The project uses SimpleCov for code coverage and uploads results to Qlty. To run tests with coverage locally:
+
+```bash
+COVERAGE=true bundle exec rake test
+```
+
+Coverage reports will be generated in the `coverage/` directory.
+
+### CI Coverage Setup
+
+To enable coverage uploads to Qlty in CI:
+
+1. Create an account at [Qlty.sh](https://qlty.sh)
+2. Create a new project and get your coverage token
+3. Add the token as a GitHub repository secret named `QLTY_COVERAGE_TOKEN`
+
 ### Local Development
 
 ```bash

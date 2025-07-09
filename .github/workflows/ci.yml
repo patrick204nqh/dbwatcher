@@ -1,104 +1,126 @@
 name: CI
 
+permissions:
+  actions: write
+  contents: read
+  id-token: write
+
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 env:
-  RUBY_VERSION: '3.3'
+  RUBY_VERSION: "3.3"
+  COVERAGE: true
+  CI: true
 
 jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Ruby ${{ env.RUBY_VERSION }}
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: ${{ env.RUBY_VERSION }}
-        bundler-cache: true
-    
-    - name: Set up test database
-      run: |
-        cd spec/dummy
-        bundle install
-        bundle exec rails db:drop db:create db:migrate RAILS_ENV=test
-    
-    - name: Run RSpec unit tests
-      run: bundle exec rake unit
-    
-    - name: Run Cucumber acceptance tests
-      run: bundle exec rake acceptance
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby ${{ env.RUBY_VERSION }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Set up test database
+        run: |
+          cd spec/dummy
+          bundle install
+          bundle exec rails db:drop db:create db:migrate RAILS_ENV=test
+
+      - name: Run RSpec unit tests
+        run: bundle exec rake unit
+
+      - name: Run Cucumber acceptance tests
+        run: bundle exec rake acceptance
+
+      - name: Upload coverage to Qlty
+        if: success() && github.ref == 'refs/heads/master'
+        uses: qltysh/qlty-action/coverage@v1
+        with:
+          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+          files: coverage/.resultset.json
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
 
   quality:
     name: Code Quality
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Ruby ${{ env.RUBY_VERSION }}
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: ${{ env.RUBY_VERSION }}
-        bundler-cache: true
-    
-    - name: Run RuboCop
-      run: bundle exec rubocop
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby ${{ env.RUBY_VERSION }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Run RuboCop
+        run: bundle exec rubocop
 
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Ruby ${{ env.RUBY_VERSION }}
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: ${{ env.RUBY_VERSION }}
-        bundler-cache: true
-    
-    - name: Run security checks
-      run: bundle exec rake security
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby ${{ env.RUBY_VERSION }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Run security checks
+        run: bundle exec rake security
 
   compatibility:
     name: Compatibility Check
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Ruby ${{ env.RUBY_VERSION }}
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: ${{ env.RUBY_VERSION }}
-        bundler-cache: true
-    
-    - name: Check gem build
-      run: |
-        gem build dbwatcher.gemspec
-        echo "✅ Gem builds successfully"
-    
-    - name: Check gemspec validity
-      run: |
-        gem specification dbwatcher-*.gem
-        echo "✅ Gemspec is valid"
-    
-    - name: Verify gem can be loaded in bundle context
-      run: |
-        bundle exec ruby -e "require 'dbwatcher'; puts '✅ Gem loads successfully in bundle context'"
-    
-    - name: Check dependencies compatibility
-      run: |
-        bundle outdated --strict || echo "📦 Some dependencies could be updated"
-        echo "✅ Dependencies check completed"
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby ${{ env.RUBY_VERSION }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Check gem build
+        run: |
+          gem build dbwatcher.gemspec
+          echo "✅ Gem builds successfully"
+
+      - name: Check gemspec validity
+        run: |
+          gem specification dbwatcher-*.gem
+          echo "✅ Gemspec is valid"
+
+      - name: Verify gem can be loaded in bundle context
+        run: |
+          bundle exec ruby -e "require 'dbwatcher'; puts '✅ Gem loads successfully in bundle context'"
+
+      - name: Check dependencies compatibility
+        run: |
+          bundle outdated --strict || echo "📦 Some dependencies could be updated"
+          echo "✅ Dependencies check completed"

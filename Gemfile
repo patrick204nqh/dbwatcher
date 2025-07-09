@@ -18,3 +18,7 @@ gem "sqlite3", "~> 1.4"
 gem "brakeman", "~> 6.0"
 gem "bundler-audit", "~> 0.9"
 gem "rubocop", "~> 1.77"
+
+# Test coverage
+gem "simplecov", "~> 0.22.0", require: false
+gem "simplecov_json_formatter", "~> 0.1.4", require: false

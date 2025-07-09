@@ -1,5 +1,24 @@
 # frozen_string_literal: true
 
+# Configure SimpleCov for test coverage
+if ENV["COVERAGE"] || ENV["CI"]
+  require "simplecov"
+  SimpleCov.start "rails" do
+    add_filter "/spec/"
+    add_filter "/features/"
+    add_group "Tracker", "lib/dbwatcher/tracker"
+    add_group "Storage", "lib/dbwatcher/storage"
+    add_group "Services", "lib/dbwatcher/services"
+    add_group "Controllers", "app/controllers"
+
+    # Use JSON formatter for CI
+    if ENV["CI"]
+      SimpleCov.coverage_dir "coverage"
+      SimpleCov.formatter = SimpleCov::Formatter::JSONFormatter
+    end
+  end
+end
+
 # Load the entire dbwatcher library
 require "dbwatcher"
 
