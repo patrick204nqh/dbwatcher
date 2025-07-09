@@ -174,8 +174,8 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
         responsiveLayout: false,
         height: Math.max(200, Math.min(400, (tabulatorData.length * 35) + 80)),  // Minimum 200px, expand based on content
         
-        // Force Tabulator to use our custom ID field
-        index: 'id',  // Tell Tabulator to use the 'id' field as the row identifier
+        // Force Tabulator to use our custom rowId field
+        index: 'rowId',  // Tell Tabulator to use the 'rowId' field as the row identifier
         
         // Performance optimizations - disable virtual DOM to ensure all rows render
         virtualDom: false,
@@ -208,28 +208,18 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
       changes.forEach((change, index) => {
         const columnData = this.extractColumnData(change, tableInfo.columns);
         
-        // Create truly unique row ID using table name and index only (more reliable)
-        const uniqueId = `${tableName}_row_${index}`;
-        
-        // Clean column data to remove any 'id' field that might conflict
-        const cleanColumnData = { ...columnData };
-        delete cleanColumnData.id;  // Remove any id field from column data
+        // Create truly unique row ID using table name and index only (for Tabulator internal use)
+        const uniqueRowId = `${tableName}_row_${index}`;
         
         const row = {
-          id: uniqueId,  // Force this to be the ID used by Tabulator
+          rowId: uniqueRowId,  // Tabulator's internal row identifier
           index: index + 1,  // Display index (1-based) - should maintain API order
           operation: change.operation,
           timestamp: change.timestamp,
           table_name: tableName,
           change_data: change,  // Keep original change data with ID intact
-          original_change_id: change.id,  // Store original ID separately
-          ...cleanColumnData  // Use cleaned column data
+          ...columnData  // Include all column data including actual record ID
         };
-        
-        // Ensure ID is correct
-        if (row.id !== uniqueId) {
-          row.id = uniqueId;  // Force it back
-        }
         
         rows.push(row);
       });
@@ -252,7 +242,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
             const rowData = cell.getRow().getData();
             return `<div class="flex items-center justify-center gap-1">
                       <button class="expand-btn text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-gray-100" 
-                             data-row-id="${rowData.id}">
+                             data-row-id="${rowData.rowId}">
                         <svg class="w-3 h-3 transition-transform" fill="currentColor" viewBox="0 0 20 20">
                           <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 5.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
                         </svg>
@@ -375,7 +365,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
             const rowData = cell.getRow().getData();
             return `<div class="flex items-center justify-center gap-1">
                       <button class="expand-btn text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-gray-100" 
-                             data-row-id="${rowData.id}">
+                             data-row-id="${rowData.rowId}">
                         <svg class="w-3 h-3 transition-transform" fill="currentColor" viewBox="0 0 20 20">
                           <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 5.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
                         </svg>
@@ -576,7 +566,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
             // Try searching through data if direct lookup fails
             try {
               const data = tabulator.getData();
-              const matchingData = data.find(d => d.id === rowId);
+              const matchingData = data.find(d => d.rowId === rowId);
               if (matchingData) {
                 targetRow = tabulator.getRow(rowId);
                 foundInTable = tableName;
@@ -614,7 +604,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
       // Create detail row as a proper table row
       const detailRow = document.createElement('tr');
       detailRow.className = 'row-detail bg-gray-50';
-      detailRow.setAttribute('data-parent-id', rowData.id);
+      detailRow.setAttribute('data-parent-id', rowData.rowId);
       
       // Create full-width cell
       const detailCell = document.createElement('td');
@@ -641,7 +631,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
           }, 50);
         }
       } catch (error) {
-        console.error(`Error creating detail row for ${rowData.id}:`, error);
+        console.error(`Error creating detail row for ${rowData.rowId}:`, error);
       }
     },
 
@@ -652,7 +642,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
       
       
       // Find and remove the detail row
-      const detailRow = element.parentNode.querySelector(`tr.row-detail[data-parent-id="${rowData.id}"]`);
+      const detailRow = element.parentNode.querySelector(`tr.row-detail[data-parent-id="${rowData.rowId}"]`);
       if (detailRow) {
         detailRow.remove();
       } else {
