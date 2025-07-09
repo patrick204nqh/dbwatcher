@@ -1,0 +1,248 @@
+// Tabulator Component Styles
+// Custom styling for the Tabulator.js library used in DBWatcher
+
+// Base Tabulator styling
+.tabulator {
+  font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+  font-size: 12px;
+  border: none;
+  background: white;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+  // Header styling
+  .tabulator-header {
+    background: #f3f3f3;
+    border-bottom: 2px solid #e8e8e8;
+    font-size: 11px;
+
+    .tabulator-col {
+      background: #f3f3f3;
+      border-right: 1px solid #e8e8e8;
+      padding: 4px 8px;
+      font-weight: 500;
+      text-transform: none;
+      height: 32px;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+
+      // Sticky columns in header
+      &.sticky-left-0 {
+        position: sticky;
+        left: 0;
+        z-index: 20;
+        background: #f3f3f3;
+        box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+      }
+
+      &.sticky-left-1 {
+        position: sticky;
+        left: 60px;
+        z-index: 19;
+        background: #f3f3f3;
+        box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+      }
+
+      &.sticky-left-2 {
+        position: sticky;
+        left: 108px;
+        z-index: 18;
+        background: #f3f3f3;
+        box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+
+  // Table body styling
+  .tabulator-tableholder {
+    .tabulator-table {
+      .tabulator-row {
+        background: white;
+        border-bottom: 1px solid #f0f0f0;
+        min-height: auto;
+        transition: background-color 0.15s ease;
+
+        &:hover {
+          background: #f3f4f6;
+        }
+
+        // Row colors based on operation
+        &.operation-insert {
+          background-color: rgba(16, 185, 129, 0.05);
+          &:hover {
+            background-color: rgba(16, 185, 129, 0.1);
+          }
+        }
+
+        &.operation-update {
+          background-color: rgba(108, 173, 223, 0.05);
+          &:hover {
+            background-color: rgba(108, 173, 223, 0.1);
+          }
+        }
+
+        &.operation-delete {
+          background-color: rgba(239, 68, 68, 0.05);
+          &:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+          }
+        }
+
+        // Cell styling
+        .tabulator-cell {
+          border-right: 1px solid #f0f0f0;
+          padding: 2px 8px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          vertical-align: top;
+          font-size: 12px;
+          height: auto;
+          min-height: 28px;
+
+          // Special styling for cells with multi-line content
+          &:has(.space-y-1) {
+            white-space: normal;
+            height: auto;
+            padding: 4px 8px;
+          }
+
+          // Sticky columns in body
+          &.sticky-left-0 {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 5;
+            box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+          }
+
+          &.sticky-left-1 {
+            position: sticky;
+            left: 60px;
+            background: white;
+            z-index: 4;
+            box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+          }
+
+          &.sticky-left-2 {
+            position: sticky;
+            left: 108px;
+            background: white;
+            z-index: 3;
+            box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+          }
+        }
+
+        // Hover state for sticky cells
+        &:hover {
+          .tabulator-cell {
+            &.sticky-left-0,
+            &.sticky-left-1,
+            &.sticky-left-2 {
+              background: #f9fafb;
+            }
+          }
+        }
+
+        // Operation-specific sticky cell backgrounds
+        &.operation-insert .tabulator-cell {
+          &.sticky-left-0, &.sticky-left-1, &.sticky-left-2 {
+            background-color: rgba(16, 185, 129, 0.05);
+          }
+        }
+
+        &.operation-update .tabulator-cell {
+          &.sticky-left-0, &.sticky-left-1, &.sticky-left-2 {
+            background-color: rgba(108, 173, 223, 0.05);
+          }
+        }
+
+        &.operation-delete .tabulator-cell {
+          &.sticky-left-0, &.sticky-left-1, &.sticky-left-2 {
+            background-color: rgba(239, 68, 68, 0.05);
+          }
+        }
+
+        // Operation-specific sticky cell hover backgrounds
+        &.operation-insert:hover .tabulator-cell {
+          &.sticky-left-0, &.sticky-left-1, &.sticky-left-2 {
+            background-color: rgba(16, 185, 129, 0.1);
+          }
+        }
+
+        &.operation-update:hover .tabulator-cell {
+          &.sticky-left-0, &.sticky-left-1, &.sticky-left-2 {
+            background-color: rgba(108, 173, 223, 0.1);
+          }
+        }
+
+        &.operation-delete:hover .tabulator-cell {
+          &.sticky-left-0, &.sticky-left-1, &.sticky-left-2 {
+            background-color: rgba(239, 68, 68, 0.1);
+          }
+        }
+      }
+    }
+  }
+}
+
+// Row detail styling for expanded rows
+.row-detail {
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 0;
+
+  td {
+    padding: 8px;
+    vertical-align: top;
+    border-right: 1px solid #e5e7eb;
+  }
+
+  h4 {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+  }
+
+  // Sticky column in expanded view
+  .sticky-left-0 {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: #f9fafb;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+    width: 268px;
+    min-width: 268px;
+  }
+}
+
+// Expand button styling
+.expand-btn {
+  padding: 2px;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background-color: #f3f4f6;
+  }
+}
+
+// Table container
+.table-container {
+  min-height: 200px;
+  width: 100%;
+  overflow: auto;
+  border-bottom-left-radius: 0.25rem;
+  border-bottom-right-radius: 0.25rem;
+}
+
+// Column selector dropdown
+.column-selector {
+  right: 1rem;
+  margin-top: -2px;
+  z-index: 100;
+}

@@ -1,7 +1,7 @@
 /**
  * DBWatcher Application Styles
  * Compiled CSS for all components
- * Generated at 2025-07-09 21:16:32 +0700
+ * Generated at 2025-07-09 21:44:32 +0700
  */
 
 /**
@@ -418,7 +418,7 @@
   font-weight: 500;
   text-transform: uppercase;
   display: inline-block;
-  width: 18px;
+  min-width: 18px;
   height: 18px;
   line-height: 18px;
   text-align: center;
@@ -426,34 +426,67 @@
 
 /* Operation type badges */
 .badge-insert {
-  background: var(--status-insert);
+  background: var(--status-insert, #10b981);
   color: white;
 }
 
 .badge-update {
-  background: var(--status-update);
+  background: var(--status-update, #6CADDF);
   color: white;
 }
 
 .badge-delete {
-  background: var(--status-delete);
+  background: var(--status-delete, #ef4444);
   color: white;
 }
 
 .badge-select {
-  background: var(--status-select);
+  background: var(--status-select, #6b7280);
   color: white;
 }
 
 /* Status badges */
 .badge-success {
-  background: var(--status-insert);
+  background: var(--status-insert, #10b981);
   color: white;
 }
 
 .badge-primary {
-  background: var(--blue-medium);
+  background: var(--blue-medium, #3b82f6);
   color: white;
+}
+
+.badge-warning {
+  background: var(--status-warning, #f59e0b);
+  color: white;
+}
+
+.badge-error {
+  background: var(--status-delete, #ef4444);
+  color: white;
+}
+
+/* Badge sizes */
+.badge-sm {
+  font-size: 9px;
+  padding: 0px 4px;
+  height: 16px;
+  line-height: 16px;
+}
+
+.badge-lg {
+  font-size: 11px;
+  padding: 2px 8px;
+  height: 20px;
+  line-height: 16px;
+}
+
+/* Changes table specific badges */
+.changes-table-badge {
+  width: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /**
@@ -501,4 +534,243 @@ pre[x-ref="codeContainer"]::-webkit-scrollbar-thumb {
 
 pre[x-ref="codeContainer"]::-webkit-scrollbar-thumb:hover {
   background: theme("colors.gray.500");
+}
+
+.tabulator {
+  font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
+  font-size: 12px;
+  border: none;
+  background: white;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.tabulator .tabulator-header {
+  background: #f3f3f3;
+  border-bottom: 2px solid #e8e8e8;
+  font-size: 11px;
+}
+
+.tabulator .tabulator-header .tabulator-col {
+  background: #f3f3f3;
+  border-right: 1px solid #e8e8e8;
+  padding: 4px 8px;
+  font-weight: 500;
+  text-transform: none;
+  height: 32px;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.tabulator .tabulator-header .tabulator-col.sticky-left-0 {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  background: #f3f3f3;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.tabulator .tabulator-header .tabulator-col.sticky-left-1 {
+  position: sticky;
+  left: 60px;
+  z-index: 19;
+  background: #f3f3f3;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.tabulator .tabulator-header .tabulator-col.sticky-left-2 {
+  position: sticky;
+  left: 108px;
+  z-index: 18;
+  background: #f3f3f3;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row {
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+  min-height: auto;
+  transition: background-color 0.15s ease;
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover {
+  background: #f3f4f6;
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert {
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert:hover {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update {
+  background-color: rgba(108, 173, 223, 0.05);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update:hover {
+  background-color: rgba(108, 173, 223, 0.1);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete {
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell {
+  border-right: 1px solid #f0f0f0;
+  padding: 2px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+  font-size: 12px;
+  height: auto;
+  min-height: 28px;
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell:has(.space-y-1) {
+  white-space: normal;
+  height: auto;
+  padding: 4px 8px;
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell.sticky-left-0 {
+  position: sticky;
+  left: 0;
+  background: white;
+  z-index: 5;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell.sticky-left-1 {
+  position: sticky;
+  left: 60px;
+  background: white;
+  z-index: 4;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell.sticky-left-2 {
+  position: sticky;
+  left: 108px;
+  background: white;
+  z-index: 3;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-2 {
+  background: #f9fafb;
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert .tabulator-cell.sticky-left-2 {
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update .tabulator-cell.sticky-left-2 {
+  background-color: rgba(108, 173, 223, 0.05);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete .tabulator-cell.sticky-left-2 {
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert:hover .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert:hover .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert:hover .tabulator-cell.sticky-left-2 {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update:hover .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update:hover .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update:hover .tabulator-cell.sticky-left-2 {
+  background-color: rgba(108, 173, 223, 0.1);
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete:hover .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete:hover .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete:hover .tabulator-cell.sticky-left-2 {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.row-detail {
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 0;
+}
+
+.row-detail td {
+  padding: 8px;
+  vertical-align: top;
+  border-right: 1px solid #e5e7eb;
+}
+
+.row-detail h4 {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.row-detail .sticky-left-0 {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: #f9fafb;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  width: 268px;
+  min-width: 268px;
+}
+
+.expand-btn {
+  padding: 2px;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+}
+
+.expand-btn:hover {
+  background-color: #f3f4f6;
+}
+
+.table-container {
+  min-height: 200px;
+  width: 100%;
+  overflow: auto;
+  border-bottom-left-radius: 0.25rem;
+  border-bottom-right-radius: 0.25rem;
+}
+
+.column-selector {
+  right: 1rem;
+  margin-top: -2px;
+  z-index: 100;
+}
+
+/**
+ * Tabulator Vendor Overrides
+ * Overrides for the Tabulator.js vendor CSS
+ */
+.tabulator {
+  font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace !important;
+}
+
+.tabulator .tabulator-header {
+  background: #f3f3f3 !important;
+}
+
+.tabulator .tabulator-header .tabulator-col {
+  background: #f3f3f3 !important;
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row {
+  background: white !important;
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover {
+  background: #f3f4f6 !important;
+}
+
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-2 {
+  background: #f9fafb !important;
 }

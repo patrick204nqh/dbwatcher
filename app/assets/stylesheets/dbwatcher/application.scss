@@ -13,3 +13,7 @@
 @import "components/forms";
 @import "components/badges";
 @import "components/diagrams";
+@import "components/tabulator";
+
+// Vendor overrides - must be imported after our components
+@import "vendor/tabulator_overrides";
