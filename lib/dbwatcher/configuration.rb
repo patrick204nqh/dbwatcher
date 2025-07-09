@@ -35,7 +35,7 @@ module Dbwatcher
       @auto_clean_after_days = 7
 
       # Query tracking configuration defaults
-      @track_queries = true
+      @track_queries = false
       @slow_query_threshold = 200 # milliseconds
       @max_query_logs_per_day = 1000
 
