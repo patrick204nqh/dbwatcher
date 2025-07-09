@@ -2,7 +2,7 @@
  * Diagram Component Styles
  */
 
-// Code view styles
+/* Code view container */
 .diagram-code-view {
   position: relative;
   height: 100%;
@@ -20,7 +20,7 @@
   }
 }
 
-// Mermaid diagram container
+/* Mermaid diagram container */
 [x-ref="diagramContainer"] {
   .mermaid {
     overflow: auto;
@@ -28,7 +28,7 @@
   }
 }
 
-// Code container scrollbar styling
+/* Code container scrollbar styling */
 pre[x-ref="codeContainer"] {
   &::-webkit-scrollbar {
     width: 8px;

@@ -9,22 +9,9 @@ module Dbwatcher
     end
 
     def show
-      redirect_to changes_session_path(@session.id)
-    end
-
-    def changes
-      Rails.logger.info "SessionsController#changes: Loading changes for session #{@session.id}"
-      # No server-side data processing - API-first architecture
-    end
-
-    def summary
-      Rails.logger.info "SessionsController#summary: Loading summary for session #{@session.id}"
-      # No server-side data processing - API-first architecture
-    end
-
-    def diagrams
-      Rails.logger.info "SessionsController#diagrams: Loading diagrams for session #{@session.id}"
-      # No server-side data processing - API-first architecture
+      @active_tab = params[:tab] || "changes"
+      # Debug logging
+      Rails.logger.info "SessionsController#show: Session ID: #{@session.id.inspect}, Class: #{@session.class}"
     end
 
     def clear
@@ -41,8 +28,5 @@ module Dbwatcher
       @session = Storage.sessions.find(params[:id])
       handle_not_found("Session", sessions_path) unless @session
     end
-
-    # No longer needed with API-first architecture
-    # All data processing happens in API services and is loaded via JavaScript
   end
 end

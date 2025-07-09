@@ -136,7 +136,7 @@
 
           <!-- Navigation -->
           <nav class="flex-1 py-2 overflow-y-auto">
-            <%= link_to root_path, class: "sidebar-item #{current_page?(root_path) || current_page?(system_info_path) ? 'active' : ''}" do %>
+            <%= link_to root_path, class: "sidebar-item #{current_page?(root_path) || (params[:tab] == 'system_info') ? 'active' : ''}" do %>
               <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>

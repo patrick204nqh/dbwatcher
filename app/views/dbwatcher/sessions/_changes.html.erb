@@ -1,0 +1,91 @@
+<!-- Changes Content - Hybrid Tabulator Implementation -->
+<div class="h-full"
+     x-data="changesTableHybrid({ sessionId: '<%= @session.id %>' })">
+
+  <!-- Loading State -->
+  <div x-show="loading" class="flex items-center justify-center h-64">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    <span class="ml-2 text-gray-600">Loading changes...</span>
+  </div>
+
+  <!-- Error State -->
+  <div x-show="error" class="p-4 bg-red-50 border border-red-200 rounded">
+    <p class="text-red-700" x-text="error"></p>
+    <button @click="loadChangesData()" class="mt-2 text-red-600 underline">Retry</button>
+  </div>
+
+  <!-- No Data State -->
+  <div x-show="!loading && !error && Object.keys(tableData).length === 0"
+       class="flex flex-col items-center justify-center h-64">
+    <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    </svg>
+    <p class="mt-2 text-gray-500">No changes data available</p>
+  </div>
+
+  <!-- Multiple Tables - Enhanced UI Structure -->
+  <template x-if="!loading && !error && Object.keys(tableData).length > 0">
+    <div class="h-full overflow-auto p-2 bg-gray-50">
+      <template x-for="[tableName, tableInfo] in Object.entries(tableData)" :key="tableName">
+        <div class="mb-4 bg-white border border-gray-200 rounded shadow-sm" x-data="{ expanded: true }">
+          <!-- Table Header with Column Controls -->
+          <div class="bg-gray-100 px-3 py-2 flex items-center cursor-pointer border-b border-gray-200"
+               @click="expanded = !expanded"
+               :id="`table-${tableName}`">
+            <svg class="w-4 h-4 mr-2 transition-transform text-gray-600"
+                 :class="{ 'rotate-90': expanded }"
+                 fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <h3 class="text-sm font-medium text-gray-900 flex-1" x-text="tableName"></h3>
+            <div class="flex gap-2 mr-4">
+              <template x-for="[op, count] in Object.entries(tableInfo.operations || {})" :key="op">
+                <span x-show="count > 0" class="badge changes-table-badge" :class="`badge-${op.toLowerCase()}`" x-text="count"></span>
+              </template>
+            </div>
+
+            <!-- Column Visibility Button -->
+            <button @click.stop="toggleColumnSelector(tableName)"
+                    class="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50 relative flex items-center">
+              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+              </svg>
+              Columns
+            </button>
+          </div>
+
+          <!-- Column Selector Dropdown -->
+          <div x-show="showColumnSelector === tableName"
+               x-transition
+               @click.away="showColumnSelector = null"
+               class="absolute z-50 bg-white border border-gray-300 rounded shadow-lg p-3 max-h-64 overflow-auto column-selector">
+            <div class="text-xs font-medium mb-2">Select Visible Columns:</div>
+            <div class="space-y-1 min-w-48">
+              <template x-for="column in tableInfo.columns" :key="column">
+                <label class="flex items-center text-xs hover:bg-gray-50 p-1 rounded">
+                  <input type="checkbox"
+                         :checked="isColumnVisible(tableName, column)"
+                         @change="toggleColumnVisibility(tableName, column)"
+                         class="mr-2">
+                  <span class="flex-1" x-text="column"></span>
+                </label>
+              </template>
+            </div>
+            <div class="mt-2 pt-2 border-t border-gray-200 flex gap-1">
+              <button @click="selectAllColumns(tableName)"
+                      class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">All</button>
+              <button @click="selectNoneColumns(tableName)"
+                      class="text-xs bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-700">None</button>
+            </div>
+          </div>
+
+          <!-- Tabulator Container for This Table -->
+          <div x-show="expanded" x-collapse>
+            <div :id="`changes-table-${tableName}`" class="table-container"></div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </template>
+</div>

@@ -1,51 +1,43 @@
 <%# Tables Index Page %>
-<div class="h-full flex flex-col">
+<div class="h-full flex flex-col" x-data="{ searchTerm: '' }">
   <%= render 'dbwatcher/shared/header', title: 'Database Tables', subtitle: "#{@tables.count} tables" %>
-  
+
   <%= render 'dbwatcher/shared/tab_bar', tabs: [
-    { name: 'All Tables', active: true },
-    { name: 'Modified', active: false },
-    { name: 'Recent', active: false }
+    { name: 'All Tables', active: true }
   ] %>
-  
+
   <!-- Toolbar -->
   <div class="h-8 bg-gray-100 border-b border-gray-300 flex items-center px-4 gap-2">
-    <input type="text" placeholder="Filter tables..." 
+    <input type="text" placeholder="Filter tables..."
            class="compact-input flex-1 max-w-xs"
-           x-data="" x-model="searchTerm" 
+           x-model="searchTerm"
            @input="filterTables()">
-    <select class="compact-select">
-      <option>All Types</option>
-      <option>User Tables</option>
-      <option>System Tables</option>
-    </select>
-    <button class="compact-button bg-blue-medium text-white hover:bg-blue-dark">
-      Refresh
-    </button>
   </div>
-  
+
   <!-- Content Area -->
   <div class="flex-1 overflow-auto">
     <table class="compact-table w-full">
       <thead>
         <tr>
-          <th class="text-left">Table Name</th>
-          <th class="text-center">Changes</th>
-          <th class="text-center">Last Modified</th>
-          <th class="text-center">Operations</th>
-          <th class="text-right">Actions</th>
+          <th class="text-left" style="min-width: 250px; width: 40%">Table Name</th>
+          <th class="text-center" style="width: 100px">Changes</th>
+          <th class="text-center" style="width: 180px">Last Modified</th>
+          <th class="text-center" style="width: 120px">Operations</th>
+          <th class="text-right" style="width: 100px">Actions</th>
         </tr>
       </thead>
       <tbody>
         <% @tables.each do |table| %>
           <% next if table[:name].nil? || table[:name].empty? %>
           <tr class="hover:bg-gray-50">
-            <td class="font-medium text-navy-dark">
+            <td class="font-medium text-navy-dark" style="max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               <div class="flex items-center gap-2">
-                <svg class="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg class="w-3 h-3 text-gray-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/>
                 </svg>
-                <%= link_to table[:name], table_path(table[:name]), class: "text-navy-dark hover:text-blue-medium" %>
+                <span class="truncate" title="<%= table[:name] %>">
+                  <%= link_to table[:name], table_path(table[:name]), class: "text-navy-dark hover:text-blue-medium" %>
+                </span>
               </div>
             </td>
             <td class="text-center">
@@ -57,35 +49,35 @@
             </td>
             <td class="text-center text-gray-600">
               <% if table[:last_change] %>
-                <%= Time.parse(table[:last_change].to_s).strftime("%m/%d %H:%M") rescue table[:last_change] %>
+                <%= format_timestamp(table[:last_change]) %>
               <% else %>
                 <span class="text-gray-400">No changes</span>
               <% end %>
             </td>
             <td class="text-center">
-              <div class="flex gap-1 justify-center">
-                <span class="badge badge-insert text-xs" title="Inserts">I</span>
-                <span class="badge badge-update text-xs" title="Updates">U</span>
-                <span class="badge badge-delete text-xs" title="Deletes">D</span>
+              <div class="flex gap-2 justify-center">
+                <span class="badge badge-insert text-xs px-2" title="Inserts">Insert</span>
+                <span class="badge badge-update text-xs px-2" title="Updates">Update</span>
+                <span class="badge badge-delete text-xs px-2" title="Deletes">Delete</span>
               </div>
             </td>
             <td class="text-right">
               <div class="flex gap-1 justify-end">
-                <%= link_to changes_table_path(table[:name]), 
-                    class: "compact-button bg-gray-500 text-white hover:bg-gray-600", 
+                <%= link_to changes_table_path(table[:name]),
+                    class: "compact-button bg-gray-500 text-white hover:bg-gray-600",
                     title: "View Changes" do %>
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                   </svg>
                 <% end %>
-                <%= link_to table_path(table[:name]), 
-                    class: "compact-button bg-navy-dark text-white hover:bg-blue-medium", 
+                <%= link_to table_path(table[:name]),
+                    class: "compact-button bg-navy-dark text-white hover:bg-blue-medium",
                     title: "Table Details" do %>
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
                 <% end %>
@@ -96,10 +88,10 @@
       </tbody>
     </table>
   </div>
-  
+
   <!-- Status Bar -->
   <div class="h-6 bg-gray-100 border-t border-gray-300 flex items-center px-4 text-xs text-gray-600">
-    <%= @tables.count %> tables total • 
+    <%= @tables.count %> tables total •
     <%= @tables.count { |t| t[:change_count] > 0 } %> with changes •
     Last updated: <%= Time.current.strftime("%H:%M:%S") %>
   </div>
@@ -110,7 +102,7 @@ function filterTables() {
   // Simple table filtering functionality
   const searchTerm = document.querySelector('input[x-model="searchTerm"]').value.toLowerCase();
   const rows = document.querySelectorAll('tbody tr');
-  
+
   rows.forEach(row => {
     const tableName = row.querySelector('td').textContent.toLowerCase();
     if (tableName.includes(searchTerm)) {

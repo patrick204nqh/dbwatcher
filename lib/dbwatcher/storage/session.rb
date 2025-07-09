@@ -28,6 +28,11 @@ module Dbwatcher
         }
       end
 
+      # Used by Rails URL helpers to convert the object to a URL parameter
+      def to_param
+        id.to_s
+      end
+
       def summary
         return {} unless changes.is_a?(Array)
 

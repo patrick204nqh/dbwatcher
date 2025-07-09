@@ -1,0 +1,37 @@
+/**
+ * Tabulator Vendor Overrides
+ * Overrides for the Tabulator.js vendor CSS
+ */
+
+// Override specific vendor styles that can't be handled in our component CSS
+.tabulator {
+  // Force our font settings
+  font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace !important;
+
+  // Ensure proper header styling
+  .tabulator-header {
+    background: #f3f3f3 !important;
+
+    .tabulator-col {
+      background: #f3f3f3 !important;
+    }
+  }
+
+  // Ensure proper row styling
+  .tabulator-tableholder .tabulator-table .tabulator-row {
+    background: white !important;
+
+    &:hover {
+      background: #f3f4f6 !important;
+    }
+
+    // Ensure proper hover state for sticky cells
+    &:hover .tabulator-cell {
+      &.sticky-left-0,
+      &.sticky-left-1,
+      &.sticky-left-2 {
+        background: #f9fafb !important;
+      }
+    }
+  }
+}

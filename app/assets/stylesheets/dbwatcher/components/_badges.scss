@@ -3,27 +3,7 @@
  * Operation and status indicators
  */
 
-/* Status badges */
-.badge-insert { 
-  background: var(--status-insert); 
-  color: white; 
-}
-
-.badge-update { 
-  background: var(--status-update); 
-  color: white; 
-}
-
-.badge-delete { 
-  background: var(--status-delete); 
-  color: white; 
-}
-
-.badge-select { 
-  background: var(--status-select); 
-  color: white; 
-}
-
+/* Base badge style */
 .badge {
   padding: 1px 6px;
   font-size: 10px;
@@ -31,8 +11,73 @@
   font-weight: 500;
   text-transform: uppercase;
   display: inline-block;
-  width: 18px;
+  min-width: 18px;
   height: 18px;
   line-height: 18px;
   text-align: center;
+}
+
+/* Operation type badges */
+.badge-insert {
+  background: var(--status-insert, #10b981);
+  color: white;
+}
+
+.badge-update {
+  background: var(--status-update, #6CADDF);
+  color: white;
+}
+
+.badge-delete {
+  background: var(--status-delete, #ef4444);
+  color: white;
+}
+
+.badge-select {
+  background: var(--status-select, #6b7280);
+  color: white;
+}
+
+/* Status badges */
+.badge-success {
+  background: var(--status-insert, #10b981);
+  color: white;
+}
+
+.badge-primary {
+  background: var(--blue-medium, #3b82f6);
+  color: white;
+}
+
+.badge-warning {
+  background: var(--status-warning, #f59e0b);
+  color: white;
+}
+
+.badge-error {
+  background: var(--status-delete, #ef4444);
+  color: white;
+}
+
+/* Badge sizes */
+.badge-sm {
+  font-size: 9px;
+  padding: 0px 4px;
+  height: 16px;
+  line-height: 16px;
+}
+
+.badge-lg {
+  font-size: 11px;
+  padding: 2px 8px;
+  height: 20px;
+  line-height: 16px;
+}
+
+/* Changes table specific badges */
+.changes-table-badge {
+  width: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }

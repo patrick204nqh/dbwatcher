@@ -1,0 +1,27 @@
+<%# Dashboard Layout - Common structure for all dashboard pages %>
+<div class="h-full flex flex-col">
+  <!-- Compact Header -->
+  <div class="h-10 bg-navy-dark text-white flex items-center px-4">
+    <h1 class="text-sm font-medium">Dashboard</h1>
+    <span class="ml-auto text-xs text-blue-light">
+      <%= Time.current.strftime("%Y-%m-%d %H:%M:%S") %>
+    </span>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <%= link_to root_path, class: "tab-item #{active_tab == 'overview' ? 'active' : ''}" do %>
+      Overview
+    <% end %>
+    <% if @system_info_summary && !@system_info_summary.empty? %>
+      <%= link_to root_path(tab: 'system_info'), class: "tab-item #{active_tab == 'system_info' ? 'active' : ''}" do %>
+        System Info
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- Content Area -->
+  <div class="flex-1 overflow-auto p-4">
+    <%= yield %>
+  </div>
+</div>
