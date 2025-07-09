@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2025-07-09
+### Added
+
+- Add Slack notification to CI workflow and update README with maintainability and coverage badges
+- Add SimpleCov for test coverage and update CI configuration for coverage uploads
+- Add debug logging to SessionsController#show and implement to_param method in Session model; remove unused components and views
+- Add Tabulator component styles and vendor overrides; enhance changes tab UI
+- Enhance dashboard UI and add gem info section
+- Refactor dashboard system info handling and add dedicated system info page
+- Add system information collection and storage services
+
+
+### Changed
+
+- Refactor Slack notification step in CI workflow to use a custom payload format and remove unnecessary steps
+- Update README images and configure SimpleCov with JSON formatter for test coverage
+- Update screenshots.md
+- Refactor tables index page: enhance filtering functionality, update tab structure, and improve UI elements
+- Refactor session views and implement new tab structure
+- Refactor session index page with filtering functionality and enhanced styling
+- Update changesTableHybrid to use 'rowId' instead of 'id' for Tabulator row identifiers
+- Refactor dashboard system info handling
+- Refactor system information collection and storage
+- Update README.md
+
+
 ## [1.1.1] - 2025-07-08
 ### Added
 
