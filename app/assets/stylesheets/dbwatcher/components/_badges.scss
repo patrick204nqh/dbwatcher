@@ -3,27 +3,7 @@
  * Operation and status indicators
  */
 
-/* Status badges */
-.badge-insert { 
-  background: var(--status-insert); 
-  color: white; 
-}
-
-.badge-update { 
-  background: var(--status-update); 
-  color: white; 
-}
-
-.badge-delete { 
-  background: var(--status-delete); 
-  color: white; 
-}
-
-.badge-select { 
-  background: var(--status-select); 
-  color: white; 
-}
-
+/* Base badge style */
 .badge {
   padding: 1px 6px;
   font-size: 10px;
@@ -35,4 +15,36 @@
   height: 18px;
   line-height: 18px;
   text-align: center;
+}
+
+/* Operation type badges */
+.badge-insert {
+  background: var(--status-insert);
+  color: white;
+}
+
+.badge-update {
+  background: var(--status-update);
+  color: white;
+}
+
+.badge-delete {
+  background: var(--status-delete);
+  color: white;
+}
+
+.badge-select {
+  background: var(--status-select);
+  color: white;
+}
+
+/* Status badges */
+.badge-success {
+  background: var(--status-insert);
+  color: white;
+}
+
+.badge-primary {
+  background: var(--blue-medium);
+  color: white;
 }

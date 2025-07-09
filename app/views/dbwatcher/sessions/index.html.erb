@@ -1,31 +1,30 @@
 <%# Sessions Index Page %>
-<div class="h-full flex flex-col">
+<div class="h-full flex flex-col" x-data="{
+  filterText: '',
+  filterSessions(session, filterText) {
+    if (!filterText) return true;
+    const searchText = filterText.toLowerCase();
+    const sessionId = session.querySelector('td:first-child').textContent.toLowerCase();
+    const sessionName = session.querySelector('td:nth-child(2)').textContent.toLowerCase();
+    return sessionId.includes(searchText) || sessionName.includes(searchText);
+  }
+}">
   <%= render 'dbwatcher/shared/header', title: 'Tracking Sessions', subtitle: "#{@sessions.count} sessions" %>
 
   <%= render 'dbwatcher/shared/tab_bar', tabs: [
-    { name: 'All Sessions', active: true },
-    { name: 'Active', active: false },
-    { name: 'Recent', active: false }
+    { name: 'All Sessions', active: true }
   ] %>
 
   <!-- Toolbar -->
   <div class="h-8 bg-gray-100 border-b border-gray-300 flex items-center px-4 gap-2">
     <input type="text" placeholder="Filter sessions..."
-           class="compact-input flex-1 max-w-xs">
-    <select class="compact-select">
-      <option>Last 24 hours</option>
-      <option>Last week</option>
-      <option>All time</option>
-    </select>
+           class="compact-input flex-1 max-w-xs"
+           x-model="filterText"
+           @input="document.querySelectorAll('.session-row').forEach(row => {
+             row.classList.toggle('hidden', !filterSessions(row, filterText));
+           })">
 
     <div class="ml-auto flex items-center gap-2">
-      <button class="compact-button bg-blue-medium text-white hover:bg-blue-700">
-        <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
-        </svg>
-        Refresh
-      </button>
-
       <%= button_to clear_sessions_path,
                     method: :delete,
                     class: "compact-button bg-red-600 text-white hover:bg-red-700",
@@ -56,79 +55,100 @@
       </div>
     </div>
   <% else %>
-    <table class="compact-table w-full">
-      <thead>
-        <tr>
-          <th class="text-left" style="min-width:180px; max-width:260px; width:18%">Session ID</th>
-          <th class="text-left" style="min-width:160px; max-width:260px; width:22%">Name</th>
-          <th class="text-center">Status</th>
-          <th class="text-center">Changes</th>
-          <th class="text-right">Started</th>
-          <th class="text-right">Duration</th>
-          <th class="text-center">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% @sessions.each do |session| %>
-          <tr class="hover:bg-blue-50">
-            <td class="font-mono text-xs" style="min-width:180px; max-width:260px; width:18%">
-              <span class="inline-block whitespace-nowrap overflow-x-auto" style="max-width:260px;">
-                <%= safe_value(session, :id) %>
-              </span>
-            </td>
-            <td style="min-width:160px; max-width:260px; width:22%" title="<%= safe_value(session, :name) %>">
-              <%= link_to display_session_name(safe_value(session, :name)),
-                  session_path(safe_value(session, :id)),
-                  class: "text-navy-dark hover:text-blue-medium whitespace-normal break-words inline-block",
-                  style: "max-width:260px; overflow-x:auto; display:inline-block;" %>
-            </td>
-            <td class="text-center">
-              <%= render 'dbwatcher/shared/badge',
-                  content: (session_active?(session) ? 'Active' : 'Completed'),
-                  badge_class: (session_active?(session) ? 'badge-success' : 'badge-primary') %>
-            </td>
-            <td class="text-center">
-              <% change_count = session_change_count(session) %>
-              <%= render 'dbwatcher/shared/badge',
-                  content: change_count > 99 ? "#{change_count}" : change_count,
-                  badge_class: 'bg-gray-600 text-white whitespace-nowrap' %>
-            </td>
-            <td class="text-right text-xs whitespace-nowrap">
-              <%= format_timestamp(safe_value(session, :started_at)) %>
-            </td>
-            <td class="text-right text-xs whitespace-nowrap">
-              <% if session_active?(session) %>
-                <span class="text-blue-600">Active</span>
-              <% else %>
-                <%= distance_of_time_in_words(
-                    Time.parse(safe_value(session, :started_at)),
-                    Time.parse(safe_value(session, :ended_at))
-                  ) rescue 'N/A' %>
-              <% end %>
-            </td>
-            <td class="text-center">
-              <div class="flex gap-1 justify-end">
-                <%= link_to session_path(safe_value(session, :id)),
-                    class: "compact-button bg-navy-dark text-white hover:bg-blue-medium" do %>
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                  </svg>
-                <% end %>
-              </div>
-            </td>
+    <div class="bg-white border border-gray-300 rounded shadow-sm">
+      <table class="compact-table sessions-table w-full">
+        <thead>
+          <tr>
+            <th class="text-left" style="min-width:180px; max-width:260px; width:18%">Session ID</th>
+            <th class="text-left" style="min-width:160px; max-width:260px; width:22%">Name</th>
+            <th class="text-center" style="width:100px">Status</th>
+            <th class="text-center" style="width:100px">Changes</th>
+            <th class="text-right" style="width:120px">Started</th>
+            <th class="text-right" style="width:120px">Duration</th>
+            <th class="text-center" style="width:80px">Actions</th>
           </tr>
-        <% end %>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          <% @sessions.each do |session| %>
+            <tr class="session-row">
+              <td style="min-width:180px; max-width:260px; width:18%">
+                <span class="font-mono text-xs">
+                  <%= safe_value(session, :id) %>
+                </span>
+              </td>
+              <td style="min-width:160px; max-width:260px; width:22%" title="<%= safe_value(session, :name) %>">
+                <%= link_to display_session_name(safe_value(session, :name)),
+                    session_path(safe_value(session, :id)),
+                    class: "text-navy-dark hover:text-blue-medium whitespace-normal break-words inline-block",
+                    style: "max-width:260px; overflow-x:auto; display:inline-block;" %>
+              </td>
+              <td class="text-center">
+                <%= render 'dbwatcher/shared/badge',
+                    content: (session_active?(session) ? 'Active' : 'Completed'),
+                    badge_class: (session_active?(session) ? 'badge-success' : 'badge-primary') %>
+              </td>
+              <td class="text-center">
+                <% change_count = session_change_count(session) %>
+                <%= render 'dbwatcher/shared/badge',
+                    content: change_count > 99 ? "#{change_count}" : change_count,
+                    badge_class: 'bg-gray-600 text-white whitespace-nowrap' %>
+              </td>
+              <td class="text-right text-xs whitespace-nowrap">
+                <%= format_timestamp(safe_value(session, :started_at)) %>
+              </td>
+              <td class="text-right text-xs whitespace-nowrap">
+                <% if session_active?(session) %>
+                  <span class="text-blue-600 font-medium">Active</span>
+                <% else %>
+                  <%= distance_of_time_in_words(
+                      Time.parse(safe_value(session, :started_at)),
+                      Time.parse(safe_value(session, :ended_at))
+                    ) rescue 'N/A' %>
+                <% end %>
+              </td>
+              <td class="text-center actions-cell">
+                <div class="flex gap-1 justify-end">
+                  <%= link_to session_path(safe_value(session, :id)),
+                      class: "compact-button bg-navy-dark text-white hover:bg-blue-medium",
+                      title: "View session details" do %>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                  <% end %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- No Results Message -->
+    <div
+      x-show="filterText && document.querySelectorAll('.session-row:not(.hidden)').length === 0"
+      x-cloak
+      class="mt-4 text-center py-8 bg-gray-50 border border-gray-200 rounded">
+      <p class="text-gray-500">No sessions match your filter criteria</p>
+      <button
+        @click="filterText = ''"
+        class="mt-2 text-blue-medium hover:text-blue-700 text-sm">
+        Clear filter
+      </button>
+    </div>
   <% end %>
 
   <!-- Status Bar -->
-  <div class="h-6 bg-gray-100 border-t border-gray-300 flex items-center px-4 text-xs text-gray-600">
-    <%= @sessions.count %> sessions total •
-    <%= @sessions.count { |s| session_active?(s) } %> active •
-    Last updated: <%= Time.current.strftime("%H:%M:%S") %>
+  <div class="h-6 bg-gray-100 border-t border-gray-300 flex items-center px-4 text-xs text-gray-600 mt-4">
+    <span x-show="!filterText"><%= @sessions.count %> sessions total •
+    <%= @sessions.count { |s| session_active?(s) } %> active</span>
+    <span x-show="filterText" x-text="`${document.querySelectorAll('.session-row:not(.hidden)').length} of ${<%= @sessions.count %>} sessions shown`"></span>
+    <span class="ml-auto">Last updated: <%= Time.current.strftime("%H:%M:%S") %></span>
   </div>
 </div>
+
+<style>
+  [x-cloak] { display: none !important; }
+</style>

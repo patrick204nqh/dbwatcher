@@ -104,17 +104,6 @@ module Dbwatcher
 
     public
 
-    # Generate operation badges for tables
-    def operation_badges
-      content_tag(:div, class: "flex gap-1 justify-center") do
-        [
-          content_tag(:span, "I", class: "badge badge-insert", title: "Inserts"),
-          content_tag(:span, "U", class: "badge badge-update", title: "Updates"),
-          content_tag(:span, "D", class: "badge badge-delete", title: "Deletes")
-        ].join.html_safe
-      end
-    end
-
     # Create action buttons with consistent styling
     def action_button(text, path, color: "blue")
       link_to text, path, class: "px-3 py-1 text-xs bg-#{color}-600 text-white rounded hover:bg-#{color}-700"

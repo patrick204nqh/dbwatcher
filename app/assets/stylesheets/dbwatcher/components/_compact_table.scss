@@ -12,6 +12,7 @@
   border-spacing: 0;
 }
 
+/* Header styles */
 .compact-table th {
   padding: 4px 8px;
   font-weight: 500;
@@ -27,6 +28,18 @@
   height: 32px;
 }
 
+/* Cell styles */
+.compact-table td {
+  padding: 2px 8px;
+  border-right: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+/* Sticky columns */
 /* Enhanced sticky header styling */
 .compact-table th.sticky-left-0 {
   position: sticky;
@@ -47,16 +60,6 @@
   left: 108px; /* Width of Index + Op columns (60px + 48px) */
   z-index: 18;
   box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
-}
-
-.compact-table td {
-  padding: 2px 8px;
-  border-right: 1px solid var(--border-light);
-  border-bottom: 1px solid var(--border-light);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: top;
 }
 
 /* Enhanced sticky cell styling */
@@ -84,19 +87,6 @@
   box-shadow: 2px 0px 3px rgba(0,0,0,0.05);
 }
 
-/* Special cell formatting */
-.compact-table td.highlight-change {
-  background-color: var(--highlight-change);
-}
-
-.compact-table td.highlight-new {
-  color: #047857;
-}
-
-.compact-table td.highlight-deleted {
-  color: #b91c1c;
-}
-
 /* Row styles */
 .compact-table tr:hover td:not(.sticky-left-0):not(.sticky-left-1):not(.sticky-left-2) {
   background-color: rgba(243, 244, 246, 0.7);
@@ -118,7 +108,7 @@
   background-color: #e6f3ff;
 }
 
-/* Smart column width distribution */
+/* Text overflow handling */
 .compact-table th,
 .compact-table td {
   overflow: hidden;
@@ -126,7 +116,7 @@
   white-space: nowrap;
 }
 
-/* Fixed widths for sticky columns only */
+/* Fixed widths for common columns */
 .compact-table th:first-child,
 .compact-table td:first-child {
   width: 60px;
@@ -151,9 +141,76 @@
   font-size: 11px;
 }
 
+/* Sessions table specific overrides */
+.sessions-table th:nth-child(2),
+.sessions-table td:nth-child(2) {
+  width: 22%;
+  min-width: 160px;
+  max-width: 260px;
+  text-align: left;
+  padding-left: 16px;
+}
+
+/* Enhanced sessions table styling */
+.sessions-table tr {
+  border-bottom: 1px solid var(--border-light);
+  transition: all 0.15s ease;
+}
+
+.sessions-table tr:hover {
+  background-color: rgba(230, 243, 255, 0.5);
+}
+
+.sessions-table td {
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+
+.sessions-table td:first-child .font-mono {
+  color: var(--navy-dark);
+  font-weight: 500;
+  background: var(--gray-50);
+  padding: 2px 4px;
+  border-radius: 3px;
+  border: 1px solid var(--border-medium);
+  display: inline-block;
+}
+
+.sessions-table .badge {
+  min-width: 60px;
+  width: auto;
+  height: auto;
+  padding: 2px 8px;
+}
+
+.sessions-table .actions-cell {
+  width: 80px;
+}
+
+.sessions-table .actions-cell .compact-button {
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.sessions-table .actions-cell .compact-button:hover {
+  transform: translateY(-1px);
+}
+
 /* Font styling for specific column types */
 .compact-table .text-right {
   font-family: monospace;
+}
+
+/* Special cell formatting */
+.compact-table td.highlight-change {
+  background-color: var(--highlight-change);
+}
+
+.compact-table td.highlight-new {
+  color: #047857;
+}
+
+.compact-table td.highlight-deleted {
+  color: #b91c1c;
 }
 
 /* Highlight colors */

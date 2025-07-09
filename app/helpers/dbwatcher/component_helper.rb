@@ -2,15 +2,6 @@
 
 module Dbwatcher
   module ComponentHelper
-    # Removed as part of API-first migration (Story 6.8)
-    # All data is now loaded directly from API endpoints
-
-    # Removed as part of API-first migration (Story 6.8)
-    # All data is now loaded directly from API endpoints
-
-    # Removed as part of API-first migration (Story 6.8)
-    # All data is now loaded directly from API endpoints
-
     # Generate data attributes for component binding
     def dbwatcher_component(component_name, config)
       {
