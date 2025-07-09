@@ -1,4 +1,10 @@
-<!-- This view is only used for redirects now -->
-<div>
-  <p>Redirecting to changes...</p>
-</div>
+<%= render layout: 'layout', locals: { active_tab: @active_tab, session: @session } do %>
+  <% case @active_tab %>
+  <% when 'summary' %>
+    <%= render partial: 'summary' %>
+  <% when 'diagrams' %>
+    <%= render partial: 'diagrams' %>
+  <% else %>
+    <%= render partial: 'changes' %>
+  <% end %>
+<% end %>

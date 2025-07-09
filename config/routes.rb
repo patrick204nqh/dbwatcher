@@ -4,7 +4,6 @@ Dbwatcher::Engine.routes.draw do
   root to: "dashboard#index"
 
   # Dashboard actions
-  get :system_info, to: "dashboard#system_info"
   delete :clear_all, to: "dashboard#clear_all"
 
   # Dashboard system info actions
@@ -18,12 +17,6 @@ Dbwatcher::Engine.routes.draw do
   end
 
   resources :sessions do
-    member do
-      get :changes
-      get :summary
-      get :diagrams
-    end
-
     collection do
       delete :clear
     end

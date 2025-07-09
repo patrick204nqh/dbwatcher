@@ -8,21 +8,21 @@
           </h1>
         </div>
         <div class="ml-6 flex space-x-8">
-          <a href="<%= changes_session_path(@session.id) %>"
+          <a href="<%= session_path(@session.id, tab: 'changes') %>"
              @click.prevent="$store.session.setView('changes')"
              :class="$store.session.currentView === 'changes' ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
              class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
             Changes
           </a>
 
-          <a href="<%= summary_session_path(@session.id) %>"
+          <a href="<%= session_path(@session.id, tab: 'summary') %>"
              @click.prevent="$store.session.setView('summary')"
              :class="$store.session.currentView === 'summary' ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
              class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
             Summary
           </a>
 
-          <a href="<%= diagrams_session_path(@session.id) %>"
+          <a href="<%= session_path(@session.id, tab: 'diagrams') %>"
              @click.prevent="$store.session.setView('diagrams')"
              :class="$store.session.currentView === 'diagrams' ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
              class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">

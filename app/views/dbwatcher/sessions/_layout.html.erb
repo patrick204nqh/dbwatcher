@@ -1,0 +1,23 @@
+<%# Session Layout - Common structure for all session views %>
+<div class="h-full flex flex-col">
+  <!-- Session Header -->
+  <%= render 'dbwatcher/sessions/session_header', session: session %>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <%= link_to session_path(session.id, tab: 'changes'), class: "tab-item #{active_tab == 'changes' ? 'active' : ''}" do %>
+      Changes
+    <% end %>
+    <%= link_to session_path(session.id, tab: 'summary'), class: "tab-item #{active_tab == 'summary' ? 'active' : ''}" do %>
+      Summary
+    <% end %>
+    <%= link_to session_path(session.id, tab: 'diagrams'), class: "tab-item #{active_tab == 'diagrams' ? 'active' : ''}" do %>
+      Diagrams
+    <% end %>
+  </div>
+
+  <!-- Content Area -->
+  <div class="flex-1 overflow-auto p-4">
+    <%= yield %>
+  </div>
+</div>

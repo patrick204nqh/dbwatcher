@@ -1,0 +1,22 @@
+<div class="system-info-container">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-semibold text-gray-800">System Information</h2>
+    <div class="flex items-center gap-2">
+      <% if @system_info&.dig(:collected_at) %>
+        <span class="text-sm text-gray-500">
+          Last updated: <%= time_ago_in_words(Time.parse(@system_info[:collected_at])) %> ago
+        </span>
+      <% end %>
+      <button id="refresh-system-info" class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+        Refresh
+      </button>
+      <button id="clear-cache-system-info" class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors">
+        Clear Cache
+      </button>
+    </div>
+  </div>
+
+  <div id="system-info-content">
+    <%= render 'dbwatcher/dashboard/system_info_content' %>
+  </div>
+</div>
