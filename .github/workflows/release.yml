@@ -22,7 +22,13 @@ jobs:
     outputs:
       version: ${{ steps.extract_version.outputs.version }}
       should_release: ${{ steps.validate.outputs.should_release }}
+      is_dry_run: ${{ steps.set_dry_run.outputs.is_dry_run }}
     steps:
+      - name: Set dry run flag
+        id: set_dry_run
+        run: |
+          echo "is_dry_run=${{ env.DRY_RUN }}" >> $GITHUB_OUTPUT
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -207,14 +213,14 @@ jobs:
           echo "✅ Gem structure validation completed successfully"
 
       - name: Dry run check
-        if: github.event_name == 'workflow_dispatch' && env.DRY_RUN == 'true'
+        if: github.event_name == 'workflow_dispatch' && needs.validate-release.outputs.is_dry_run == 'true'
         run: |
           echo "🏃‍♂️ DRY RUN MODE - Skipping actual publishing"
           echo "Would publish: ${{ steps.build.outputs.gem_file }}"
           exit 0
 
       - name: Setup RubyGems credentials
-        if: github.event_name != 'workflow_dispatch' || env.DRY_RUN != 'true'
+        if: github.event_name != 'workflow_dispatch' || needs.validate-release.outputs.is_dry_run != 'true'
         run: |
           mkdir -p ~/.gem
           cat > ~/.gem/credentials << EOF
@@ -224,7 +230,7 @@ jobs:
           chmod 0600 ~/.gem/credentials
 
       - name: Publish to RubyGems
-        if: github.event_name != 'workflow_dispatch' || env.DRY_RUN != 'true'
+        if: github.event_name != 'workflow_dispatch' || needs.validate-release.outputs.is_dry_run != 'true'
         id: publish
         run: |
           VERSION="${{ needs.validate-release.outputs.version }}"
@@ -237,7 +243,7 @@ jobs:
           echo "published=true" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        if: github.event_name != 'workflow_dispatch' || env.DRY_RUN != 'true'
+        if: github.event_name != 'workflow_dispatch' || needs.validate-release.outputs.is_dry_run != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.validate-release.outputs.version }}
@@ -281,7 +287,7 @@ jobs:
     needs: [validate-release, build-and-publish]
     runs-on: ubuntu-latest
     name: Post-Release Tasks
-    if: needs.validate-release.outputs.should_release == 'true' && (github.event_name != 'workflow_dispatch' || env.DRY_RUN != 'true')
+    if: needs.validate-release.outputs.should_release == 'true' && (github.event_name != 'workflow_dispatch' || needs.validate-release.outputs.is_dry_run != 'true')
     steps:
       - name: Verify publication
         run: |
