@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2025-07-12
+### Added
+
+- Refactor TimelineDataService with modular enhancements and entry building utilities
+- Implement timeline and tables views in DBWatcher
+
+### Fixed
+
+- Fix formatting in labels.yml for consistency in branch and path definitions
+
+
 ## [1.1.2] - 2025-07-09
 ### Added
 
