@@ -101,6 +101,11 @@ window.DBWatcher = {
     return factory(config);
   },
 
+  // Get component (alias for createComponent for compatibility)
+  getComponent(name, config = {}) {
+    return this.createComponent(name, config);
+  },
+
   // Register a component using the ComponentRegistry
   register(name, factory) {
     if (!this.ComponentRegistry) {

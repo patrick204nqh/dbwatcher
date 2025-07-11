@@ -51,7 +51,8 @@ module Dbwatcher
             sample_record: nil,
             total_operations: 0,
             operations: { insert: 0, update: 0, delete: 0 },
-            changes: []
+            changes: [],
+            model_class: find_model_class(table_name)
           }
         end
 
@@ -195,6 +196,106 @@ module Dbwatcher
             tables_analyzed: tables.keys.length,
             total_operations: tables.values.sum { |t| t[:total_operations] }
           }
+        end
+
+        # Find the actual Rails model class for a table name
+        #
+        # @param table_name [String] database table name
+        # @return [String, nil] model class name or nil if not found
+        def find_model_class(table_name)
+          return nil unless table_name.is_a?(String)
+
+          Rails.logger.debug "Finding model class for table: #{table_name}"
+          ensure_models_loaded
+
+          # Try conventional naming first
+          model_name = find_by_convention(table_name)
+          return model_name if model_name
+
+          # Fallback to searching all ActiveRecord descendants
+          find_by_table_name_search(table_name)
+        rescue StandardError => e
+          log_model_finding_error(table_name, e)
+          nil
+        end
+
+        # Ensure all models are loaded in development
+        def ensure_models_loaded
+          Rails.application.eager_load! if Rails.env.development?
+        end
+
+        # Find model by conventional naming (table_name.classify)
+        #
+        # @param table_name [String] database table name
+        # @return [String, nil] model class name or nil
+        def find_by_convention(table_name)
+          model_name = table_name.classify
+          Rails.logger.debug "Expected model name: #{model_name}"
+
+          return nil unless Object.const_defined?(model_name)
+
+          model_class = Object.const_get(model_name)
+          Rails.logger.debug "Found model class: #{model_class}"
+
+          validate_and_return_model(model_class, table_name)
+        end
+
+        # Validate model class and return name if valid
+        #
+        # @param model_class [Class] the model class to validate
+        # @param table_name [String] expected table name
+        # @return [String, nil] model name or nil
+        def validate_and_return_model(model_class, table_name)
+          unless active_record_model?(model_class)
+            Rails.logger.debug "#{model_class} is not an ActiveRecord model"
+            return nil
+          end
+
+          if model_class.table_name == table_name
+            Rails.logger.debug "Model #{model_class.name} matches table #{table_name}"
+            model_class.name
+          else
+            log_table_name_mismatch(model_class, table_name)
+            nil
+          end
+        end
+
+        # Check if class is an ActiveRecord model
+        #
+        # @param model_class [Class] class to check
+        # @return [Boolean] true if ActiveRecord model
+        def active_record_model?(model_class)
+          model_class.respond_to?(:ancestors) && model_class.ancestors.include?(ActiveRecord::Base)
+        end
+
+        # Find model by searching all ActiveRecord descendants
+        #
+        # @param table_name [String] database table name
+        # @return [String, nil] model class name or nil
+        def find_by_table_name_search(table_name)
+          Rails.logger.debug "Checking all ActiveRecord descendants..."
+
+          ActiveRecord::Base.descendants.each do |model|
+            if model.table_name == table_name
+              Rails.logger.debug "Found matching model: #{model.name} for table #{table_name}"
+              return model.name
+            end
+          end
+
+          Rails.logger.debug "No model found for table: #{table_name}"
+          nil
+        end
+
+        # Log table name mismatch
+        def log_table_name_mismatch(model_class, table_name)
+          message = "Model #{model_class.name} table_name (#{model_class.table_name}) doesn't match #{table_name}"
+          Rails.logger.debug message
+        end
+
+        # Log model finding error
+        def log_model_finding_error(table_name, error)
+          Rails.logger.debug "Error finding model class for table #{table_name}: #{error.message}"
+          Rails.logger.debug error.backtrace.first(5).join("\n")
         end
       end
     end

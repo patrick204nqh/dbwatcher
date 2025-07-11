@@ -27,9 +27,10 @@ Dbwatcher::Engine.routes.draw do
     namespace :v1 do
       resources :sessions, only: [] do
         member do
-          get :changes_data
+          get :tables_data
           get :summary_data
           get :diagram_data
+          get :timeline_data
         end
 
         collection do

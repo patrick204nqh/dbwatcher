@@ -1,7 +1,7 @@
 /**
  * DBWatcher Application Styles
  * Compiled CSS for all components
- * Generated at 2025-07-09 21:44:32 +0700
+ * Generated at 2025-07-11 21:59:56 +0700
  */
 
 /**
@@ -745,6 +745,303 @@ pre[x-ref="codeContainer"]::-webkit-scrollbar-thumb:hover {
   right: 1rem;
   margin-top: -2px;
   z-index: 100;
+}
+
+.timeline-container {
+  @apply h-full flex flex-col;
+}
+
+.timeline-controls {
+  @apply p-3 border-b border-gray-300 bg-gray-50;
+}
+
+.timeline-header {
+  @apply flex items-center justify-between mb-3;
+}
+
+.timeline-title {
+  @apply text-sm font-medium text-gray-900;
+}
+
+.timeline-zoom-controls {
+  @apply flex items-center gap-2;
+}
+
+.timeline-filter-controls {
+  @apply flex items-center gap-4 text-xs flex-wrap;
+}
+
+.timeline-filter-group {
+  @apply flex items-center gap-2;
+}
+
+.timeline-filter-label {
+  @apply text-gray-700 font-medium;
+}
+
+.timeline-visualization {
+  @apply flex-1 overflow-hidden;
+}
+
+.timeline-time-header {
+  @apply h-8 bg-gray-100 border-b border-gray-200 relative;
+}
+
+.timeline-time-scale {
+  @apply absolute inset-0 flex items-center px-4;
+}
+
+.timeline-content {
+  @apply flex-1 overflow-auto p-4 bg-white;
+}
+
+.timeline-track {
+  @apply relative h-16 bg-gray-50 rounded border border-gray-200 mb-4;
+}
+
+.timeline-line {
+  @apply absolute top-1/2 left-4 right-4 h-0.5 bg-gray-300 transform -translate-y-1/2;
+}
+
+.timeline-marker {
+  @apply absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 cursor-pointer;
+}
+
+.timeline-marker .timeline-marker-dot {
+  @apply w-3 h-3 rounded-full border-2 border-white shadow-sm transition-transform;
+}
+
+.timeline-marker .timeline-marker-dot:hover {
+  @apply scale-125;
+}
+
+.timeline-stats {
+  @apply grid grid-cols-2 gap-4 text-xs;
+}
+
+@screen md {
+  .timeline-stats {
+    @apply grid-cols-4;
+  }
+}
+
+.timeline-stat-card {
+  @apply bg-gray-50 p-3 rounded;
+}
+
+.timeline-stat-label {
+  @apply text-gray-500 font-medium;
+}
+
+.timeline-stat-value {
+  @apply text-lg font-bold text-gray-900;
+}
+
+.timeline-stat-detail {
+  @apply text-xs text-gray-500;
+}
+
+.timeline-operations {
+  @apply mt-6;
+}
+
+.timeline-operations-title {
+  @apply text-sm font-medium text-gray-900 mb-3;
+}
+
+.timeline-operations-list {
+  @apply space-y-2 max-h-64 overflow-auto;
+}
+
+.timeline-operation-item {
+  @apply flex items-center justify-between p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer text-xs;
+}
+
+.timeline-operation-info {
+  @apply flex items-center gap-3;
+}
+
+.timeline-operation-marker {
+  @apply w-2 h-2 rounded-full;
+}
+
+.timeline-operation-type {
+  @apply font-medium;
+}
+
+.timeline-operation-time {
+  @apply text-gray-500;
+}
+
+.timeline-operation-record {
+  @apply text-gray-500;
+}
+
+.timeline-empty {
+  @apply text-center py-8 text-gray-500;
+}
+
+.timeline-empty-icon {
+  @apply w-12 h-12 mx-auto mb-4 text-gray-300;
+}
+
+.timeline-empty-action {
+  @apply mt-2 text-blue-600 underline;
+}
+
+.timeline-loading {
+  @apply flex items-center justify-center h-64;
+}
+
+.timeline-loading-spinner {
+  @apply animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500;
+}
+
+.timeline-loading-text {
+  @apply ml-2 text-gray-600;
+}
+
+.timeline-error {
+  @apply p-4 bg-red-50 border border-red-200 rounded m-4;
+}
+
+.timeline-error-text {
+  @apply text-red-700;
+}
+
+.timeline-error-retry {
+  @apply mt-2 text-red-600 underline;
+}
+
+.timeline-modal-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+}
+
+.timeline-modal-content {
+  @apply bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-96 overflow-auto;
+}
+
+.timeline-modal-header {
+  @apply p-4 border-b border-gray-200 flex justify-between items-center;
+}
+
+.timeline-modal-title {
+  @apply text-lg font-medium;
+}
+
+.timeline-modal-close {
+  @apply text-gray-400 hover:text-gray-600;
+}
+
+.timeline-modal-body {
+  @apply p-4;
+}
+
+.timeline-operation-details {
+  @apply grid grid-cols-1 gap-4 text-sm;
+}
+
+@screen md {
+  .timeline-operation-details {
+    @apply grid-cols-2;
+  }
+}
+
+.timeline-operation-detail-label {
+  @apply font-medium;
+}
+
+.timeline-operation-detail-value {
+  @apply ml-2;
+}
+
+.timeline-operation-detail-value.operation-badge {
+  @apply px-2 py-1 rounded text-xs;
+}
+
+.timeline-operation-detail-value.monospace {
+  @apply font-mono;
+}
+
+.timeline-operation-detail-value.small {
+  @apply text-xs;
+}
+
+.timeline-changes-section {
+  @apply mt-4;
+}
+
+.timeline-changes-title {
+  @apply text-sm font-medium;
+}
+
+.timeline-changes-content {
+  @apply mt-2 p-3 bg-gray-50 rounded text-xs overflow-auto border max-h-32;
+}
+
+.timeline-metadata-section {
+  @apply mt-4;
+}
+
+.timeline-metadata-title {
+  @apply text-sm font-medium;
+}
+
+.timeline-metadata-grid {
+  @apply mt-2 grid grid-cols-2 gap-2 text-xs;
+}
+
+.timeline-metadata-key {
+  @apply font-medium capitalize;
+}
+
+@screen sm {
+  .timeline-filter-controls {
+    @apply flex-nowrap;
+  }
+  .timeline-stats {
+    @apply grid-cols-4;
+  }
+}
+
+.operation-insert {
+  @apply text-green-600 bg-green-100;
+}
+
+.operation-update {
+  @apply text-blue-600 bg-blue-100;
+}
+
+.operation-delete {
+  @apply text-red-600 bg-red-100;
+}
+
+.operation-select {
+  @apply text-purple-600 bg-purple-100;
+}
+
+.timeline-transition-enter {
+  @apply transition ease-out duration-300;
+}
+
+.timeline-transition-enter-start {
+  @apply opacity-0;
+}
+
+.timeline-transition-enter-end {
+  @apply opacity-100;
+}
+
+.timeline-transition-leave {
+  @apply transition ease-in duration-200;
+}
+
+.timeline-transition-leave-start {
+  @apply opacity-100;
+}
+
+.timeline-transition-leave-end {
+  @apply opacity-0;
 }
 
 /**

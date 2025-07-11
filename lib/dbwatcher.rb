@@ -74,7 +74,7 @@ require_relative "dbwatcher/services/diagram_system"
 
 # API services
 require_relative "dbwatcher/services/api/base_api_service"
-require_relative "dbwatcher/services/api/changes_data_service"
+require_relative "dbwatcher/services/api/tables_data_service"
 require_relative "dbwatcher/services/api/summary_data_service"
 require_relative "dbwatcher/services/api/diagram_data_service"
 

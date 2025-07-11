@@ -26,9 +26,82 @@
 
   <!-- Multiple Tables - Enhanced UI Structure -->
   <template x-if="!loading && !error && Object.keys(tableData).length > 0">
-    <div class="h-full overflow-auto p-2 bg-gray-50">
-      <template x-for="[tableName, tableInfo] in Object.entries(tableData)" :key="tableName">
-        <div class="mb-4 bg-white border border-gray-200 rounded shadow-sm" x-data="{ expanded: true }">
+    <div class="h-full flex flex-col bg-gray-50">
+      <!-- Filter Header -->
+      <div class="p-3 border-b border-gray-300 bg-gray-50">
+        <div class="flex items-center justify-between gap-4">
+          <h3 class="text-sm font-medium text-gray-900">Tables View</h3>
+          <div class="flex items-center gap-3 text-xs">
+            <!-- Search Filter -->
+            <input type="text" 
+                   x-model="filters.search" 
+                   @input="applyFilters()"
+                   placeholder="Search..."
+                   class="px-2 py-1 border border-gray-300 rounded text-xs w-32 focus:outline-none focus:ring-1 focus:ring-blue-medium">
+            
+            <!-- Operation Filter -->
+            <select x-model="filters.operation" 
+                    @change="applyFilters()"
+                    class="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-medium">
+              <option value="">All Operations</option>
+              <template x-for="operation in getAvailableOperations()" :key="operation">
+                <option :value="operation" x-text="operation"></option>
+              </template>
+            </select>
+            
+            <!-- Multi-Table Filter -->
+            <div class="relative" x-data="{ showTableFilter: false }">
+              <button @click="showTableFilter = !showTableFilter" 
+                      class="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50 flex items-center gap-1">
+                <span x-text="filters.selectedTables.length === 0 ? 'All Tables' : `${filters.selectedTables.length} Tables`"></span>
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              
+              <div x-show="showTableFilter" 
+                   x-transition
+                   @click.away="showTableFilter = false"
+                   class="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 min-w-48 max-h-48 overflow-auto">
+                <div class="p-2 border-b border-gray-200 flex gap-2">
+                  <button @click="selectAllTables(); showTableFilter = false"
+                          class="text-xs text-blue-medium hover:text-navy-dark underline">
+                    All
+                  </button>
+                  <button @click="clearTableFilters()"
+                          class="text-xs text-blue-medium hover:text-navy-dark underline">
+                    None
+                  </button>
+                </div>
+                <div class="p-1">
+                  <template x-for="tableName in getAvailableTables()" :key="tableName">
+                    <label class="flex items-center gap-2 p-1 rounded hover:bg-gray-100 cursor-pointer">
+                      <input type="checkbox" 
+                             :value="tableName" 
+                             x-model="filters.selectedTables" 
+                             @change="applyFilters()"
+                             class="form-checkbox h-3 w-3 text-blue-medium">
+                      <span class="text-xs text-gray-700" x-text="tableName"></span>
+                    </label>
+                  </template>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Clear Filters -->
+            <button @click="clearAllFilters()" 
+                    class="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-50">
+              Clear
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tables Content -->
+      <div class="flex-1 overflow-auto p-2">
+        <template x-for="[tableName, tableInfo] in Object.entries(tableData)" :key="tableName">
+        <div x-show="filters.selectedTables.length === 0 || filters.selectedTables.includes(tableName)" 
+             class="mb-4 bg-white border border-gray-200 rounded shadow-sm" x-data="{ expanded: true }">
           <!-- Table Header with Column Controls -->
           <div class="bg-gray-100 px-3 py-2 flex items-center cursor-pointer border-b border-gray-200"
                @click="expanded = !expanded"
@@ -38,7 +111,12 @@
                  fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
             </svg>
-            <h3 class="text-sm font-medium text-gray-900 flex-1" x-text="tableName"></h3>
+            <div class="flex-1">
+              <h3 class="text-sm font-medium text-gray-900" x-text="tableName"></h3>
+              <div class="text-xs text-gray-500 mt-1" x-show="tableInfo.model_class">
+                <span x-text="tableInfo.model_class"></span>
+              </div>
+            </div>
             <div class="flex gap-2 mr-4">
               <template x-for="[op, count] in Object.entries(tableInfo.operations || {})" :key="op">
                 <span x-show="count > 0" class="badge changes-table-badge" :class="`badge-${op.toLowerCase()}`" x-text="count"></span>
@@ -85,7 +163,8 @@
             <div :id="`changes-table-${tableName}`" class="table-container"></div>
           </div>
         </div>
-      </template>
+        </template>
+      </div>
     </div>
   </template>
 </div>

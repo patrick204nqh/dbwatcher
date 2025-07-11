@@ -9,7 +9,7 @@ module Dbwatcher
     end
 
     def show
-      @active_tab = params[:tab] || "changes"
+      @active_tab = params[:tab] || "tables"
       # Debug logging
       Rails.logger.info "SessionsController#show: Session ID: #{@session.id.inspect}, Class: #{@session.class}"
     end

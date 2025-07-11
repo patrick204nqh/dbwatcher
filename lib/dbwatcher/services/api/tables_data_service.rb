@@ -3,25 +3,25 @@
 module Dbwatcher
   module Services
     module Api
-      # Service for handling filtered changes data
+      # Service for handling filtered tables data
       #
-      # Provides changes data for the sessions changes view and API endpoints
+      # Provides tables data for the sessions tables view and API endpoints
       # with filtering and caching support.
-      class ChangesDataService < BaseApiService
+      class TablesDataService < BaseApiService
         def call
           start_time = Time.now
 
           # Check for nil session first
           return { error: "Session not found" } unless session
 
-          log_service_start("Getting changes data for session #{session.id}")
+          log_service_start("Getting tables data for session #{session.id}")
 
           validation_error = validate_session
           return validation_error if validation_error
 
           begin
             result = with_cache(cache_suffix) do
-              build_changes_response
+              build_tables_response
             end
 
             log_service_completion(start_time, session_id: session.id, filters: filter_params)
@@ -33,7 +33,7 @@ module Dbwatcher
 
         private
 
-        def build_changes_response
+        def build_tables_response
           {
             tables_summary: build_filtered_summary,
             filters: filter_params || {},

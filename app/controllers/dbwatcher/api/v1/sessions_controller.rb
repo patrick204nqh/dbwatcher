@@ -6,12 +6,12 @@ module Dbwatcher
       class SessionsController < BaseController
         before_action :find_session, except: [:diagram_types]
 
-        def changes_data
-          Rails.logger.info "API::V1::SessionsController#changes_data: Getting changes for session #{@session.id}"
+        def tables_data
+          Rails.logger.info "API::V1::SessionsController#tables_data: Getting tables for session #{@session.id}"
 
-          # Paginated, filtered changes data
+          # Paginated, filtered tables data
           # Convert ActionController::Parameters to a hash before passing to service
-          service = Dbwatcher::Services::Api::ChangesDataService.new(@session, filter_params.to_h)
+          service = Dbwatcher::Services::Api::TablesDataService.new(@session, filter_params.to_h)
           render json: service.call
         end
 
@@ -34,6 +34,20 @@ module Dbwatcher
 
           if result[:error]
             render json: { error: result[:error] }, status: :unprocessable_entity
+          else
+            render json: result
+          end
+        end
+
+        def timeline_data
+          Rails.logger.info "API::V1::SessionsController#timeline_data: Getting timeline for session #{@session.id}"
+
+          # Timeline data processed from session changes
+          service = Dbwatcher::Services::TimelineDataService.new(@session)
+          result = service.call
+
+          if result[:errors].any?
+            render json: { error: result[:errors].first[:message] }, status: :unprocessable_entity
           else
             render json: result
           end
