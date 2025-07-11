@@ -10,19 +10,10 @@ on:
     tags:
       - v*
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version to release (e.g., 1.0.2)"
-        required: true
-        type: string
-      dry_run:
-        description: "Dry run (skip actual publishing)"
-        required: false
-        type: boolean
-        default: false
 
 env:
   RUBY_VERSION: "3.3"
+  DRY_RUN: "false"
 
 jobs:
   validate-release:
@@ -41,7 +32,9 @@ jobs:
         id: extract_version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
+            # For workflow_dispatch, use the version from the gemspec
+            GEMSPEC_VERSION=$(ruby -e "require './lib/dbwatcher/version'; puts Dbwatcher::VERSION")
+            VERSION="$GEMSPEC_VERSION"
             echo "Manual release triggered for version: $VERSION"
           else
             VERSION=${GITHUB_REF#refs/tags/v}
@@ -214,14 +207,14 @@ jobs:
           echo "✅ Gem structure validation completed successfully"
 
       - name: Dry run check
-        if: github.event.inputs.dry_run == 'true'
+        if: github.event_name == 'workflow_dispatch' && env.DRY_RUN == 'true'
         run: |
           echo "🏃‍♂️ DRY RUN MODE - Skipping actual publishing"
           echo "Would publish: ${{ steps.build.outputs.gem_file }}"
           exit 0
 
       - name: Setup RubyGems credentials
-        if: github.event.inputs.dry_run != 'true'
+        if: github.event_name != 'workflow_dispatch' || env.DRY_RUN != 'true'
         run: |
           mkdir -p ~/.gem
           cat > ~/.gem/credentials << EOF
@@ -231,7 +224,7 @@ jobs:
           chmod 0600 ~/.gem/credentials
 
       - name: Publish to RubyGems
-        if: github.event.inputs.dry_run != 'true'
+        if: github.event_name != 'workflow_dispatch' || env.DRY_RUN != 'true'
         id: publish
         run: |
           VERSION="${{ needs.validate-release.outputs.version }}"
@@ -244,7 +237,7 @@ jobs:
           echo "published=true" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        if: github.event.inputs.dry_run != 'true'
+        if: github.event_name != 'workflow_dispatch' || env.DRY_RUN != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.validate-release.outputs.version }}
@@ -288,7 +281,7 @@ jobs:
     needs: [validate-release, build-and-publish]
     runs-on: ubuntu-latest
     name: Post-Release Tasks
-    if: needs.validate-release.outputs.should_release == 'true' && github.event.inputs.dry_run != 'true'
+    if: needs.validate-release.outputs.should_release == 'true' && (github.event_name != 'workflow_dispatch' || env.DRY_RUN != 'true')
     steps:
       - name: Verify publication
         run: |
