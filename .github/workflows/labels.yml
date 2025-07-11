@@ -2,15 +2,15 @@ name: Sync Labels
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
     paths:
-      - '.github/labels.yml'
-      - '.github/workflows/labels.yml'
+      - .github/labels.yml
+      - .github/workflows/labels.yml
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
     paths:
-      - '.github/labels.yml'
-      - '.github/workflows/labels.yml'
+      - .github/labels.yml
+      - .github/workflows/labels.yml
   workflow_dispatch:
 
 jobs:
