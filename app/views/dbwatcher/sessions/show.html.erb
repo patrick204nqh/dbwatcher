@@ -1,10 +1,12 @@
 <%= render layout: 'layout', locals: { active_tab: @active_tab, session: @session } do %>
   <% case @active_tab %>
+  <% when 'timeline' %>
+    <%= render partial: 'timeline' %>
   <% when 'summary' %>
     <%= render partial: 'summary' %>
   <% when 'diagrams' %>
     <%= render partial: 'diagrams' %>
   <% else %>
-    <%= render partial: 'changes' %>
+    <%= render partial: 'tables' %>
   <% end %>
 <% end %>

@@ -18,7 +18,8 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
     filters: {
       search: '',
       operation: '',
-      table: ''
+      table: '',
+      selectedTables: []
     },
     showColumnSelector: null,
     expandedRows: {},
@@ -57,46 +58,55 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
 
     // Apply filters directly to Tabulator (no server reload needed)
     applyTabulatorFilters() {
-      if (!this.tabulator) return;
+      // Apply filters to all tabulator instances
+      Object.keys(this.tabulators).forEach(tableName => {
+        const tabulator = this.tabulators[tableName];
+        if (!tabulator) return;
 
-      // Clear existing filters
-      this.tabulator.clearFilter();
+        // Clear existing filters
+        tabulator.clearFilter();
 
-      // Apply filters based on current state
-      const filters = [];
+        // Create a combined filter function that handles all filters
+        const hasSearch = this.filters.search && this.filters.search.trim();
+        const hasOperation = this.filters.operation;
+        const hasTable = this.filters.table;
 
-      // Search filter (searches across multiple fields)
-      if (this.filters.search && this.filters.search.trim()) {
-        const searchTerm = this.filters.search.trim().toLowerCase();
-        filters.push({
-          field: 'searchable_content',
-          type: 'like',
-          value: searchTerm
-        });
-      }
+        if (hasSearch || hasOperation || hasTable) {
+          const searchTerm = hasSearch ? this.filters.search.trim().toLowerCase() : '';
 
-      // Operation filter
-      if (this.filters.operation) {
-        filters.push({
-          field: 'operation',
-          type: '=',
-          value: this.filters.operation
-        });
-      }
+          // Apply combined custom filter
+          tabulator.setFilter((data) => {
+            // Search filter
+            if (hasSearch) {
+              const searchableContent = [
+                data.table_name,
+                data.operation,
+                data.timestamp,
+                data.index,
+                ...Object.values(data).filter(val => val !== null && val !== undefined)
+              ].join(' ').toLowerCase();
 
-      // Table filter
-      if (this.filters.table) {
-        filters.push({
-          field: 'table_name',
-          type: '=',
-          value: this.filters.table
-        });
-      }
+              if (!searchableContent.includes(searchTerm)) {
+                return false;
+              }
+            }
 
-      // Apply all filters
-      if (filters.length > 0) {
-        this.tabulator.setFilter(filters);
-      }
+            // Operation filter
+            if (hasOperation && data.operation !== this.filters.operation) {
+              return false;
+            }
+
+            // Table filter
+            if (hasTable && data.table_name !== this.filters.table) {
+              return false;
+            }
+
+            return true;
+          });
+        }
+
+        // Note: Multi-table filtering is handled at the template level via x-show
+      });
     },
 
     // Load data from API
@@ -117,11 +127,18 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
         if (this.filters.operation) params.append('operation', this.filters.operation);
         if (this.filters.search) params.append('search', this.filters.search);
 
-        const url = `/dbwatcher/api/v1/sessions/${this.sessionId}/changes_data?${params.toString()}`;
+        const url = `/dbwatcher/api/v1/sessions/${this.sessionId}/tables_data?${params.toString()}`;
         const data = await this.fetchData(url);
 
         if (data.tables_summary) {
           this.tableData = data.tables_summary;
+          
+          // Debug: Log the table data structure to verify model_class is included
+          console.log('Table data received:', Object.keys(this.tableData));
+          Object.entries(this.tableData).forEach(([tableName, tableInfo]) => {
+            console.log(`Table ${tableName} model_class:`, tableInfo.model_class);
+          });
+          
           this.initializeColumnVisibility();
           this.initializeTabulators();
         } else {
@@ -166,30 +183,30 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
 
       // Transform data for this specific table
       const tabulatorData = this.transformTableDataForTabulator(tableName, tableInfo);
-      
+
       // Create Tabulator instance for this table
       this.tabulators[tableName] = new Tabulator(container, {
         data: tabulatorData,
         layout: 'fitDataFill',
         responsiveLayout: false,
         height: Math.max(200, Math.min(400, (tabulatorData.length * 35) + 80)),  // Minimum 200px, expand based on content
-        
+
         // Force Tabulator to use our custom rowId field
         index: 'rowId',  // Tell Tabulator to use the 'rowId' field as the row identifier
-        
+
         // Performance optimizations - disable virtual DOM to ensure all rows render
         virtualDom: false,
         pagination: false,  // Ensure no pagination
-        
+
         // Column configuration for this table
         columns: this.buildColumnsForTable(tableName, tableInfo),
-        
+
         // Row formatting
         rowFormatter: this.customRowFormatter.bind(this),
-        
+
         // No initial sorting - data should be in correct order from API
         // initialSort: [],
-        
+
         // Enable header sorting
         headerSortTristate: true,
 
@@ -204,13 +221,13 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
     transformTableDataForTabulator(tableName, tableInfo) {
       const rows = [];
       const changes = tableInfo.changes || [];
-      
+
       changes.forEach((change, index) => {
         const columnData = this.extractColumnData(change, tableInfo.columns);
-        
+
         // Create truly unique row ID using table name and index only (for Tabulator internal use)
         const uniqueRowId = `${tableName}_row_${index}`;
-        
+
         const row = {
           rowId: uniqueRowId,  // Tabulator's internal row identifier
           index: index + 1,  // Display index (1-based) - should maintain API order
@@ -220,7 +237,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
           change_data: change,  // Keep original change data with ID intact
           ...columnData  // Include all column data including actual record ID
         };
-        
+
         rows.push(row);
       });
 
@@ -241,7 +258,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
           formatter: (cell) => {
             const rowData = cell.getRow().getData();
             return `<div class="flex items-center justify-center gap-1">
-                      <button class="expand-btn text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-gray-100" 
+                      <button class="expand-btn text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-gray-100"
                              data-row-id="${rowData.rowId}">
                         <svg class="w-3 h-3 transition-transform" fill="currentColor" viewBox="0 0 20 20">
                           <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 5.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
@@ -302,7 +319,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
                 const value = cell.getValue();
                 const rowData = cell.getRow().getData();
                 const change = rowData.change_data;
-                
+
                 // Handle different operations with appropriate styling
                 if (change.operation === 'UPDATE' && change.changes) {
                   const columnChange = change.changes.find(c => c.column === col);
@@ -334,7 +351,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
     // Extract column data from change record
     extractColumnData(change, columns) {
       const data = {};
-      
+
       columns.forEach(col => {
         // Get value from record snapshot or change data
         if (change.record_snapshot && change.record_snapshot[col] !== undefined) {
@@ -364,7 +381,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
           formatter: (cell) => {
             const rowData = cell.getRow().getData();
             return `<div class="flex items-center justify-center gap-1">
-                      <button class="expand-btn text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-gray-100" 
+                      <button class="expand-btn text-gray-400 hover:text-gray-600 transition-colors p-1 rounded hover:bg-gray-100"
                              data-row-id="${rowData.rowId}">
                         <svg class="w-3 h-3 transition-transform" fill="currentColor" viewBox="0 0 20 20">
                           <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 5.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
@@ -431,7 +448,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
             const value = cell.getValue();
             const rowData = cell.getRow().getData();
             const change = rowData.change_data;
-            
+
             // Handle different operations with appropriate styling
             if (change.operation === 'UPDATE' && change.changes) {
               const columnChange = change.changes.find(c => c.column === col);
@@ -463,15 +480,15 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
       if (columnName.toLowerCase().includes('id') || columnName.toLowerCase().includes('uuid')) {
         return 'string';
       }
-      
+
       // Timestamp columns - use string sorting to avoid Luxon dependency
-      if (columnName.toLowerCase().includes('time') || 
+      if (columnName.toLowerCase().includes('time') ||
           columnName.toLowerCase().includes('date') ||
           columnName.toLowerCase().includes('created') ||
           columnName.toLowerCase().includes('updated')) {
         return 'string';  // Changed from 'datetime' to 'string'
       }
-      
+
       // Numeric columns
       if (columnName.toLowerCase().includes('count') ||
           columnName.toLowerCase().includes('amount') ||
@@ -479,7 +496,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
           columnName.toLowerCase().includes('quantity')) {
         return 'number';
       }
-      
+
       // Default to alphanum for mixed content
       return 'alphanum';
     },
@@ -488,11 +505,11 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
     applyHeaderClasses(tableName) {
       const tabulator = this.tabulators[tableName];
       if (!tabulator) return;
-      
+
       const headers = tabulator.getHeaderElements();
       headers.forEach((header) => {
         const field = header.getAttribute('tabulator-field');
-        
+
         if (field === 'index') {
           header.classList.add('sticky-left-0');
         } else if (field === 'operation') {
@@ -507,10 +524,10 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
     applyRowClasses(tableName, row) {
       const element = row.getElement();
       const cells = element.querySelectorAll('.tabulator-cell');
-      
+
       cells.forEach((cell) => {
         const field = cell.getAttribute('tabulator-field');
-        
+
         if (field === 'index') {
           cell.classList.add('sticky-left-0');
         } else if (field === 'operation') {
@@ -525,7 +542,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
     customRowFormatter(row) {
       const rowData = row.getData();
       const element = row.getElement();
-      
+
       // Add classes based on operation
       const operation = rowData.operation;
       if (operation) {
@@ -536,7 +553,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
       element.addEventListener('mouseenter', () => {
         element.style.backgroundColor = '#f3f4f6';
       });
-      
+
       element.addEventListener('mouseleave', () => {
         element.style.backgroundColor = '';
       });
@@ -546,11 +563,11 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
     // Toggle row expansion
     toggleRowExpansion(rowId) {
       this.expandedRows[rowId] = !this.expandedRows[rowId];
-      
+
       // Find the row across all tabulator instances
       let targetRow = null;
       let foundInTable = null;
-      
+
       Object.keys(this.tabulators).forEach(tableName => {
         const tabulator = this.tabulators[tableName];
         if (tabulator && !targetRow) {
@@ -577,7 +594,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
           }
         }
       });
-      
+
       if (targetRow) {
         if (this.expandedRows[rowId]) {
           this.showRowDetails(targetRow);
@@ -593,34 +610,34 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
     showRowDetails(row) {
       const rowData = row.getData();
       const element = row.getElement();
-      
-      
+
+
       // Check if detail row already exists
       const existingDetail = element.nextElementSibling;
       if (existingDetail && existingDetail.classList.contains('row-detail')) {
         return; // Already expanded
       }
-      
+
       // Create detail row as a proper table row
       const detailRow = document.createElement('tr');
       detailRow.className = 'row-detail bg-gray-50';
       detailRow.setAttribute('data-parent-id', rowData.rowId);
-      
+
       // Create full-width cell
       const detailCell = document.createElement('td');
       detailCell.colSpan = 1000; // Span all columns
       detailCell.className = 'p-0 border-t border-gray-200';
-      
+
       try {
         detailCell.innerHTML = this.generateExpandedContent(rowData);
         detailRow.appendChild(detailCell);
-        
+
         // Insert after the current row
         element.parentNode.insertBefore(detailRow, element.nextSibling);
-        
+
         // Update expand button
         this.updateExpandButton(element, true);
-        
+
         // Dynamically increase table height when expanded
         const tabulator = this.findTabulatorForRow(rowData.table_name);
         if (tabulator) {
@@ -635,22 +652,22 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
       }
     },
 
-    // Hide row details  
+    // Hide row details
     hideRowDetails(row) {
       const element = row.getElement();
       const rowData = row.getData();
-      
-      
+
+
       // Find and remove the detail row
       const detailRow = element.parentNode.querySelector(`tr.row-detail[data-parent-id="${rowData.rowId}"]`);
       if (detailRow) {
         detailRow.remove();
       } else {
       }
-      
+
       // Update expand button
       this.updateExpandButton(element, false);
-      
+
       // Shrink table height back when collapsed
       const tabulator = this.findTabulatorForRow(rowData.table_name);
       if (tabulator) {
@@ -675,12 +692,12 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
       }
     },
 
-    // Generate expanded content for a row - inline table format 
+    // Generate expanded content for a row - inline table format
     generateExpandedContent(rowData) {
       const change = rowData.change_data;
       const tableInfo = this.tableData[rowData.table_name];
       const columns = tableInfo ? tableInfo.columns : [];
-      
+
       // Create a table row that matches the column structure
       let content = `
         <div class="bg-gray-50 border-t border-gray-200">
@@ -700,21 +717,21 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
                       <div class="text-gray-500 mt-1">${rowData.table_name}</div>
                     </div>
       `;
-      
+
       if (change.operation === 'UPDATE' && change.changes) {
         content += `<div class="text-blue-600 font-medium">${change.changes.length} columns modified</div>`;
       }
-      
+
       if (change.record_snapshot && (change.record_snapshot.id || change.record_snapshot.uuid)) {
         const fullId = change.record_snapshot.id || change.record_snapshot.uuid;
         content += `<div class="text-gray-500 font-mono text-xs bg-gray-200 p-1 rounded truncate" title="${fullId}">ID: ${String(fullId).substring(0, 12)}...</div>`;
       }
-      
+
       content += `
                   </div>
                 </td>
       `;
-      
+
       // Add detail cells for each column that matches the table structure
       columns.forEach(col => {
         // Only show if column is visible in the main table
@@ -724,7 +741,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
               <div class="text-xs font-medium text-gray-600 mb-1">${col}</div>
               <div class="text-xs">
           `;
-          
+
           if (change.operation === 'UPDATE' && change.changes) {
             const columnChange = change.changes.find(c => c.column === col);
             if (columnChange) {
@@ -779,21 +796,21 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
               </div>
             `;
           }
-          
+
           content += `
               </div>
             </td>
           `;
         }
       });
-      
+
       content += `
               </tr>
             </tbody>
           </table>
         </div>
       `;
-      
+
       return content;
     },
 
@@ -802,7 +819,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
       if (value === null || value === undefined) {
         return '<span class="text-gray-400 italic">NULL</span>';
       }
-      
+
       if (typeof value === 'string' && this.isJsonValue(value)) {
         try {
           const parsed = JSON.parse(value);
@@ -811,7 +828,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
           return String(value);
         }
       }
-      
+
       return String(value);
     },
 
@@ -831,11 +848,11 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
       if (value === null || value === undefined) {
         return '<span class="text-gray-400">NULL</span>';
       }
-      
+
       if (typeof value === 'string' && value.length > 50) {
         return `<span title="${value}">${value.substring(0, 50)}...</span>`;
       }
-      
+
       return String(value);
     },
 
@@ -888,7 +905,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
     // Initialize column visibility state (per table)
     initializeColumnVisibility() {
       this.tableColumns = {};
-      
+
       Object.keys(this.tableData).forEach(tableName => {
         const tableInfo = this.tableData[tableName];
         if (tableInfo && tableInfo.columns) {
@@ -916,7 +933,7 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
       // Rebuild columns for this table
       const tableInfo = this.tableData[tableName];
       const newColumns = this.buildColumnsForTable(tableName, tableInfo);
-      
+
       // Update the tabulator columns
       tabulator.setColumns(newColumns);
     },
@@ -984,6 +1001,76 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
       });
     },
 
+    // Get available operations for filtering
+    getAvailableOperations() {
+      const operations = new Set();
+      Object.values(this.tableData).forEach(tableInfo => {
+        if (tableInfo.operations) {
+          Object.keys(tableInfo.operations).forEach(op => operations.add(op));
+        }
+      });
+      return Array.from(operations).sort();
+    },
+
+    // Get available tables for filtering
+    getAvailableTables() {
+      return Object.keys(this.tableData).sort();
+    },
+
+    // Select all tables
+    selectAllTables() {
+      this.filters.selectedTables = this.getAvailableTables();
+      this.applyFilters();
+    },
+
+    // Clear table filters
+    clearTableFilters() {
+      this.filters.selectedTables = [];
+      this.applyFilters();
+    },
+
+    // Clear all filters
+    clearAllFilters() {
+      this.filters = {
+        search: '',
+        operation: '',
+        table: '',
+        selectedTables: []
+      };
+      this.applyFilters();
+    },
+
+    // Get active filter count
+    getActiveFilterCount() {
+      let count = 0;
+      if (this.filters.search) count++;
+      if (this.filters.operation) count++;
+      if (this.filters.table) count++;
+      if (this.filters.selectedTables.length > 0) count++;
+      return count;
+    },
+
+    // Get filtered row count
+    getFilteredRowCount() {
+      let count = 0;
+      Object.values(this.tabulators).forEach(tabulator => {
+        if (tabulator) {
+          count += tabulator.getDataCount('active');
+        }
+      });
+      return count;
+    },
+
+    // Get total row count
+    getTotalRowCount() {
+      let count = 0;
+      Object.values(this.tabulators).forEach(tabulator => {
+        if (tabulator) {
+          count += tabulator.getDataCount();
+        }
+      });
+      return count;
+    },
 
     // Component cleanup
     componentDestroy() {

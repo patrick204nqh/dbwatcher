@@ -59,7 +59,7 @@
           <div class="grid grid-cols-4 gap-3">
             <template x-for="table in summaryData.tables_breakdown" :key="table.table_name">
               <div class="bg-gray-50 border border-gray-200 p-2 hover:bg-gray-100 cursor-pointer transition-colors"
-                   @click="window.location.href=`/dbwatcher/sessions/${summaryData.session_id}/changes?table=${table.table_name}`">
+                   @click="window.location.href=`/dbwatcher/sessions/${summaryData.session_id}?tab=tables`">
                 <h4 class="text-xs font-medium text-gray-800 mb-2 truncate" x-text="table.table_name"></h4>
                 <div class="space-y-1">
                   <template x-for="(count, op) in table.operations" :key="op">

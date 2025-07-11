@@ -24,7 +24,7 @@ module Dbwatcher
           # @return [Hash] tables summary hash
           def build_tables_summary(session)
             # Delegate to new service while maintaining interface compatibility
-            Dbwatcher::Services::Analyzers::TableSummaryBuilder.call(session)
+            Dbwatcher::Services::Analyzers::TableSummaryBuilder.new(session).call
           end
 
           # Process all changes in a session (legacy method for backward compatibility)

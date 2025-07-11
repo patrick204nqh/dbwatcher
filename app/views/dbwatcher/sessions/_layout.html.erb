@@ -5,8 +5,11 @@
 
   <!-- Tab Bar -->
   <div class="tab-bar">
-    <%= link_to session_path(session.id, tab: 'changes'), class: "tab-item #{active_tab == 'changes' ? 'active' : ''}" do %>
-      Changes
+    <%= link_to session_path(session.id, tab: 'tables'), class: "tab-item #{active_tab == 'tables' ? 'active' : ''}" do %>
+      Tables
+    <% end %>
+    <%= link_to session_path(session.id, tab: 'timeline'), class: "tab-item #{active_tab == 'timeline' ? 'active' : ''}" do %>
+      Timeline
     <% end %>
     <%= link_to session_path(session.id, tab: 'summary'), class: "tab-item #{active_tab == 'summary' ? 'active' : ''}" do %>
       Summary

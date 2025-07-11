@@ -51,7 +51,8 @@ module Dbwatcher
             sample_record: nil,
             total_operations: 0,
             operations: { insert: 0, update: 0, delete: 0 },
-            changes: []
+            changes: [],
+            model_class: find_model_class(table_name)
           }
         end
 
@@ -195,6 +196,62 @@ module Dbwatcher
             tables_analyzed: tables.keys.length,
             total_operations: tables.values.sum { |t| t[:total_operations] }
           }
+        end
+
+        # Find the actual Rails model class for a table name
+        #
+        # @param table_name [String] database table name
+        # @return [String, nil] model class name or nil if not found
+        def find_model_class(table_name)
+          return nil unless table_name.is_a?(String)
+
+          Rails.logger.debug "Finding model class for table: #{table_name}"
+
+          # Ensure all models are loaded
+          Rails.application.eager_load! if Rails.env.development?
+
+          # Try to find the model class by checking if it exists in Rails
+          model_name = table_name.classify
+          Rails.logger.debug "Expected model name: #{model_name}"
+          
+          # Check if the model class exists and is loaded
+          if Object.const_defined?(model_name)
+            model_class = Object.const_get(model_name)
+            Rails.logger.debug "Found model class: #{model_class}"
+            
+            # Verify it's an ActiveRecord model and matches the table
+            if model_class.respond_to?(:ancestors) && model_class.ancestors.include?(ActiveRecord::Base)
+              if model_class.table_name == table_name
+                Rails.logger.debug "Model #{model_class.name} matches table #{table_name}"
+                return model_class.name
+              else
+                Rails.logger.debug "Model #{model_class.name} table_name (#{model_class.table_name}) doesn't match #{table_name}"
+              end
+            else
+              Rails.logger.debug "#{model_class} is not an ActiveRecord model"
+            end
+          else
+            Rails.logger.debug "Model class #{model_name} not found via const_defined"
+          end
+
+          # Try alternative approaches for namespaced models or different naming
+          # Check all loaded ActiveRecord models
+          Rails.logger.debug "Checking all ActiveRecord descendants..."
+          ActiveRecord::Base.descendants.each do |model|
+            if model.table_name == table_name
+              Rails.logger.debug "Found matching model: #{model.name} for table #{table_name}"
+              return model.name
+            end
+          end
+
+          Rails.logger.debug "No model found for table: #{table_name}"
+          # If no model found, return nil
+          nil
+        rescue StandardError => e
+          # Log error but don't fail the whole process
+          Rails.logger.debug "Error finding model class for table #{table_name}: #{e.message}"
+          Rails.logger.debug e.backtrace.first(5).join("\n")
+          nil
         end
       end
     end
