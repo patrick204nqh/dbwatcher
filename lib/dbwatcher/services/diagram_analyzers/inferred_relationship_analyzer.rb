@@ -257,17 +257,17 @@ module Dbwatcher
             replied_to_id
           ]
 
-          # Check for exact matches with common patterns
+          # Check if column is in the common self-referential patterns
           return true if self_ref_patterns.include?(column_name)
 
           # Get the singular form of the table name
-          base_name = singularize(table_name)
+          singular_table = singularize(table_name)
 
           # Special case for post_id in posts table - not a self-reference
-          return false if column_name == "#{base_name}_id" && table_name == "posts" && base_name == "post"
+          return false if column_name == "#{singular_table}_id" && table_name == "posts" && singular_table == "post"
 
           # Check for table-specific self-references (e.g., comment_id in comments table)
-          if column_name == "#{base_name}_id"
+          if column_name == "#{singular_table}_id"
             # Check if this is not the primary key column
             if primary_key.nil?
               begin
@@ -283,8 +283,8 @@ module Dbwatcher
           # Check for hierarchy patterns with table name
           hierarchy_prefixes = %w[parent child ancestor descendant superior subordinate manager supervisor]
           hierarchy_prefixes.each do |prefix|
-            # Check for patterns like parent_comment_id in comments table
-            return true if column_name.start_with?("#{prefix}_#{base_name}_id")
+            # Check for patterns like parent_node_id in nodes table
+            return true if column_name.start_with?("#{prefix}_#{singular_table}_id")
 
             # Check for patterns like parent_of_id in any table
             return true if column_name.start_with?("#{prefix}_of_id")
@@ -302,6 +302,13 @@ module Dbwatcher
             return true if column_name.start_with?("#{pattern}_")
           end
 
+          # Check for primary key reference (if provided)
+          if primary_key && column_name.end_with?("_#{primary_key}")
+            base_name = column_name.gsub(/_#{primary_key}$/, "")
+            return true if base_name == singular_table
+          end
+
+          # Not self-referential
           false
         end
 
