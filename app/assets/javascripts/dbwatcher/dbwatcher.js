@@ -15,11 +15,10 @@ window.DBWatcher = {
     optional: ['lodash', 'dateFns', 'mermaid', 'svgPanZoom']
   },
 
-  // Component registry - will be initialized from core/component_registry.js
+  // Core services
   ComponentRegistry: null,
-
-  // Base Component - will be initialized from components/base.js
   BaseComponent: null,
+  ApiService: null,
 
   // Initialize the entire system
   init(config = {}) {
@@ -43,27 +42,18 @@ window.DBWatcher = {
     // Initialize component registry with global config
     this.ComponentRegistry.initAll(config);
 
+    // Initialize API Service if available
+    if (this.ApiService) {
+      this.ApiService.init({
+        debug: this.debug
+      });
+    }
+
     // Mark as initialized
     this.initialized = true;
     console.log(`DBWatcher ${this.version} initialized`);
 
-    // Setup auto-initialization for Alpine
-    document.addEventListener('alpine:initialized', () => {
-      console.log('Alpine.js initialized, binding components...');
-      this.ComponentRegistry.initAll(config);
-    });
-
     return this;
-  },
-
-  // Shorthand for component registration
-  register(name, factory) {
-    if (this.ComponentRegistry) {
-      return this.ComponentRegistry.register(name, factory);
-    } else {
-      console.error('Cannot register component: ComponentRegistry not loaded');
-      return false;
-    }
   },
 
   // Validate that required dependencies are loaded
@@ -83,43 +73,5 @@ window.DBWatcher = {
     }
 
     return missing.length === 0;
-  },
-
-  // Create a new component instance
-  createComponent(name, config = {}) {
-    if (!this.ComponentRegistry) {
-      console.error('ComponentRegistry not loaded');
-      return null;
-    }
-
-    const factory = this.ComponentRegistry.get(name);
-    if (!factory) {
-      console.error(`Component '${name}' not registered`);
-      return null;
-    }
-
-    return factory(config);
-  },
-
-  // Get component (alias for createComponent for compatibility)
-  getComponent(name, config = {}) {
-    return this.createComponent(name, config);
-  },
-
-  // Register a component using the ComponentRegistry
-  register(name, factory) {
-    if (!this.ComponentRegistry) {
-      console.error('ComponentRegistry not loaded');
-      return false;
-    }
-    return this.ComponentRegistry.register(name, factory);
-  },
-
-  // Legacy support for old API
-  registerComponent(name, factory) {
-    return this.register(name, factory);
-  },
-
-  // Maintain compatibility with existing components
-  components: {}
-};
+  }
+}
