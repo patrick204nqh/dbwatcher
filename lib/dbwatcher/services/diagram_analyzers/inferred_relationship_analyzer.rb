@@ -252,17 +252,17 @@ module Dbwatcher
           end
 
           # Use pattern matching to check various self-referential patterns
-          check_common_patterns(column_name) ||
-            check_hierarchy_patterns(column_name, base_name) ||
-            check_relationship_patterns(column_name) ||
-            check_directional_patterns(column_name)
+          common_pattern?(column_name) ||
+            hierarchy_pattern?(column_name, base_name) ||
+            relationship_pattern?(column_name) ||
+            directional_pattern?(column_name)
         end
 
         # Check if column matches common self-referential patterns
         #
         # @param column_name [String] column name to check
         # @return [Boolean] true if matches common patterns
-        def check_common_patterns(column_name)
+        def common_pattern?(column_name)
           # Common self-referential patterns
           self_ref_patterns = %w[
             parent_id
@@ -296,7 +296,7 @@ module Dbwatcher
         # @param column_name [String] column name to check
         # @param base_name [String] singular form of table name
         # @return [Boolean] true if matches hierarchy patterns
-        def check_hierarchy_patterns(column_name, base_name)
+        def hierarchy_pattern?(column_name, base_name)
           hierarchy_prefixes = %w[parent child ancestor descendant superior subordinate manager supervisor]
 
           hierarchy_prefixes.any? do |prefix|
@@ -311,7 +311,7 @@ module Dbwatcher
         #
         # @param column_name [String] column name to check
         # @return [Boolean] true if matches relationship patterns
-        def check_relationship_patterns(column_name)
+        def relationship_pattern?(column_name)
           relationship_patterns = %w[related linked connected associated referenced]
 
           relationship_patterns.any? do |pattern|
@@ -323,7 +323,7 @@ module Dbwatcher
         #
         # @param column_name [String] column name to check
         # @return [Boolean] true if matches directional patterns
-        def check_directional_patterns(column_name)
+        def directional_pattern?(column_name)
           directional_patterns = %w[previous next original copy source target]
 
           directional_patterns.any? do |pattern|
