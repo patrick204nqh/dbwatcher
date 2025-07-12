@@ -1,4 +1,8 @@
-//= link_tree ../images
+// Asset directories
+//= link_directory ../images .png
+//= link_directory ../images .jpg
+//= link_directory ../images .gif
+//= link_directory ../images .svg
 //= link_directory ../stylesheets/dbwatcher .css
 //= link_directory ../javascripts/dbwatcher .js
 //= link_directory ../javascripts/dbwatcher/vendor .js
