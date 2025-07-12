@@ -1,8 +1,8 @@
-# GitHub Labels Configuration for class-metrix
+# GitHub Labels Configuration for DBWatcher
 # Consistent naming convention: "category: value" or "category-subcategory"
 # This file can be used with github-label-sync or similar tools
 # Install: npm install -g github-label-sync
-# Usage: github-label-sync --access-token <token> patrick204nqh/class-metrix
+# Usage: github-label-sync --access-token <token> patrick204nqh/dbwatcher
 
 # =============================================================================
 # PRIORITY LABELS - Determines urgency level
@@ -115,29 +115,41 @@
 # =============================================================================
 # COMPONENT LABELS - Specific areas of codebase
 # =============================================================================
-- name: "component: extractor"
-  color: "e1f5fe"
-  description: "🔍 Data extraction functionality"
+- name: "component: core"
+  color: "e8f5e9"
+  description: "🧠 Core tracking and configuration functionality"
 
-- name: "component: formatter"
-  color: "f3e5f5"
-  description: "📋 Output formatting components"
-
-- name: "component: processor"
+- name: "component: storage"
   color: "fff3e0"
-  description: "⚙️ Data processing logic"
+  description: "💾 Storage and data persistence"
 
-- name: "component: config"
-  color: "f8f9fa"
-  description: "⚙️ Configuration and settings"
+- name: "component: ui"
+  color: "fce4ec"
+  description: "🖼️ User interface and visualization"
 
-- name: "component: utils"
-  color: "e8f5e8"
-  description: "🛠️ Utility functions and helpers"
+- name: "component: diagrams"
+  color: "e1f5fe"
+  description: "📊 Diagram generation and visualization"
+
+- name: "component: middleware"
+  color: "f3e5f5"
+  description: "🔄 Rails middleware components"
+
+- name: "component: api"
+  color: "e3f2fd"
+  description: "🔌 API endpoints and services"
 
 - name: "component: services"
   color: "e3f2fd"
   description: "🔧 Service layer components"
+
+- name: "component: analyzers"
+  color: "e1f5fe"
+  description: "🔍 Data analyzers and processors"
+
+- name: "component: system-info"
+  color: "f8f9fa"
+  description: "📈 System information collection and display"
 
 - name: "component: testing"
   color: "fce4ec"
@@ -204,6 +216,18 @@
   color: "cc342d"
   description: "💎 Ruby language related"
 
+- name: "lang: javascript"
+  color: "f7df1e"
+  description: "📜 JavaScript related changes"
+
+- name: "lang: scss"
+  color: "c6538c"
+  description: "🎨 SCSS/CSS styling changes"
+
+- name: "tech: rails"
+  color: "cc0000"
+  description: "🛤️ Rails framework specific"
+
 - name: "tech: github-actions"
   color: "2088ff"
   description: "⚡ GitHub Actions workflows"
@@ -219,6 +243,10 @@
 - name: "tech: steep"
   color: "563d7c"
   description: "🔍 Static type checking"
+
+- name: "tech: mermaid"
+  color: "ff9e64"
+  description: "📊 Mermaid diagram related"
 
 # =============================================================================
 # RELEASE LABELS - Version management
