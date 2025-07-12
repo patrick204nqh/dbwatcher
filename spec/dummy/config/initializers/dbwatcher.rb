@@ -10,5 +10,8 @@ Rails.application.configure do
     config.enabled = true
     config.auto_clean_after_days = 7
     config.max_sessions = 100
+
+    # Enable debug logging in development environment
+    config.debug_logging = Rails.env.development?
   end
 end

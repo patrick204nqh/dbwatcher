@@ -15,6 +15,8 @@ module Dbwatcher
     #   content = builder.build_erd_diagram_from_dataset(dataset)
     #   # => "erDiagram\n    USERS ||--o{ ORDERS : user_id"
     class MermaidSyntaxBuilder
+      include Dbwatcher::Logging
+
       # Custom error classes
       class SyntaxValidationError < StandardError; end
       class UnsupportedDiagramTypeError < StandardError; end
@@ -40,8 +42,8 @@ module Dbwatcher
       # @param options [Hash] generation options
       # @return [String] Mermaid ERD syntax
       def build_erd_diagram_from_dataset(dataset, options = {})
-        @logger.debug "Building ERD diagram from dataset with #{dataset.entities.size} entities and " \
-                      "#{dataset.relationships.size} relationships"
+        log_debug("Building ERD diagram from dataset with #{dataset.entities.size} entities and " \
+                  "#{dataset.relationships.size} relationships")
 
         builder = MermaidSyntax::ErdBuilder.new(@config.merge(options))
         builder.build_from_dataset(dataset)
@@ -53,8 +55,8 @@ module Dbwatcher
       # @param options [Hash] generation options
       # @return [String] Mermaid class diagram syntax
       def build_class_diagram_from_dataset(dataset, options = {})
-        @logger.debug "Building class diagram from dataset with #{dataset.entities.size} entities and " \
-                      "#{dataset.relationships.size} relationships"
+        log_debug("Building class diagram from dataset with #{dataset.entities.size} entities and " \
+                  "#{dataset.relationships.size} relationships")
 
         builder = MermaidSyntax::ClassDiagramBuilder.new(@config.merge(options))
         builder.build_from_dataset(dataset)
@@ -66,8 +68,8 @@ module Dbwatcher
       # @param options [Hash] generation options
       # @return [String] Mermaid flowchart syntax
       def build_flowchart_diagram_from_dataset(dataset, options = {})
-        @logger.debug "Building flowchart diagram from dataset with #{dataset.entities.size} entities and " \
-                      "#{dataset.relationships.size} relationships"
+        log_debug("Building flowchart diagram from dataset with #{dataset.entities.size} entities and " \
+                  "#{dataset.relationships.size} relationships")
 
         builder = MermaidSyntax::FlowchartBuilder.new(@config.merge(options))
         builder.build_from_dataset(dataset)
@@ -125,7 +127,7 @@ module Dbwatcher
       # @param options [Hash] generation options
       # @return [String] Mermaid ERD syntax
       def build_erd_diagram_with_tables(entities, options = {})
-        @logger.debug "Building ERD diagram with #{entities.size} isolated tables"
+        log_debug("Building ERD diagram with #{entities.size} isolated tables")
 
         dataset = Dbwatcher::Services::DiagramData::Dataset.new
         entities.each { |entity| dataset.add_entity(entity) }
@@ -139,7 +141,7 @@ module Dbwatcher
       # @param options [Hash] generation options
       # @return [String] Mermaid flowchart syntax
       def build_flowchart_with_nodes(entities, options = {})
-        @logger.debug "Building flowchart diagram with #{entities.size} isolated nodes"
+        log_debug("Building flowchart diagram with #{entities.size} isolated nodes")
 
         dataset = Dbwatcher::Services::DiagramData::Dataset.new
         entities.each { |entity| dataset.add_entity(entity) }

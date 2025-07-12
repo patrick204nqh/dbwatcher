@@ -54,7 +54,7 @@ module Dbwatcher
       # @param diagram_type [String] type of diagram to generate
       # @return [Hash] diagram generation result
       def self.generate(session_id, diagram_type = "database_tables")
-        DiagramGenerator.new(session_id, diagram_type).call
+        DiagramGenerator.new(session_id: session_id, diagram_type: diagram_type).call
       end
 
       # Check if diagram type is supported

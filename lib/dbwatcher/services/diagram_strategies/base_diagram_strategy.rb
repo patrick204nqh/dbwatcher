@@ -8,6 +8,8 @@ module Dbwatcher
       # Defines the common interface and shared behavior for all diagram generation
       # strategies. Subclasses must implement the render_diagram method.
       class BaseDiagramStrategy
+        include Dbwatcher::Logging
+
         attr_reader :syntax_builder, :logger
 
         # Initialize strategy with dependencies
@@ -25,8 +27,8 @@ module Dbwatcher
         # @param dataset [Dataset] standardized dataset
         # @return [Hash] diagram generation result
         def generate_from_dataset(dataset)
-          @logger.info("Generating diagram from dataset with #{dataset.entities.size} entities and " \
-                       "#{dataset.relationships.size} relationships")
+          log_info("Generating diagram from dataset with #{dataset.entities.size} entities and " \
+                   "#{dataset.relationships.size} relationships")
           start_time = Time.current
 
           begin
@@ -40,7 +42,7 @@ module Dbwatcher
 
             result
           rescue StandardError => e
-            @logger.error("Diagram generation failed: #{e.class}: #{e.message}\n#{e.backtrace.join("\n")}")
+            log_error("Diagram generation failed: #{e.class}: #{e.message}\n#{e.backtrace.join("\n")}")
             error_response("Diagram generation failed: #{e.message}")
           end
         end
@@ -64,10 +66,8 @@ module Dbwatcher
         # @param dataset [Dataset] standardized dataset
         # @return [Hash] diagram generation result
         def render_diagram(dataset)
-          @logger.debug(
-            "Rendering #{mermaid_diagram_type} diagram from dataset with " \
-            "#{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
-          )
+          log_debug("Rendering #{mermaid_diagram_type} diagram from dataset with " \
+                    "#{dataset.entities.size} entities and #{dataset.relationships.size} relationships")
 
           # Generate diagram content directly from dataset
           content = generate_diagram_content(dataset)
@@ -132,9 +132,9 @@ module Dbwatcher
         # @param operation [String] operation name
         # @param duration [Float] operation duration in seconds
         # @param context [Hash] additional context
-        def log_operation_completion(operation, duration, _context = {})
-          @logger.info("Strategy operation completed: #{operation} by #{self.class.name} " \
-                       "in #{(duration * 1000).round(2)}ms")
+        def log_operation_completion(operation, duration, context = {})
+          log_info("Strategy operation completed: #{operation} by #{self.class.name} " \
+                   "in #{(duration * 1000).round(2)}ms", context)
         end
 
         # Create default syntax builder
