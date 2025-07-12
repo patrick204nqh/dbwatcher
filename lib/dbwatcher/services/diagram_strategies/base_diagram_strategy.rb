@@ -59,13 +59,25 @@ module Dbwatcher
 
         protected
 
-        # Render diagram from dataset (abstract method)
+        # Render diagram from dataset (template method)
         #
         # @param dataset [Dataset] standardized dataset
         # @return [Hash] diagram generation result
-        # @raise [NotImplementedError] if not implemented by subclass
         def render_diagram(dataset)
-          raise NotImplementedError, "Subclasses must implement render_diagram method"
+          @logger.debug "Rendering #{mermaid_diagram_type} diagram from dataset with #{dataset.entities.size} entities and " \
+                        "#{dataset.relationships.size} relationships"
+
+          # Generate diagram content directly from dataset
+          content = generate_diagram_content(dataset)
+          success_response(content, mermaid_diagram_type)
+        end
+
+        # Generate diagram content based on dataset (to be implemented by subclasses)
+        #
+        # @param dataset [Dataset] standardized dataset
+        # @return [String] diagram content
+        def generate_diagram_content(dataset)
+          raise NotImplementedError, "Subclasses must implement generate_diagram_content method"
         end
 
         # Build empty diagram with message

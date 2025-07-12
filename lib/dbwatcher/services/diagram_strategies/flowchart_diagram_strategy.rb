@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative "base_diagram_strategy"
+require_relative "diagram_strategy_helpers"
+
 module Dbwatcher
   module Services
     module DiagramStrategies
@@ -8,27 +11,21 @@ module Dbwatcher
       # Handles flowchart diagram generation by converting dataset entities and relationships
       # to Mermaid flowchart syntax.
       class FlowchartDiagramStrategy < BaseDiagramStrategy
+        include DiagramStrategyHelpers
+
         protected
 
-        # Render flowchart diagram from standardized dataset
+        # Generate flowchart diagram content from standardized dataset
         #
         # @param dataset [Dataset] standardized dataset
-        # @return [Hash] diagram generation result
-        def render_diagram(dataset)
-          @logger.debug "Rendering flowchart diagram from dataset with #{dataset.entities.size} entities and " \
-                        "#{dataset.relationships.size} relationships"
-
-          # Generate diagram content directly from dataset
-          content = if dataset.relationships.empty? && dataset.entities.empty?
-                      @syntax_builder.build_empty_flowchart("No model associations or entities found")
-                    elsif dataset.relationships.empty?
-                      # Show isolated nodes if no relationships but entities exist
-                      @syntax_builder.build_flowchart_with_nodes(dataset.entities.values)
-                    else
-                      @syntax_builder.build_flowchart_diagram_from_dataset(dataset)
-                    end
-
-          success_response(content, "flowchart")
+        # @return [String] diagram content
+        def generate_diagram_content(dataset)
+          generate_standard_diagram_content(dataset, {
+                                              empty_method: :build_empty_flowchart,
+                                              empty_message: "No model associations or entities found",
+                                              empty_entities_method: :build_flowchart_with_nodes,
+                                              full_diagram_method: :build_flowchart_diagram_from_dataset
+                                            })
         end
 
         private

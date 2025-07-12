@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative "base_diagram_strategy"
+require_relative "diagram_strategy_helpers"
+
 module Dbwatcher
   module Services
     module DiagramStrategies
@@ -8,24 +11,20 @@ module Dbwatcher
       # Handles class diagram generation by converting dataset entities and relationships
       # to Mermaid class diagram syntax.
       class ClassDiagramStrategy < BaseDiagramStrategy
+        include DiagramStrategyHelpers
+
         protected
 
-        # Render class diagram from standardized dataset
+        # Generate class diagram content from standardized dataset
         #
         # @param dataset [Dataset] standardized dataset
-        # @return [Hash] diagram generation result
-        def render_diagram(dataset)
-          @logger.debug "Rendering class diagram from dataset with #{dataset.entities.size} entities and " \
-                        "#{dataset.relationships.size} relationships"
-
-          # Generate diagram content directly from dataset
-          content = if dataset.relationships.empty? && dataset.entities.empty?
-                      @syntax_builder.build_empty_class_diagram("No model associations or entities found")
-                    else
-                      @syntax_builder.build_class_diagram_from_dataset(dataset)
-                    end
-
-          success_response(content, "classDiagram")
+        # @return [String] diagram content
+        def generate_diagram_content(dataset)
+          generate_standard_diagram_content(dataset, {
+                                              empty_method: :build_empty_class_diagram,
+                                              empty_message: "No model associations or entities found",
+                                              full_diagram_method: :build_class_diagram_from_dataset
+                                            })
         end
 
         private
