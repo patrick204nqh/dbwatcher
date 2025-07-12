@@ -232,6 +232,37 @@ module Dbwatcher
         # @param primary_key [String, nil] optional primary key for testing
         # @return [Boolean] true if likely self-referential
         def self_referential_column?(column_name, table_name, primary_key = nil)
+          # Get the singular form of the table name
+          base_name = singularize(table_name)
+
+          # Special case for post_id in posts table - not a self-reference
+          return false if column_name == "#{base_name}_id" && table_name == "posts" && base_name == "post"
+
+          # Check primary key if this is a table-specific reference
+          if column_name == "#{base_name}_id"
+            if primary_key.nil?
+              begin
+                primary_key = connection.primary_key(table_name)
+              rescue StandardError
+                return false
+              end
+            end
+
+            return column_name != primary_key
+          end
+
+          # Use pattern matching to check various self-referential patterns
+          common_pattern?(column_name) ||
+            hierarchy_pattern?(column_name, base_name) ||
+            relationship_pattern?(column_name) ||
+            directional_pattern?(column_name)
+        end
+
+        # Check if column matches common self-referential patterns
+        #
+        # @param column_name [String] column name to check
+        # @return [Boolean] true if matches common patterns
+        def common_pattern?(column_name)
           # Common self-referential patterns
           self_ref_patterns = %w[
             parent_id
@@ -257,52 +288,47 @@ module Dbwatcher
             replied_to_id
           ]
 
-          # Check for exact matches with common patterns
-          return true if self_ref_patterns.include?(column_name)
+          self_ref_patterns.include?(column_name)
+        end
 
-          # Get the singular form of the table name
-          base_name = singularize(table_name)
-
-          # Special case for post_id in posts table - not a self-reference
-          return false if column_name == "#{base_name}_id" && table_name == "posts" && base_name == "post"
-
-          # Check for table-specific self-references (e.g., comment_id in comments table)
-          if column_name == "#{base_name}_id"
-            # Check if this is not the primary key column
-            if primary_key.nil?
-              begin
-                primary_key = connection.primary_key(table_name)
-              rescue StandardError
-                return false
-              end
-            end
-
-            return column_name != primary_key
-          end
-
-          # Check for hierarchy patterns with table name
+        # Check for hierarchy patterns with table name
+        #
+        # @param column_name [String] column name to check
+        # @param base_name [String] singular form of table name
+        # @return [Boolean] true if matches hierarchy patterns
+        def hierarchy_pattern?(column_name, base_name)
           hierarchy_prefixes = %w[parent child ancestor descendant superior subordinate manager supervisor]
-          hierarchy_prefixes.each do |prefix|
+
+          hierarchy_prefixes.any? do |prefix|
             # Check for patterns like parent_comment_id in comments table
-            return true if column_name.start_with?("#{prefix}_#{base_name}_id")
-
-            # Check for patterns like parent_of_id in any table
-            return true if column_name.start_with?("#{prefix}_of_id")
+            column_name.start_with?("#{prefix}_#{base_name}_id") ||
+              # Check for patterns like parent_of_id in any table
+              column_name.start_with?("#{prefix}_of_id")
           end
+        end
 
-          # Check for relationship patterns
+        # Check for relationship patterns
+        #
+        # @param column_name [String] column name to check
+        # @return [Boolean] true if matches relationship patterns
+        def relationship_pattern?(column_name)
           relationship_patterns = %w[related linked connected associated referenced]
-          relationship_patterns.each do |pattern|
-            return true if column_name.start_with?("#{pattern}_")
-          end
 
-          # Check for directional patterns
+          relationship_patterns.any? do |pattern|
+            column_name.start_with?("#{pattern}_")
+          end
+        end
+
+        # Check for directional patterns
+        #
+        # @param column_name [String] column name to check
+        # @return [Boolean] true if matches directional patterns
+        def directional_pattern?(column_name)
           directional_patterns = %w[previous next original copy source target]
-          directional_patterns.each do |pattern|
-            return true if column_name.start_with?("#{pattern}_")
-          end
 
-          false
+          directional_patterns.any? do |pattern|
+            column_name.start_with?("#{pattern}_")
+          end
         end
 
         # Analyze junction tables (many-to-many relationships)
