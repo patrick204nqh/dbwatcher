@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.4] - 2025-07-12
+### Added
+
+- Refactor diagram strategies to inherit from StandardDiagramStrategy and enhance logging in DiagramSystem
+- Add debug logging configuration and enhance logging in diagram generation services
+- Refactor diagram generation strategies with helper methods for content generation
+- Refactor release workflow to improve dry run handling and version extraction
+- Enhance release workflow with dry run flag handling and validation
+- Update release workflow to use gemspec version and improve dry run handling
+
+
+### Changed
+
+- Rename pattern checking methods for clarity and consistency
+- Enhance self-referential column detection logic and streamline pattern checks
+- Remove quotes from color values in GitHub labels configuration
+- Update GitHub labels for DBWatcher configuration and enhance component categorization
+- Remove obsolete diagram visualization integration tests
+
+
+### Fixed
+
+- Function with many returns (count = 8): self_referential_column?
+- Set default permissions as read-only for workflow
+- Update DiagramGenerator initialization to use keyword arguments and improve error messages in specs
+- Improve logger debug message formatting in render_diagram method
+
+
 ## [1.1.3] - 2025-07-12
 ### Added
 
