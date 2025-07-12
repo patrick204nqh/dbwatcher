@@ -15,6 +15,8 @@ module Dbwatcher
       #     end
       #   end
       class BaseBuilder
+        include Dbwatcher::Logging
+
         # Initialize a new builder with configuration
         #
         # @param config [Hash] configuration options

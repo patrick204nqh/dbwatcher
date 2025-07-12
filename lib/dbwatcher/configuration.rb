@@ -26,6 +26,9 @@ module Dbwatcher
                   :collect_sensitive_env_vars, :system_info_cache_duration,
                   :system_info_include_performance_metrics
 
+    # Logging configuration
+    attr_accessor :debug_logging
+
     # Initialize with default values
     def initialize
       # Storage configuration defaults
@@ -47,6 +50,9 @@ module Dbwatcher
 
       # Initialize system information configuration with defaults
       initialize_system_info_config
+
+      # Initialize logging configuration with defaults
+      initialize_logging_config
     end
 
     # Initialize diagram configuration with default values
@@ -71,6 +77,11 @@ module Dbwatcher
       @collect_sensitive_env_vars = false
       @system_info_cache_duration = 60 * 60 # 1 hour in seconds
       @system_info_include_performance_metrics = true
+    end
+
+    # Initialize logging configuration with default values
+    def initialize_logging_config
+      @debug_logging = false
     end
 
     # Validate configuration

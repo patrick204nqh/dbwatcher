@@ -8,32 +8,23 @@ module Dbwatcher
 
         def tables_data
           Rails.logger.info "API::V1::SessionsController#tables_data: Getting tables for session #{@session.id}"
-
-          # Paginated, filtered tables data
-          # Convert ActionController::Parameters to a hash before passing to service
-          service = Dbwatcher::Services::Api::TablesDataService.new(@session, filter_params.to_h)
+          service = Dbwatcher::Services::Api::TablesDataService.new(@session, tables_data_params)
           render json: service.call
         end
 
         def summary_data
           Rails.logger.info "API::V1::SessionsController#summary_data: Getting summary for session #{@session.id}"
-
-          # Aggregated summary statistics
           service = Dbwatcher::Services::Api::SummaryDataService.new(@session)
           render json: service.call
         end
 
         def diagram_data
           Rails.logger.info "API::V1::SessionsController#diagram_data: Getting diagram for session #{@session.id}"
-
-          # Generated diagram content with caching
-          # Convert ActionController::Parameters to a hash before passing to service
-          diagram_params = params.to_unsafe_h
           service = Dbwatcher::Services::Api::DiagramDataService.new(@session, params[:type], diagram_params)
           result = service.call
 
           if result[:error]
-            render json: { error: result[:error] }, status: :unprocessable_entity
+            render_error(result[:error])
           else
             render json: result
           end
@@ -41,13 +32,11 @@ module Dbwatcher
 
         def timeline_data
           Rails.logger.info "API::V1::SessionsController#timeline_data: Getting timeline for session #{@session.id}"
-
-          # Timeline data processed from session changes
           service = Dbwatcher::Services::TimelineDataService.new(@session)
           result = service.call
 
           if result[:errors].any?
-            render json: { error: result[:errors].first[:message] }, status: :unprocessable_entity
+            render_error(result[:errors].first[:message])
           else
             render json: result
           end
@@ -55,7 +44,6 @@ module Dbwatcher
 
         def diagram_types
           Rails.logger.info "API::V1::SessionsController#diagram_types: Getting available diagram types"
-
           render json: {
             types: Dbwatcher::Services::Api::DiagramDataService.available_types_with_metadata,
             default_type: "database_tables"
@@ -66,11 +54,19 @@ module Dbwatcher
 
         def find_session
           @session = Storage.sessions.find(params[:id])
-          render json: { error: "Session not found" }, status: :not_found unless @session
+          render_error("Session not found", :not_found) unless @session
         end
 
-        def filter_params
-          params.permit(:table, :operation, :page, :per_page)
+        def tables_data_params
+          params.permit(:id, :table, :operation, :page, :per_page, session: {}).to_h
+        end
+
+        def diagram_params
+          params.permit(:type, :format, :include_columns, :show_relationships, session: {}).to_h
+        end
+
+        def render_error(message, status = :unprocessable_entity)
+          render json: { error: message }, status: status
         end
       end
     end

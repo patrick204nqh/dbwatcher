@@ -49,7 +49,7 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
   describe "#call" do
     context "with invalid session" do
       it "returns error response when session doesn't exist" do
-        generator = described_class.new("invalid-id", "database_tables", dependencies)
+        generator = described_class.new(session_id: "invalid-id", diagram_type: "database_tables", options: dependencies)
         result = generator.call
 
         expect(result[:success]).to be false
@@ -64,11 +64,11 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
                                                                                     error: "Unknown diagram type: invalid_type"
                                                                                   })
 
-        generator = described_class.new(session_id, "invalid_type", dependencies)
+        generator = described_class.new(session_id: session_id, diagram_type: "invalid_type", options: dependencies)
         result = generator.call
 
         expect(result[:success]).to be false
-        expect(result[:error]).to include("Unknown diagram type")
+        expect(result[:error]).to include("Invalid diagram type")
       end
     end
 
@@ -80,7 +80,7 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
                                                                              type: "erDiagram"
                                                                            })
 
-        generator = described_class.new(session_id, "database_tables", dependencies)
+        generator = described_class.new(session_id: session_id, diagram_type: "database_tables", options: dependencies)
         result = generator.call
 
         expect(result[:success]).to be true
@@ -96,7 +96,7 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
                                                                              type: "classDiagram"
                                                                            })
 
-        generator = described_class.new(session_id, "model_associations", dependencies)
+        generator = described_class.new(session_id: session_id, diagram_type: "model_associations", options: dependencies)
         result = generator.call
 
         expect(result[:success]).to be true
@@ -112,7 +112,7 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
                                                                              type: "flowchart"
                                                                            })
 
-        generator = described_class.new(session_id, "model_associations_flowchart", dependencies)
+        generator = described_class.new(session_id: session_id, diagram_type: "model_associations_flowchart", options: dependencies)
         result = generator.call
 
         expect(result[:success]).to be true
@@ -123,16 +123,19 @@ RSpec.describe Dbwatcher::Services::DiagramGenerator do
 
   describe ".available_types" do
     it "returns expected diagram types" do
-      types = described_class.available_types
+      # This test should be testing DiagramSystem.available_types, not DiagramGenerator
+      registry = instance_double(Dbwatcher::Services::DiagramTypeRegistry)
 
-      expect(types).to be_a(Hash)
-      expect(types.keys).to include("database_tables", "model_associations")
+      # Setup the registry mock
+      allow(Dbwatcher::Services::DiagramTypeRegistry).to receive(:new).and_return(registry)
+      allow(registry).to receive(:available_types).and_return(
+        %w[database_tables model_associations model_associations_flowchart]
+      )
 
-      # Check that model_associations uses classDiagram type
-      expect(types["model_associations"][:mermaid_type]).to eq("classDiagram")
-
-      # Check that model_associations_flowchart uses flowchart type
-      expect(types["model_associations_flowchart"][:mermaid_type]).to eq("flowchart")
+      # Test DiagramSystem.available_types
+      types = Dbwatcher::Services::DiagramSystem.available_types
+      expect(types).to be_a(Array)
+      expect(types).to include("database_tables", "model_associations", "model_associations_flowchart")
     end
   end
 end

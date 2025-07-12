@@ -14,9 +14,12 @@ module Dbwatcher
     end
 
     # Log a debug message with optional context
+    # Only logs if debug mode is enabled
     # @param message [String] the log message
     # @param context [Hash] additional context data
     def log_debug(message, context = {})
+      return unless debug_enabled?
+
       log_with_level(:debug, message, context)
     end
 
@@ -32,6 +35,16 @@ module Dbwatcher
     # @param context [Hash] additional context data
     def log_error(message, context = {})
       log_with_level(:error, message, context)
+    end
+
+    # Check if debug logging is enabled
+    # @return [Boolean] true if debug logging is enabled
+    def debug_enabled?
+      return Dbwatcher.configuration.debug_logging if defined?(Dbwatcher.configuration) &&
+                                                      Dbwatcher.configuration.respond_to?(:debug_logging)
+      return Rails.env.development? if defined?(Rails)
+
+      false
     end
 
     private
@@ -51,7 +64,16 @@ module Dbwatcher
     end
 
     def component_name
-      self.class.name.split("::").last
+      if is_a?(Module) && !is_a?(Class)
+        # For modules
+        name.to_s.split("::").last
+      elsif self.class.name
+        # For classes
+        self.class.name.split("::").last
+      else
+        # Fallback
+        "Logger"
+      end
     end
 
     def rails_logger

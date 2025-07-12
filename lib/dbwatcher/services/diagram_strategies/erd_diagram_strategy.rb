@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "standard_diagram_strategy"
+
 module Dbwatcher
   module Services
     module DiagramStrategies
@@ -7,34 +9,10 @@ module Dbwatcher
       #
       # Handles ERD diagram generation by converting dataset entities and relationships
       # to Mermaid ERD syntax.
-      class ErdDiagramStrategy < BaseDiagramStrategy
-        protected
-
-        # Render ERD diagram from standardized dataset
-        #
-        # @param dataset [Dataset] standardized dataset
-        # @return [Hash] diagram generation result
-        def render_diagram(dataset)
-          @logger.debug "Rendering ERD diagram from dataset with #{dataset.entities.size} entities and " \
-                        "#{dataset.relationships.size} relationships"
-
-          # Generate diagram content directly from dataset
-          content = if dataset.relationships.empty? && dataset.entities.empty?
-                      @syntax_builder.build_empty_erd("No database relationships or tables found")
-                    elsif dataset.relationships.empty?
-                      # Show isolated tables if no relationships but entities exist
-                      @syntax_builder.build_erd_diagram_with_tables(dataset.entities.values)
-                    else
-                      @syntax_builder.build_erd_diagram_from_dataset(dataset)
-                    end
-
-          success_response(content, "erDiagram")
-        end
-
+      class ErdDiagramStrategy < StandardDiagramStrategy
         private
 
         # Strategy metadata methods
-
         def strategy_name
           "Database Schema (ERD)"
         end
@@ -45,6 +23,23 @@ module Dbwatcher
 
         def mermaid_diagram_type
           "erDiagram"
+        end
+
+        # Diagram generation configuration
+        def empty_diagram_method
+          :build_empty_erd
+        end
+
+        def empty_diagram_message
+          "No database relationships or tables found"
+        end
+
+        def empty_entities_method
+          :build_erd_diagram_with_tables
+        end
+
+        def full_diagram_method
+          :build_erd_diagram_from_dataset
         end
       end
     end

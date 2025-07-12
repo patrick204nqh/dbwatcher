@@ -29,6 +29,8 @@ require_relative "diagram_analyzers/model_association_analyzer"
 
 # Diagram strategies
 require_relative "diagram_strategies/base_diagram_strategy"
+require_relative "diagram_strategies/diagram_strategy_helpers"
+require_relative "diagram_strategies/standard_diagram_strategy"
 require_relative "diagram_strategies/erd_diagram_strategy"
 require_relative "diagram_strategies/class_diagram_strategy"
 require_relative "diagram_strategies/flowchart_diagram_strategy"
@@ -41,6 +43,13 @@ module Dbwatcher
     # Diagram System Module
     # Provides centralized access to diagram generation capabilities
     module DiagramSystem
+      extend Dbwatcher::Logging
+
+      # Explicitly set the component name for logging
+      def self.component_name
+        "DiagramSystem"
+      end
+
       # Get available diagram types
       #
       # @return [Array<String>] available diagram type names
@@ -54,7 +63,11 @@ module Dbwatcher
       # @param diagram_type [String] type of diagram to generate
       # @return [Hash] diagram generation result
       def self.generate(session_id, diagram_type = "database_tables")
-        DiagramGenerator.new(session_id, diagram_type).call
+        log_debug("Generating diagram of type #{diagram_type} for session #{session_id}")
+        generator = DiagramGenerator.new(session_id: session_id, diagram_type: diagram_type)
+        result = generator.call
+        log_debug("Diagram generation completed with success=#{result[:success]}")
+        result
       end
 
       # Check if diagram type is supported
