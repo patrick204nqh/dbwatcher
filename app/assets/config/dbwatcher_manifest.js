@@ -1,14 +1,8 @@
-// Asset directories
-//= link_directory ../images .png
-//= link_directory ../images .jpg
-//= link_directory ../images .gif
-//= link_directory ../images .svg
-//= link_directory ../stylesheets/dbwatcher .css
-//= link_directory ../javascripts/dbwatcher .js
-//= link_directory ../javascripts/dbwatcher/vendor .js
-//= link_directory ../javascripts/dbwatcher/core .js
-//= link_directory ../javascripts/dbwatcher/services .js
-//= link_directory ../javascripts/dbwatcher/components .js
+// Stylesheets
+//= require dbwatcher/application
+//= require_tree ../stylesheets/dbwatcher/components
+//= require_tree ../stylesheets/dbwatcher/core
+//= require_tree ../stylesheets/dbwatcher/vendor
 
 // Core modules
 //= require dbwatcher/core/errors
