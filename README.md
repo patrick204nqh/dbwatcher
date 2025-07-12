@@ -75,14 +75,28 @@ Visit `/dbwatcher` in your browser to explore tracked operations.
 
 ## Configuration
 
-Optional configuration in `config/initializers/dbwatcher.rb`:
+Create a configuration file in `config/initializers/dbwatcher.rb`:
 
 ```ruby
 Dbwatcher.configure do |config|
+  # Storage configuration
   config.storage_path = Rails.root.join('tmp', 'dbwatcher')
   config.enabled = Rails.env.development?
-  config.max_sessions = 100
+  config.max_sessions = 50
   config.auto_clean_after_days = 7
+
+  # Query tracking configuration
+  config.track_queries = false  # Set to true to track all SQL queries
+  config.slow_query_threshold = 200  # milliseconds
+
+  # Diagram visualization options
+  config.diagram_show_attributes = true
+  config.diagram_show_cardinality = true
+  config.diagram_direction = "LR"  # LR (left-to-right) or TB (top-to-bottom)
+
+  # System information collection
+  config.collect_system_info = true
+  config.system_info_refresh_interval = 5 * 60  # 5 minutes in seconds
 end
 ```
 
@@ -101,17 +115,22 @@ Dbwatcher.track(
 end
 ```
 
-### Testing Integration
+### Access Current Session
 
-Use in your test suite:
+Access the current tracking session:
 
 ```ruby
-it "creates user with associations" do
-  Dbwatcher.track(name: "User Creation Test") do
-    user = create(:user)
-    expect(user.profile).to be_present
-  end
-end
+session = Dbwatcher.current_session
+puts "Session ID: #{session.id}"
+puts "Total changes: #{session.changes.count}"
+```
+
+### Clear All Data
+
+Remove all stored sessions and queries:
+
+```ruby
+Dbwatcher.clear_all
 ```
 
 ## Development
@@ -133,14 +152,6 @@ COVERAGE=true bundle exec rake test
 ```
 
 Coverage reports will be generated in the `coverage/` directory.
-
-### CI Coverage Setup
-
-To enable coverage uploads to Qlty in CI:
-
-1. Create an account at [Qlty.sh](https://qlty.sh)
-2. Create a new project and get your coverage token
-3. Add the token as a GitHub repository secret named `QLTY_COVERAGE_TOKEN`
 
 ### Local Development
 
