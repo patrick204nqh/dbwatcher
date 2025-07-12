@@ -1,10 +1,8 @@
-// Stylesheets
-//= require dbwatcher/application
-//= require_tree ../stylesheets/dbwatcher/components
-//= require_tree ../stylesheets/dbwatcher/core
-//= require_tree ../stylesheets/dbwatcher/vendor
+// Main application
+//= link_directory ../stylesheets .css
+//= link_directory ../javascripts .js
 
-// Core modules
+// DBWatcher application
 //= require dbwatcher/core/errors
 //= require dbwatcher/core/lifecycle
 //= require dbwatcher/core/event_bus
