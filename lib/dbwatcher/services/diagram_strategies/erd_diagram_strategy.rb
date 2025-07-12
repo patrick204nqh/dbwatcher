@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "base_diagram_strategy"
-require_relative "diagram_strategy_helpers"
+require_relative "standard_diagram_strategy"
 
 module Dbwatcher
   module Services
@@ -10,28 +9,10 @@ module Dbwatcher
       #
       # Handles ERD diagram generation by converting dataset entities and relationships
       # to Mermaid ERD syntax.
-      class ErdDiagramStrategy < BaseDiagramStrategy
-        include DiagramStrategyHelpers
-
-        protected
-
-        # Generate ERD diagram content from standardized dataset
-        #
-        # @param dataset [Dataset] standardized dataset
-        # @return [String] diagram content
-        def generate_diagram_content(dataset)
-          generate_standard_diagram_content(dataset, {
-                                              empty_method: :build_empty_erd,
-                                              empty_message: "No database relationships or tables found",
-                                              empty_entities_method: :build_erd_diagram_with_tables,
-                                              full_diagram_method: :build_erd_diagram_from_dataset
-                                            })
-        end
-
+      class ErdDiagramStrategy < StandardDiagramStrategy
         private
 
         # Strategy metadata methods
-
         def strategy_name
           "Database Schema (ERD)"
         end
@@ -42,6 +23,23 @@ module Dbwatcher
 
         def mermaid_diagram_type
           "erDiagram"
+        end
+
+        # Diagram generation configuration
+        def empty_diagram_method
+          :build_empty_erd
+        end
+
+        def empty_diagram_message
+          "No database relationships or tables found"
+        end
+
+        def empty_entities_method
+          :build_erd_diagram_with_tables
+        end
+
+        def full_diagram_method
+          :build_erd_diagram_from_dataset
         end
       end
     end

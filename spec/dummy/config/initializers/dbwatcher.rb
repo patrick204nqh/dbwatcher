@@ -12,6 +12,6 @@ Rails.application.configure do
     config.max_sessions = 100
 
     # Enable debug logging in development environment
-    config.debug_logging = Rails.env.development?
+    config.debug_logging = true
   end
 end

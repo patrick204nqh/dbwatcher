@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "base_diagram_strategy"
-require_relative "diagram_strategy_helpers"
+require_relative "standard_diagram_strategy"
 
 module Dbwatcher
   module Services
@@ -10,28 +9,10 @@ module Dbwatcher
       #
       # Handles flowchart diagram generation by converting dataset entities and relationships
       # to Mermaid flowchart syntax.
-      class FlowchartDiagramStrategy < BaseDiagramStrategy
-        include DiagramStrategyHelpers
-
-        protected
-
-        # Generate flowchart diagram content from standardized dataset
-        #
-        # @param dataset [Dataset] standardized dataset
-        # @return [String] diagram content
-        def generate_diagram_content(dataset)
-          generate_standard_diagram_content(dataset, {
-                                              empty_method: :build_empty_flowchart,
-                                              empty_message: "No model associations or entities found",
-                                              empty_entities_method: :build_flowchart_with_nodes,
-                                              full_diagram_method: :build_flowchart_diagram_from_dataset
-                                            })
-        end
-
+      class FlowchartDiagramStrategy < StandardDiagramStrategy
         private
 
         # Strategy metadata methods
-
         def strategy_name
           "Model Associations"
         end
@@ -42,6 +23,23 @@ module Dbwatcher
 
         def mermaid_diagram_type
           "flowchart"
+        end
+
+        # Diagram generation configuration
+        def empty_diagram_method
+          :build_empty_flowchart
+        end
+
+        def empty_diagram_message
+          "No model associations or entities found"
+        end
+
+        def empty_entities_method
+          :build_flowchart_with_nodes
+        end
+
+        def full_diagram_method
+          :build_flowchart_diagram_from_dataset
         end
       end
     end

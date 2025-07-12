@@ -64,7 +64,16 @@ module Dbwatcher
     end
 
     def component_name
-      self.class.name.split("::").last
+      if is_a?(Module) && !is_a?(Class)
+        # For modules
+        name.to_s.split("::").last
+      elsif self.class.name
+        # For classes
+        self.class.name.split("::").last
+      else
+        # Fallback
+        "Logger"
+      end
     end
 
     def rails_logger
