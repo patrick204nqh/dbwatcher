@@ -5,9 +5,15 @@
  */
 DBWatcher.BaseComponent = function(config = {}) {
   // Get utilities
-  const lifecycle = window.DBWatcher.Lifecycle;
-  const events = window.DBWatcher.Events;
-  const utils = window.DBWatcher.Utils;
+  const lifecycle = window.DBWatcher?.Lifecycle;
+  const events = window.DBWatcher?.Events;
+  const utils = window.DBWatcher?.Utils;
+
+  // Validate required dependencies
+  if (!lifecycle || !events || !utils) {
+    console.error('Required utilities not loaded for BaseComponent');
+    return null;
+  }
 
   // Create component instance
   const component = {
@@ -110,9 +116,7 @@ DBWatcher.BaseComponent = function(config = {}) {
       try {
         lifecycle.Manager.destroyComponent(this);
       } catch (error) {
-        console.error('Error during component cleanup:',
-          this.errors.ErrorUtils.formatError(error)
-        );
+        console.error('Error during component cleanup:', error);
       }
     },
 

@@ -20,6 +20,9 @@
 
   // Dashboard Component Factory
   const DashboardComponent = function(config = {}) {
+    // Get base component
+    const baseComponent = DBWatcher.BaseComponent ? DBWatcher.BaseComponent(config) : {};
+
     // Merge configuration with defaults
     const settings = {
       ...CONFIG.SELECTORS,
@@ -79,7 +82,7 @@
       }
 
       isRefreshing = true;
-      const refreshButton = safeQuerySelector(settings.refreshButton);
+      const refreshButton = baseComponent.querySelector(settings.refreshButton);
 
       try {
         // Update button state
@@ -132,7 +135,7 @@
 
     // Update system info content
     async function updateSystemInfoContent() {
-      const contentContainer = safeQuerySelector(settings.systemInfoContent);
+      const contentContainer = baseComponent.querySelector(settings.systemInfoContent);
 
       if (!contentContainer) {
         return;
@@ -211,18 +214,9 @@
       }, 5000);
     }
 
-    // Safe DOM access helper
-    function safeQuerySelector(selector) {
-      try {
-        return document.querySelector(selector);
-      } catch (e) {
-        console.warn('Error accessing DOM element:', selector, e);
-        return null;
-      }
-    }
-
     // Public API
     return {
+      ...baseComponent,
       init,
       refreshSystemInfo,
       clearSystemInfoCache
@@ -237,7 +231,7 @@
   // Auto-initialize when DOM is ready with better error handling
   function initializeDashboard() {
     try {
-      if (safeQuerySelector('.dashboard-container') || safeQuerySelector('.tab-bar') || safeQuerySelector('#refresh-system-info') || safeQuerySelector('#clear-cache-system-info')) {
+      if (document.querySelector('.dashboard-container') || document.querySelector('.tab-bar') || document.querySelector('#refresh-system-info') || document.querySelector('#clear-cache-system-info')) {
         const dashboard = DashboardComponent();
         dashboard.init();
       }
@@ -249,13 +243,7 @@
   // Multiple initialization strategies
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeDashboard);
-  } else if (document.readyState === 'interactive' || document.readyState === 'complete') {
-    // DOM is already loaded, but wait a bit for Alpine to initialize
-    setTimeout(initializeDashboard, 100);
+  } else {
+    initializeDashboard();
   }
-
-  // Also listen for Alpine initialization
-  document.addEventListener('alpine:init', () => {
-    setTimeout(initializeDashboard, 50);
-  });
 })();

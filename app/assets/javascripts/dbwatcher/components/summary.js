@@ -3,10 +3,14 @@
  * API-first implementation for DBWatcher summary tab
  */
 
-// Register component with DBWatcher
-DBWatcher.registerComponent('summary', function(config) {
-  return Object.assign(DBWatcher.BaseComponent(config), {
-    // Component-specific state
+const SummaryComponent = function(config) {
+  // Get base component
+  const baseComponent = DBWatcher.BaseComponent ? DBWatcher.BaseComponent(config) : {};
+
+  return {
+    ...baseComponent,
+
+    // Component state
     sessionId: config.sessionId,
     summaryData: {},
     autoRefresh: config.autoRefresh || false,
@@ -25,37 +29,22 @@ DBWatcher.registerComponent('summary', function(config) {
 
     // Load summary data from API
     async loadSummaryData() {
-      if (!this.sessionId) {
-        console.error('No session ID provided to summary component');
-        this.handleError(new Error('No session ID provided'));
-        return;
-      }
-
-      this.setLoading(true);
-      this.clearError();
+      this.loading = true;
+      this.error = null;
 
       try {
-        const data = await window.ApiService.table.getSummary(this.sessionId);
-
-        if (!data.error) {
-          // API returns complete data structure including tables_breakdown and enhanced_stats
-          this.summaryData = data;
-        } else {
-          throw new Error(data.error || 'No summary data received');
-        }
+        const response = await this.api.summary.getSummaryData(this.sessionId);
+        this.summaryData = response.data;
       } catch (error) {
-        this.handleError(error);
+        this.error = error.message || 'Failed to load summary data';
+        console.error('Error loading summary data:', error);
       } finally {
-        this.setLoading(false);
+        this.loading = false;
       }
     },
 
-    // Start auto-refresh if enabled
+    // Start auto-refresh
     startAutoRefresh() {
-      if (this.refreshInterval) {
-        clearInterval(this.refreshInterval);
-      }
-
       this.refreshInterval = setInterval(() => {
         this.loadSummaryData();
       }, 30000); // Refresh every 30 seconds
@@ -69,15 +58,19 @@ DBWatcher.registerComponent('summary', function(config) {
       }
     },
 
-    // Get table activity data for visualization
-    getTableActivity() {
-      if (!this.summaryData.tables_breakdown) return [];
-
-      return this.summaryData.tables_breakdown.map(table => ({
-        name: table.table_name,
-        total: table.change_count,
-        ...table.operations
-      }));
+    // Cleanup
+    destroy() {
+      this.stopAutoRefresh();
+      if (baseComponent.destroy) {
+        baseComponent.destroy();
+      }
     }
-  });
-});
+  };
+};
+
+// Register with DBWatcher ComponentRegistry
+if (window.DBWatcher && window.DBWatcher.ComponentRegistry) {
+  window.DBWatcher.ComponentRegistry.register('summary', SummaryComponent);
+} else {
+  console.error('DBWatcher ComponentRegistry not available for summary component');
+}
