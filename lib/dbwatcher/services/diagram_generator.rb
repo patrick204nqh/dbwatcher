@@ -38,10 +38,10 @@ module Dbwatcher
       def call
         log_info("Generating diagram of type #{@diagram_type} for session #{@session_id}")
 
-        start_time = Time.current
+        start_time = Time.now
         result = generate_diagram
 
-        duration_ms = ((Time.current - start_time) * 1000).round(2)
+        duration_ms = ((Time.now - start_time) * 1000).round(2)
         log_info("Diagram generation completed in #{duration_ms}ms", {
                    session_id: @session_id,
                    diagram_type: @diagram_type,
