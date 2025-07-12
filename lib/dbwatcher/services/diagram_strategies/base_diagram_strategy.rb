@@ -64,8 +64,10 @@ module Dbwatcher
         # @param dataset [Dataset] standardized dataset
         # @return [Hash] diagram generation result
         def render_diagram(dataset)
-          @logger.debug "Rendering #{mermaid_diagram_type} diagram from dataset with #{dataset.entities.size} entities and " \
-                        "#{dataset.relationships.size} relationships"
+          @logger.debug(
+            "Rendering #{mermaid_diagram_type} diagram from dataset with " \
+            "#{dataset.entities.size} entities and #{dataset.relationships.size} relationships"
+          )
 
           # Generate diagram content directly from dataset
           content = generate_diagram_content(dataset)
