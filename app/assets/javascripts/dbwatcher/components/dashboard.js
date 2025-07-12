@@ -15,12 +15,6 @@
       refreshButton: '#refresh-system-info',
       clearCacheButton: '#clear-cache-system-info',
       systemInfoContent: '#system-info-content'
-    },
-    ENDPOINTS: {
-      refresh: '/dbwatcher/dashboard/system_info/refresh',
-      clearCache: '/dbwatcher/dashboard/system_info/clear_cache',
-      dashboard: '/dbwatcher',
-      systemInfo: '/dbwatcher/system_info'
     }
   };
 
@@ -46,20 +40,19 @@
     function setupEventListeners() {
       // System info refresh
       document.addEventListener('click', handleRefreshClick);
-      
+
       // Clear cache
       document.addEventListener('click', handleClearCacheClick);
     }
-    
 
     // Handle refresh button click
     function handleRefreshClick(event) {
       const target = event.target;
-      
+
       if (!target.matches(settings.refreshButton)) {
         return;
       }
-      
+
       event.preventDefault();
       refreshSystemInfo();
     }
@@ -67,13 +60,13 @@
     // Handle clear cache button click
     function handleClearCacheClick(event) {
       const target = event.target;
-      
+
       if (!target.matches(settings.clearCacheButton)) {
         return;
       }
-      
+
       event.preventDefault();
-      
+
       if (confirm('Are you sure you want to clear the system information cache?')) {
         clearSystemInfoCache();
       }
@@ -84,25 +77,20 @@
       if (isRefreshing) {
         return;
       }
-      
+
       isRefreshing = true;
       const refreshButton = safeQuerySelector(settings.refreshButton);
-      
+
       try {
         // Update button state
         if (refreshButton) {
           refreshButton.disabled = true;
           refreshButton.textContent = 'Refreshing...';
         }
-        
-        // Make API call
-        const response = await fetch(CONFIG.ENDPOINTS.refresh, {
-          method: 'POST',
-          headers: utils.getApiHeaders()
-        });
-        
-        const data = await utils.handleApiResponse(response);
-        
+
+        // Make API call using SystemApi
+        const data = await window.ApiService.system.refresh();
+
         if (data.success) {
           // Update the system info content
           await updateSystemInfoContent();
@@ -110,13 +98,13 @@
         } else {
           showNotification(data.error || 'Failed to refresh system information', 'error');
         }
-        
+
       } catch (error) {
         console.error('Error refreshing system info:', error);
         showNotification('Failed to refresh system information', 'error');
       } finally {
         isRefreshing = false;
-        
+
         // Restore button state
         if (refreshButton) {
           refreshButton.disabled = false;
@@ -128,19 +116,14 @@
     // Clear system information cache
     async function clearSystemInfoCache() {
       try {
-        const response = await fetch(CONFIG.ENDPOINTS.clearCache, {
-          method: 'DELETE',
-          headers: utils.getApiHeaders()
-        });
-        
-        const data = await utils.handleApiResponse(response);
-        
+        const data = await window.ApiService.system.clearCache();
+
         if (data.success) {
           showNotification('System information cache cleared successfully', 'success');
         } else {
           showNotification(data.error || 'Failed to clear cache', 'error');
         }
-        
+
       } catch (error) {
         console.error('Error clearing cache:', error);
         showNotification('Failed to clear cache', 'error');
@@ -150,71 +133,25 @@
     // Update system info content
     async function updateSystemInfoContent() {
       const contentContainer = safeQuerySelector(settings.systemInfoContent);
-      
+
       if (!contentContainer) {
         return;
       }
-      
+
       try {
-        // Make request to get updated HTML content
-        const response = await fetch(CONFIG.ENDPOINTS.dashboard, {
-          headers: {
-            'Accept': 'text/html',
-            'X-Requested-With': 'XMLHttpRequest'
-          }
-        });
-        
-        if (response.ok) {
-          const html = await response.text();
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(html, 'text/html');
-          const newContent = doc.querySelector('#system-info-content');
-          
-          if (newContent) {
-            contentContainer.innerHTML = newContent.innerHTML;
-          }
+        // Get updated HTML content using SystemApi
+        const html = await window.ApiService.system.getDashboardContent();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newContent = doc.querySelector('#system-info-content');
+
+        if (newContent) {
+          contentContainer.innerHTML = newContent.innerHTML;
         }
       } catch (error) {
         console.error('Error updating system info content:', error);
       }
     }
-
-    // Safe DOM access helper
-    function safeQuerySelector(selector) {
-      try {
-        return document.querySelector(selector);
-      } catch (e) {
-        console.warn('Error accessing DOM element:', selector, e);
-        return null;
-      }
-    }
-
-
-    // Utility functions
-    const utils = {
-      // Get CSRF token
-      getCsrfToken() {
-        const metaTag = safeQuerySelector('meta[name="csrf-token"]');
-        return metaTag?.getAttribute('content');
-      },
-      
-      // Common headers for API requests
-      getApiHeaders() {
-        return {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRF-Token': this.getCsrfToken()
-        };
-      },
-      
-      // Handle API response
-      async handleApiResponse(response) {
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        return await response.json();
-      }
-    };
 
     // Show notification
     function showNotification(message, type = 'info') {
@@ -236,7 +173,7 @@
         transform: translateY(-20px);
         transition: all 0.3s ease;
       `;
-      
+
       // Set background color based on type
       switch (type) {
         case 'success':
@@ -248,20 +185,20 @@
         default:
           notification.style.backgroundColor = '#3b82f6';
       }
-      
+
       notification.textContent = message;
-      
+
       // Add to page
       if (document.body) {
         document.body.appendChild(notification);
       }
-      
+
       // Animate in
       setTimeout(() => {
         notification.style.opacity = '1';
         notification.style.transform = 'translateY(0)';
       }, 100);
-      
+
       // Remove after 5 seconds
       setTimeout(() => {
         notification.style.opacity = '0';
@@ -272,6 +209,16 @@
           }
         }, 300);
       }, 5000);
+    }
+
+    // Safe DOM access helper
+    function safeQuerySelector(selector) {
+      try {
+        return document.querySelector(selector);
+      } catch (e) {
+        console.warn('Error accessing DOM element:', selector, e);
+        return null;
+      }
     }
 
     // Public API
@@ -285,16 +232,6 @@
   // Register component with DBWatcher
   if (window.DBWatcher && window.DBWatcher.register) {
     window.DBWatcher.register('dashboard', DashboardComponent);
-  }
-
-  // Safe DOM access helper
-  function safeQuerySelector(selector) {
-    try {
-      return document.querySelector(selector);
-    } catch (e) {
-      console.warn('Error accessing DOM element:', selector, e);
-      return null;
-    }
   }
 
   // Auto-initialize when DOM is ready with better error handling
@@ -321,5 +258,4 @@
   document.addEventListener('alpine:init', () => {
     setTimeout(initializeDashboard, 50);
   });
-
 })();

@@ -122,23 +122,22 @@ DBWatcher.registerComponent('changesTableHybrid', function(config) {
 
       try {
         // Build query parameters from filters
-        const params = new URLSearchParams();
-        if (this.filters.table) params.append('table', this.filters.table);
-        if (this.filters.operation) params.append('operation', this.filters.operation);
-        if (this.filters.search) params.append('search', this.filters.search);
+        const params = {};
+        if (this.filters.table) params.table = this.filters.table;
+        if (this.filters.operation) params.operation = this.filters.operation;
+        if (this.filters.search) params.search = this.filters.search;
 
-        const url = `/dbwatcher/api/v1/sessions/${this.sessionId}/tables_data?${params.toString()}`;
-        const data = await this.fetchData(url);
+        const data = await window.ApiService.table.getChanges(this.sessionId, params);
 
         if (data.tables_summary) {
           this.tableData = data.tables_summary;
-          
+
           // Debug: Log the table data structure to verify model_class is included
           console.log('Table data received:', Object.keys(this.tableData));
           Object.entries(this.tableData).forEach(([tableName, tableInfo]) => {
             console.log(`Table ${tableName} model_class:`, tableInfo.model_class);
           });
-          
+
           this.initializeColumnVisibility();
           this.initializeTabulators();
         } else {
