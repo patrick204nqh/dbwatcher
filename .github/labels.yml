@@ -1,279 +1,307 @@
-# GitHub Labels Configuration for class-metrix
+# GitHub Labels Configuration for DBWatcher
 # Consistent naming convention: "category: value" or "category-subcategory"
 # This file can be used with github-label-sync or similar tools
 # Install: npm install -g github-label-sync
-# Usage: github-label-sync --access-token <token> patrick204nqh/class-metrix
+# Usage: github-label-sync --access-token <token> patrick204nqh/dbwatcher
 
 # =============================================================================
 # PRIORITY LABELS - Determines urgency level
 # =============================================================================
 - name: "priority: critical"
-  color: "b60205"
-  description: "🚨 Critical priority - needs immediate attention"
+  color: b60205
+  description: 🚨 Critical priority - needs immediate attention
 
 - name: "priority: high"
-  color: "d73a4a"
-  description: "🔴 High priority - should be addressed soon"
+  color: d73a4a
+  description: 🔴 High priority - should be addressed soon
 
 - name: "priority: medium"
-  color: "fbca04"
-  description: "🟡 Medium priority - normal timeline"
+  color: fbca04
+  description: 🟡 Medium priority - normal timeline
 
 - name: "priority: low"
-  color: "0e8a16"
-  description: "🟢 Low priority - when time permits"
+  color: 0e8a16
+  description: 🟢 Low priority - when time permits
 
 # =============================================================================
 # TYPE LABELS - Categorizes the nature of work
 # =============================================================================
 - name: "type: bug"
-  color: "d73a4a"
-  description: "🐛 Something isn't working correctly"
+  color: d73a4a
+  description: 🐛 Something isn't working correctly
 
 - name: "type: feature"
-  color: "a2eeef"
-  description: "✨ New feature or enhancement request"
+  color: a2eeef
+  description: ✨ New feature or enhancement request
 
 - name: "type: enhancement"
-  color: "84b6eb"
-  description: "⚡ Improvement to existing functionality"
+  color: 84b6eb
+  description: ⚡ Improvement to existing functionality
 
 - name: "type: documentation"
-  color: "0075ca"
-  description: "📚 Documentation improvements or additions"
+  color: 0075ca
+  description: 📚 Documentation improvements or additions
 
 - name: "type: refactor"
-  color: "d4c5f9"
-  description: "🔄 Code refactoring without behavior change"
+  color: d4c5f9
+  description: 🔄 Code refactoring without behavior change
 
 - name: "type: performance"
-  color: "ff6347"
-  description: "🚀 Performance improvements"
+  color: ff6347
+  description: 🚀 Performance improvements
 
 - name: "type: security"
-  color: "b60205"
-  description: "🔒 Security-related issues or improvements"
+  color: b60205
+  description: 🔒 Security-related issues or improvements
 
 - name: "type: maintenance"
-  color: "fef2c0"
-  description: "🔧 Maintenance tasks and housekeeping"
+  color: fef2c0
+  description: 🔧 Maintenance tasks and housekeeping
 
 - name: "type: testing"
-  color: "17a2b8"
-  description: "🧪 Testing related changes"
+  color: 17a2b8
+  description: 🧪 Testing related changes
 
 # =============================================================================
 # STATUS LABELS - Current state of work
 # =============================================================================
 - name: "status: needs-review"
-  color: "0052cc"
-  description: "👀 Ready for review"
+  color: 0052cc
+  description: 👀 Ready for review
 
 - name: "status: in-progress"
-  color: "1d76db"
-  description: "🚧 Currently being worked on"
+  color: 1d76db
+  description: 🚧 Currently being worked on
 
 - name: "status: blocked"
-  color: "b60205"
-  description: "🚫 Blocked by dependency or issue"
+  color: b60205
+  description: 🚫 Blocked by dependency or issue
 
 - name: "status: on-hold"
-  color: "fbca04"
-  description: "⏸️ On hold for external reasons"
+  color: fbca04
+  description: ⏸️ On hold for external reasons
 
 - name: "status: ready-to-merge"
-  color: "0e8a16"
-  description: "✅ Approved and ready to merge"
+  color: 0e8a16
+  description: ✅ Approved and ready to merge
 
 - name: "status: needs-changes"
-  color: "d73a4a"
-  description: "🔄 Changes requested in review"
+  color: d73a4a
+  description: 🔄 Changes requested in review
 
 # =============================================================================
 # SIZE LABELS - Effort estimation
 # =============================================================================
 - name: "size: xs"
-  color: "c5f015"
-  description: "🔹 Extra small change (< 1 hour)"
+  color: c5f015
+  description: 🔹 Extra small change (< 1 hour)
 
 - name: "size: sm"
-  color: "7cfc00"
-  description: "🔸 Small change (1-4 hours)"
+  color: 7cfc00
+  description: 🔸 Small change (1-4 hours)
 
 - name: "size: md"
-  color: "ffa500"
-  description: "🔶 Medium change (4-8 hours)"
+  color: ffa500
+  description: 🔶 Medium change (4-8 hours)
 
 - name: "size: lg"
-  color: "ff6347"
-  description: "🔴 Large change (1-2 days)"
+  color: ff6347
+  description: 🔴 Large change (1-2 days)
 
 - name: "size: xl"
-  color: "8b0000"
-  description: "⚫ Extra large change (2+ days)"
+  color: 8b0000
+  description: ⚫ Extra large change (2+ days)
 
 # =============================================================================
 # COMPONENT LABELS - Specific areas of codebase
 # =============================================================================
-- name: "component: extractor"
-  color: "e1f5fe"
-  description: "🔍 Data extraction functionality"
+- name: "component: core"
+  color: e8f5e9
+  description: 🧠 Core tracking and configuration functionality
 
-- name: "component: formatter"
-  color: "f3e5f5"
-  description: "📋 Output formatting components"
+- name: "component: storage"
+  color: fff3e0
+  description: 💾 Storage and data persistence
 
-- name: "component: processor"
-  color: "fff3e0"
-  description: "⚙️ Data processing logic"
+- name: "component: ui"
+  color: fce4ec
+  description: 🖼️ User interface and visualization
 
-- name: "component: config"
-  color: "f8f9fa"
-  description: "⚙️ Configuration and settings"
+- name: "component: diagrams"
+  color: e1f5fe
+  description: 📊 Diagram generation and visualization
 
-- name: "component: utils"
-  color: "e8f5e8"
-  description: "🛠️ Utility functions and helpers"
+- name: "component: middleware"
+  color: f3e5f5
+  description: 🔄 Rails middleware components
+
+- name: "component: api"
+  color: e3f2fd
+  description: 🔌 API endpoints and services
 
 - name: "component: services"
-  color: "e3f2fd"
-  description: "🔧 Service layer components"
+  color: e3f2fd
+  description: 🔧 Service layer components
+
+- name: "component: analyzers"
+  color: e1f5fe
+  description: 🔍 Data analyzers and processors
+
+- name: "component: system-info"
+  color: f8f9fa
+  description: 📈 System information collection and display
 
 - name: "component: testing"
-  color: "fce4ec"
-  description: "🧪 Test files and testing utilities"
+  color: fce4ec
+  description: 🧪 Test files and testing utilities
 
 - name: "component: docs"
-  color: "f1f8e9"
-  description: "📖 Documentation files"
+  color: f1f8e9
+  description: 📖 Documentation files
 
 # =============================================================================
 # DEPENDENCY LABELS - Dependency management (consistent with Dependabot)
 # =============================================================================
 - name: "dependencies"
-  color: "0366d6"
-  description: "📦 Dependency updates and management"
+  color: 0366d6
+  description: 📦 Dependency updates and management
 
 - name: "deps: security"
-  color: "b60205"
-  description: "🔒 Security vulnerability fixes"
+  color: b60205
+  description: 🔒 Security vulnerability fixes
 
 - name: "deps: production"
-  color: "d73a4a"
-  description: "🏭 Production runtime dependencies"
+  color: d73a4a
+  description: 🏭 Production runtime dependencies
 
 - name: "deps: development"
-  color: "1d76db"
-  description: "🔧 Development and testing dependencies"
+  color: 1d76db
+  description: 🔧 Development and testing dependencies
 
 - name: "deps: major"
-  color: "8b0000"
-  description: "⬆️ Major version updates (breaking changes possible)"
+  color: 8b0000
+  description: ⬆️ Major version updates (breaking changes possible)
 
 - name: "deps: minor"
-  color: "ffa500"
-  description: "📈 Minor version updates (new features)"
+  color: ffa500
+  description: 📈 Minor version updates (new features)
 
 - name: "deps: patch"
-  color: "0e8a16"
-  description: "🩹 Patch version updates (bug fixes)"
+  color: 0e8a16
+  description: 🩹 Patch version updates (bug fixes)
 
 # =============================================================================
 # AUTOMATION LABELS - Automated processes
 # =============================================================================
 - name: "automated"
-  color: "ededed"
-  description: "🤖 Automated pull request or process"
+  color: ededed
+  description: 🤖 Automated pull request or process
 
 - name: "auto-merge-candidate"
-  color: "2cbe4e"
-  description: "🚀 Safe for automatic merging after CI passes"
+  color: 2cbe4e
+  description: 🚀 Safe for automatic merging after CI passes
 
 - name: "bot: dependabot"
-  color: "0366d6"
-  description: "🤖 Created by Dependabot"
+  color: 0366d6
+  description: 🤖 Created by Dependabot
 
 - name: "bot: renovate"
-  color: "1f8ceb"
-  description: "🤖 Created by Renovate"
+  color: 1f8ceb
+  description: 🤖 Created by Renovate
 
 # =============================================================================
 # LANGUAGE/TECH LABELS - Technology specific
 # =============================================================================
 - name: "lang: ruby"
-  color: "cc342d"
-  description: "💎 Ruby language related"
+  color: cc342d
+  description: 💎 Ruby language related
+
+- name: "lang: javascript"
+  color: f7df1e
+  description: 📜 JavaScript related changes
+
+- name: "lang: scss"
+  color: c6538c
+  description: 🎨 SCSS/CSS styling changes
+
+- name: "tech: rails"
+  color: cc0000
+  description: 🛤️ Rails framework specific
 
 - name: "tech: github-actions"
-  color: "2088ff"
-  description: "⚡ GitHub Actions workflows"
+  color: 2088ff
+  description: ⚡ GitHub Actions workflows
 
 - name: "tech: ci-cd"
-  color: "28a745"
-  description: "🔄 Continuous integration/deployment"
+  color: 28a745
+  description: 🔄 Continuous integration/deployment
 
 - name: "tech: rbs"
-  color: "cc342d"
-  description: "📝 Ruby type signatures"
+  color: cc342d
+  description: 📝 Ruby type signatures
 
 - name: "tech: steep"
-  color: "563d7c"
-  description: "🔍 Static type checking"
+  color: 563d7c
+  description: 🔍 Static type checking
+
+- name: "tech: mermaid"
+  color: ff9e64
+  description: 📊 Mermaid diagram related
 
 # =============================================================================
 # RELEASE LABELS - Version management
 # =============================================================================
 - name: "release: major"
-  color: "8b0000"
-  description: "🚀 Major version release (breaking changes)"
+  color: 8b0000
+  description: 🚀 Major version release (breaking changes)
 
 - name: "release: minor"
-  color: "ffa500"
-  description: "📈 Minor version release (new features)"
+  color: ffa500
+  description: 📈 Minor version release (new features)
 
 - name: "release: patch"
-  color: "0e8a16"
-  description: "🩹 Patch version release (bug fixes)"
+  color: 0e8a16
+  description: 🩹 Patch version release (bug fixes)
 
 - name: "release: pre-release"
-  color: "9f7aea"
-  description: "🧪 Pre-release version (alpha/beta/rc)"
+  color: 9f7aea
+  description: 🧪 Pre-release version (alpha/beta/rc)
 
 - name: "breaking-change"
-  color: "b60205"
-  description: "💥 Contains breaking changes"
+  color: b60205
+  description: 💥 Contains breaking changes
 
 # =============================================================================
 # WORKFLOW LABELS - Process and workflow
 # =============================================================================
 - name: "good-first-issue"
-  color: "7057ff"
-  description: "👶 Good for newcomers"
+  color: 7057ff
+  description: 👶 Good for newcomers
 
 - name: "help-wanted"
-  color: "008672"
-  description: "🆘 Extra attention is needed"
+  color: 008672
+  description: 🆘 Extra attention is needed
 
 - name: "question"
-  color: "d876e3"
-  description: "❓ Further information is requested"
+  color: d876e3
+  description: ❓ Further information is requested
 
 - name: "duplicate"
-  color: "cfd3d7"
-  description: "🔄 This issue or pull request already exists"
+  color: cfd3d7
+  description: 🔄 This issue or pull request already exists
 
 - name: "invalid"
-  color: "e4e669"
-  description: "❌ This doesn't seem right"
+  color: e4e669
+  description: ❌ This doesn't seem right
 
 - name: "wontfix"
-  color: "ffffff"
-  description: "🚫 This will not be worked on"
+  color: ffffff
+  description: 🚫 This will not be worked on
 
 - name: "needs-reproduction"
-  color: "fef2c0"
-  description: "🔍 Needs steps to reproduce the issue"
+  color: fef2c0
+  description: 🔍 Needs steps to reproduce the issue
 
 - name: "needs-triage"
-  color: "ededed"
-  description: "🏷️ Needs initial triage and labeling"
+  color: ededed
+  description: 🏷️ Needs initial triage and labeling

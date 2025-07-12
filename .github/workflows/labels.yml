@@ -13,6 +13,10 @@ on:
       - .github/workflows/labels.yml
   workflow_dispatch:
 
+# Set default permissions as read-only at workflow level
+permissions:
+  contents: read
+
 jobs:
   sync-labels:
     runs-on: ubuntu-latest
