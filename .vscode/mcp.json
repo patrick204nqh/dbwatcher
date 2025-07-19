@@ -12,13 +12,16 @@
       "type": "stdio",
       "command": "docker",
       "args": [
-        "run", "-i", "--rm",
-        "-e", "GITHUB_TOKEN=${input:github-token}",
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_TOKEN=${input:github-token}",
         "ghcr.io/github/github-mcp-server:latest"
       ]
     },
     "context7": {
-      "type": "stdio", 
+      "type": "stdio",
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp@latest"]
     },
@@ -29,16 +32,21 @@
     "filesystem": {
       "type": "stdio",
       "command": "python",
-      "args": ["-m", "mcp.server.filesystem", "--base-directory", "/workspaces/dbwatcher"]
+      "args": [
+        "-m",
+        "mcp.server.filesystem",
+        "--base-directory",
+        "/workspaces/dbwatcher"
+      ]
     },
     "fetch": {
-      "type": "stdio", 
+      "type": "stdio",
       "command": "python",
       "args": ["-m", "mcp.server.fetch"]
     },
     "git": {
       "type": "stdio",
-      "command": "python", 
+      "command": "python",
       "args": ["-m", "mcp.server.git", "--repository", "/workspaces/dbwatcher"]
     },
     "memory": {
@@ -48,7 +56,7 @@
     },
     "sequential-thinking": {
       "type": "stdio",
-      "command": "python", 
+      "command": "python",
       "args": ["-m", "mcp.server.sequential_thinking"]
     },
     "time": {
