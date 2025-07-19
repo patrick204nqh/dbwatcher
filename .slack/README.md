@@ -6,7 +6,7 @@ Slack bot integration for DB Watcher CI/CD pipeline notifications.
 
 ### Option 1: Using App Manifest (Recommended)
 
-1. Go to https://api.slack.com/apps
+1. Go to <https://api.slack.com/apps>
 2. Click **"Create New App"** → **"From an app manifest"**
 3. Select your workspace
 4. Copy the contents of `.slack/app-manifest.json` and paste it
@@ -18,7 +18,7 @@ Slack bot integration for DB Watcher CI/CD pipeline notifications.
 
 ### Option 2: Manual Setup
 
-1. Go to https://api.slack.com/apps
+1. Go to <https://api.slack.com/apps>
 2. Click **"Create New App"** → **"From scratch"**
 3. Name: "DB Watcher CICD"
 4. Select your workspace
@@ -33,9 +33,11 @@ Slack bot integration for DB Watcher CI/CD pipeline notifications.
 
 1. Create or use existing channel: `#cicd-notifications`
 2. Invite the bot to the channel:
+
    ```
    /invite @DB Watcher CICD
    ```
+
 3. Get the channel ID:
    - Right-click channel → View channel details → Copy channel ID
    - Should look like: `C1234567890`
@@ -128,6 +130,7 @@ Add this to a workflow to debug:
   uses: slackapi/slack-github-action@v2.0.0
   with:
     token: ${{ secrets.SLACK_BOT_TOKEN }}
+    method: chat.postMessage
     payload: |
       {
         "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
