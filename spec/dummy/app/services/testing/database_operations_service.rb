@@ -4,18 +4,11 @@ module Testing
   # Service for complex database testing operations
   class DatabaseOperationsService < ApplicationService
     OPERATIONS = %w[
-      complex_transaction
+      basic_operations
       mass_updates
-      cascade_deletes
-      nested_operations
-      bulk_operations
-      concurrent_updates
-      trigger_errors
-      high_volume_inserts
-      high_volume_updates
-      high_volume_deletes
       mixed_high_volume_operations
-      batch_processing
+      test_relationships
+      trigger_errors
     ].freeze
 
     def initialize(operation:, params: {})
@@ -36,17 +29,124 @@ module Testing
 
     attr_reader :operation, :params
 
-    def perform_complex_transaction
-      result = nil
+    def perform_basic_operations
+      result = {}
+      created_categories = []
+      created_users = []
+
       ActiveRecord::Base.transaction do
-        user = create_test_user
-        profile = create_user_profile(user)
-        assign_user_role(user)
-        create_user_posts(user)
-        result = { user_id: user.id, profile_id: profile.id }
+        # Create new categories first
+        3.times do |i|
+          category = Category.create!(
+            name: "Test Category #{i + 1} - #{Time.current.strftime("%H:%M:%S")}",
+            description: "Category #{i + 1} created during basic operations at #{Time.current}"
+          )
+          created_categories << category
+        end
+
+        # Create users with all relationships
+        2.times do |i|
+          user = User.create!(
+            name: "Test User #{i + 1} - #{Time.current.strftime("%H:%M:%S")}",
+            email: "test_user_#{Time.current.to_i}_#{i + 1}@example.com",
+            age: rand(25..55),
+            active: true,
+            salary: rand(40_000..100_000),
+            birth_date: rand(30.years).seconds.ago.to_date,
+            preferences: {
+              test_created: true,
+              created_at: Time.current
+            }.to_json,
+            notes: "User created during basic operations"
+          )
+
+          # Create profile
+          Profile.create!(
+            user: user,
+            first_name: "Test",
+            last_name: "User#{i + 1}",
+            bio: "Profile for test user #{i + 1} created at #{Time.current}",
+            website: "https://testuser#{i + 1}.example.com",
+            location: ["Test City", "Demo Town"].sample
+          )
+
+          # Assign role
+          if Role.any?
+            role = Role.first
+            UserRole.create!(user: user, role: role, assigned_at: Time.current)
+          end
+
+          # Connect to categories (HABTM)
+          user.categories = created_categories
+
+          # Add skills (has_many_through)
+          if Skill.any?
+            available_skills = Skill.limit(2).order("RANDOM()")
+            available_skills.each do |skill|
+              UserSkill.create!(
+                user: user,
+                skill: skill,
+                proficiency_level: %w[beginner intermediate advanced].sample,
+                years_experience: rand(0..5)
+              )
+            end
+          end
+
+          # Create posts
+          post = Post.create!(
+            user: user,
+            title: "Test Post by #{user.name}",
+            content: "This is test content created during basic operations.",
+            excerpt: "Test post excerpt",
+            status: :published,
+            published_at: Time.current,
+            views_count: rand(1..50)
+          )
+
+          # Add tags to post
+          post.tags = Tag.limit(2).order("RANDOM()") if Tag.any?
+
+          # Add attachments
+          user.attachments.create!(
+            user: user,
+            filename: "test_avatar_#{user.id}.jpg",
+            content_type: "image/jpeg",
+            file_size: rand(50_000..300_000),
+            attachment_type: "image",
+            url: "https://cdn.example.com/test/#{user.id}.jpg"
+          )
+
+          post.attachments.create!(
+            user: user,
+            filename: "test_post_#{post.id}.jpg",
+            content_type: "image/jpeg",
+            file_size: rand(100_000..500_000),
+            attachment_type: "image",
+            url: "https://cdn.example.com/posts/test_#{post.id}.jpg"
+          )
+
+          created_users << user
+        end
+
+        # Update some existing records
+        update_sample_records
+
+        # Delete some old records
+        delete_sample_records
+
+        result = {
+          users_created: created_users.count,
+          categories_created: created_categories.count,
+          posts_created: created_users.sum { |u| u.posts.count },
+          attachments_created: created_users.sum { |u| u.attachments.count + u.uploaded_attachments.count },
+          user_skills_created: created_users.sum { |u| u.user_skills.count },
+          category_connections: created_users.sum { |u| u.categories.count },
+          user_ids: created_users.map(&:id),
+          category_ids: created_categories.map(&:id)
+        }
       end
 
-      success(result, "Complex transaction completed! Created user #{result[:user_id]} with profile and posts")
+      success(result, "Basic operations: Created #{result[:users_created]} users and #{result[:categories_created]} categories with all relationships!")
     end
 
     def perform_mass_updates
@@ -60,48 +160,27 @@ module Testing
       success(nil, "Mass updates completed! Updated multiple records across tables including relationships")
     end
 
-    def perform_cascade_deletes
-      user = find_user_with_associations
-      return failure("No user with associated data found for cascade delete test") unless user
-
-      user_data = extract_user_data(user)
-      user.destroy
-
-      success(
-        user_data,
-        "Cascade delete completed! Deleted user '#{user_data[:name]}' with #{user_data[:posts_count]} posts and #{user_data[:comments_count]} comments"
-      )
-    end
-
-    def perform_nested_operations
-      post = nil
+    def perform_test_relationships
+      result = {}
       ActiveRecord::Base.transaction do
-        admin = find_or_create_admin_user
-        assign_admin_role(admin)
-        post = create_admin_announcement(admin)
-        process_recent_comments
+        # Test HABTM relationships
+        result[:habtm_added] = test_habtm_relationships
+
+        # Test has_many_through relationships
+        result[:through_added] = test_has_many_through_relationships
+
+        # Test polymorphic relationships
+        result[:attachments_added] = test_polymorphic_relationships
+
+        # Test cascade deletes
+        result[:cascade_deleted] = test_cascade_deletes
+
+        # Test nested updates
+        result[:nested_updated] = test_nested_updates
       end
 
-      success(post, "Nested operations completed! Created admin user, post, and processed recent comments")
-    end
-
-    def perform_bulk_operations
-      create_bulk_tags
-      update_user_logins
-      deleted_count = delete_old_posts
-
-      success(
-        { deleted_count: deleted_count },
-        "Bulk operations completed! Created tags, updated logins, deleted #{deleted_count} old posts"
-      )
-    end
-
-    def perform_concurrent_updates
-      user = User.first
-      return failure("No users available for concurrent updates") unless user
-
-      simulate_concurrent_updates(user)
-      success(nil, "Concurrent updates simulation completed!")
+      total_operations = result.values.sum
+      success(result, "Relationship testing completed! #{total_operations} relationship operations performed")
     end
 
     def perform_trigger_errors
@@ -978,6 +1057,133 @@ module Testing
       end
 
       created_count
+    end
+
+    # === NEW CONSOLIDATED HELPER METHODS ===
+
+    def create_user_attachments(user)
+      # Create various attachment types for the user
+      user.attachments.create!(
+        user: user,
+        filename: "avatar_#{user.id}.jpg",
+        content_type: "image/jpeg",
+        file_size: rand(50_000..500_000),
+        attachment_type: "image",
+        url: "https://cdn.example.com/avatars/#{user.id}.jpg"
+      )
+
+      return unless user.profile
+
+      user.profile.attachments.create!(
+        user: user,
+        filename: "resume_#{user.id}.pdf",
+        content_type: "application/pdf",
+        file_size: rand(100_000..2_000_000),
+        attachment_type: "document",
+        url: "https://cdn.example.com/resumes/#{user.id}.pdf"
+      )
+    end
+
+    def update_sample_records
+      # Update some existing records to create update operations
+      User.limit(3).each { |u| u.update!(last_login_count: u.last_login_count + 1) }
+      Post.published.limit(2).each { |p| p.update!(views_count: p.views_count + rand(10..100)) }
+    end
+
+    def delete_sample_records
+      # Delete some old/unused records
+      Comment.where(approved: false, created_at: ..30.days.ago).limit(2).destroy_all
+    end
+
+    def test_habtm_relationships
+      # Add categories to users and vice versa
+      added_count = 0
+      User.limit(3).each do |user|
+        available_categories = Category.where.not(id: user.category_ids).limit(2)
+        user.categories.concat(available_categories) if available_categories.any?
+        added_count += available_categories.count
+      end
+      added_count
+    end
+
+    def test_has_many_through_relationships
+      # Add skills to users through user_skills
+      added_count = 0
+      User.limit(2).each do |user|
+        available_skills = Skill.where.not(id: user.skill_ids).limit(2)
+        available_skills.each do |skill|
+          UserSkill.create!(
+            user: user,
+            skill: skill,
+            proficiency_level: %w[beginner intermediate advanced].sample,
+            years_experience: rand(0..10)
+          )
+          added_count += 1
+        end
+      end
+      added_count
+    end
+
+    def test_polymorphic_relationships
+      # Add attachments to various models
+      added_count = 0
+
+      # Add to posts
+      Post.limit(2).each do |post|
+        post.attachments.create!(
+          user: User.first,
+          filename: "test_attachment_#{post.id}.jpg",
+          content_type: "image/jpeg",
+          file_size: rand(100_000..1_000_000),
+          attachment_type: "image",
+          url: "https://cdn.example.com/test/#{post.id}.jpg"
+        )
+        added_count += 1
+      end
+
+      # Add to comments
+      Comment.limit(1).each do |comment|
+        comment.attachments.create!(
+          user: User.first,
+          filename: "comment_attachment_#{comment.id}.png",
+          content_type: "image/png",
+          file_size: rand(50_000..500_000),
+          attachment_type: "image",
+          url: "https://cdn.example.com/comments/#{comment.id}.png"
+        )
+        added_count += 1
+      end
+
+      added_count
+    end
+
+    def test_cascade_deletes
+      # Test cascade delete behavior - only delete users without critical dependencies
+      user = User.joins(:posts).where.not(id: User.joins(:user_roles).pluck(:user_id)).first
+      return 0 unless user
+
+      associations_count = user.posts.count + user.comments.count + user.attachments.count
+      user.destroy
+      associations_count
+    end
+
+    def test_nested_updates
+      # Test nested attribute updates and complex operations
+      updated_count = 0
+
+      # Update users with nested profile updates
+      User.joins(:profile).limit(2).each do |user|
+        user.update!(
+          name: "#{user.name} (Updated)",
+          profile_attributes: {
+            id: user.profile.id,
+            bio: "#{user.profile.bio} - Updated via nested attributes"
+          }
+        )
+        updated_count += 1
+      end
+
+      updated_count
     end
   end
 end

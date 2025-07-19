@@ -70,7 +70,7 @@
                        class: "test-button bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm font-medium",
                        confirm: "This will reset all test data. Continue?" %>
         <% end %>
-        <%= link_to "📊 Quick Stats", quick_test_path(dbwatch: true),
+        <%= link_to "📊 Quick Stats", quick_stats_path(dbwatch: true),
                     class: "test-button bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm font-medium" %>
         <%= link_to "🏠 Users", users_path(dbwatch: true),
                     class: "test-button bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm font-medium" %>
@@ -79,13 +79,13 @@
       </div>
     </div>
 
-    <!-- Standard Operations -->
+    <!-- Core Database Operations -->
     <div class="mb-4">
-      <h3 class="text-md font-semibold text-white mb-2">📝 Standard Operations</h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-        <%= form_with url: complex_transaction_path, method: :post, local: true, class: "inline w-full" do |f| %>
+      <h3 class="text-md font-semibold text-white mb-2">🔧 Core Operations</h3>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+        <%= form_with url: basic_operations_path, method: :post, local: true, class: "inline w-full" do |f| %>
           <%= f.hidden_field :dbwatch, value: "true" %>
-          <%= f.submit "🔗 Complex Transaction",
+          <%= f.submit "🚀 Basic Operations",
                        class: "test-button bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded text-sm font-medium w-full" %>
         <% end %>
 
@@ -95,41 +95,23 @@
                        class: "test-button bg-cyan-500 hover:bg-cyan-600 text-white px-3 py-2 rounded text-sm font-medium w-full" %>
         <% end %>
 
-        <%= form_with url: cascade_deletes_path, method: :post, local: true, class: "inline w-full" do |f| %>
+        <%= form_with url: high_volume_operations_path, method: :post, local: true, class: "inline w-full" do |f| %>
           <%= f.hidden_field :dbwatch, value: "true" %>
-          <%= f.submit "🗑️ Cascade Deletes",
-                       class: "test-button bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm font-medium w-full",
-                       confirm: "This will delete records with cascading effects. Continue?" %>
-        <% end %>
-
-        <%= form_with url: nested_operations_path, method: :post, local: true, class: "inline w-full" do |f| %>
-          <%= f.hidden_field :dbwatch, value: "true" %>
-          <%= f.submit "🎯 Nested Operations",
-                       class: "test-button bg-violet-500 hover:bg-violet-600 text-white px-3 py-2 rounded text-sm font-medium w-full" %>
+          <%= f.submit "💥 High Volume Ops",
+                       class: "test-button bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm font-medium w-full",
+                       confirm: "Perform high-volume database operations?" %>
         <% end %>
       </div>
     </div>
 
-    <!-- Advanced Operations -->
+    <!-- Relationship Testing -->
     <div class="mb-4">
-      <h3 class="text-md font-semibold text-white mb-2">🚀 Advanced Operations</h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-        <%= form_with url: bulk_operations_path, method: :post, local: true, class: "inline w-full" do |f| %>
+      <h3 class="text-md font-semibold text-white mb-2">🔗 Relationship Testing</h3>
+      <div class="grid grid-cols-2 gap-2">
+        <%= form_with url: test_relationships_path, method: :post, local: true, class: "inline w-full" do |f| %>
           <%= f.hidden_field :dbwatch, value: "true" %>
-          <%= f.submit "📦 Bulk Operations",
-                       class: "test-button bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded text-sm font-medium w-full" %>
-        <% end %>
-
-        <%= form_with url: concurrent_updates_path, method: :post, local: true, class: "inline w-full" do |f| %>
-          <%= f.hidden_field :dbwatch, value: "true" %>
-          <%= f.submit "⚡ Concurrent Updates",
-                       class: "test-button bg-pink-500 hover:bg-pink-600 text-white px-3 py-2 rounded text-sm font-medium w-full" %>
-        <% end %>
-
-        <%= form_with url: batch_processing_path, method: :post, local: true, class: "inline w-full" do |f| %>
-          <%= f.hidden_field :dbwatch, value: "true" %>
-          <%= f.submit "🔄 Batch Processing",
-                       class: "test-button bg-teal-500 hover:bg-teal-600 text-white px-3 py-2 rounded text-sm font-medium w-full" %>
+          <%= f.submit "🔗 Test All Relationships",
+                       class: "test-button bg-violet-500 hover:bg-violet-600 text-white px-3 py-2 rounded text-sm font-medium w-full" %>
         <% end %>
 
         <%= form_with url: trigger_errors_path, method: :post, local: true, class: "inline w-full" do |f| %>
@@ -141,40 +123,12 @@
       </div>
     </div>
 
-    <!-- High-Volume Operations -->
+    <!-- DBWatcher Access -->
     <div>
-      <h3 class="text-md font-semibold text-white mb-2">💥 High-Volume Operations</h3>
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
-        <%= form_with url: high_volume_inserts_path, method: :post, local: true, class: "inline w-full" do |f| %>
-          <%= f.hidden_field :dbwatch, value: "true" %>
-          <%= f.submit "📈 HV Inserts",
-                       class: "test-button bg-green-600 hover:bg-green-700 text-white px-2 py-2 rounded text-xs font-medium w-full",
-                       confirm: "Create hundreds of records?" %>
-        <% end %>
-
-        <%= form_with url: high_volume_updates_path, method: :post, local: true, class: "inline w-full" do |f| %>
-          <%= f.hidden_field :dbwatch, value: "true" %>
-          <%= f.submit "📊 HV Updates",
-                       class: "test-button bg-blue-600 hover:bg-blue-700 text-white px-2 py-2 rounded text-xs font-medium w-full",
-                       confirm: "Update hundreds of records?" %>
-        <% end %>
-
-        <%= form_with url: high_volume_deletes_path, method: :post, local: true, class: "inline w-full" do |f| %>
-          <%= f.hidden_field :dbwatch, value: "true" %>
-          <%= f.submit "📉 HV Deletes",
-                       class: "test-button bg-red-600 hover:bg-red-700 text-white px-2 py-2 rounded text-xs font-medium w-full",
-                       confirm: "Delete hundreds of records?" %>
-        <% end %>
-
-        <%= form_with url: mixed_high_volume_operations_path, method: :post, local: true, class: "inline w-full" do |f| %>
-          <%= f.hidden_field :dbwatch, value: "true" %>
-          <%= f.submit "🔀 HV Mixed",
-                       class: "test-button bg-purple-600 hover:bg-purple-700 text-white px-2 py-2 rounded text-xs font-medium w-full",
-                       confirm: "Perform mixed high-volume operations?" %>
-        <% end %>
-
-        <%= link_to "🔍 DBWatcher", "/dbwatcher?dbwatch=true",
-                    class: "test-button bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-2 rounded text-xs font-medium w-full text-center block" %>
+      <h3 class="text-md font-semibold text-white mb-2">🔍 DBWatcher Dashboard</h3>
+      <div class="text-center">
+        <%= link_to "🔍 View DBWatcher Dashboard", "/dbwatcher?dbwatch=true",
+                    class: "test-button bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded font-medium inline-block" %>
       </div>
     </div>
   </div>
@@ -183,7 +137,7 @@
 <script>
   // Load stats once on page load
   function loadStats() {
-    fetch('/quick_test')
+    fetch('/quick_stats')
       .then(response => response.json())
       .then(data => {
         const grid = document.getElementById('stats-grid');
