@@ -1,0 +1,69 @@
+name: Stale Issues and PRs
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Run daily at 2 AM UTC
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Stale configuration
+          days-before-stale: 90
+          days-before-close: 7
+          
+          # Issue configuration
+          stale-issue-message: |
+            This issue has been automatically marked as stale because it has not had recent activity for 90 days.
+            It will be closed in 7 days if no further activity occurs.
+            
+            If this issue is still relevant, please:
+            - Add a comment to keep it open
+            - Remove the `stale` label
+            - Provide any updates or additional context
+            
+            Thank you for your contributions! 🙏
+          
+          close-issue-message: |
+            This issue was automatically closed because it has been stale for 7 days with no activity.
+            
+            If you believe this issue should remain open, please reopen it and provide an update.
+          
+          stale-issue-label: 'stale'
+          
+          # Pull request configuration
+          stale-pr-message: |
+            This pull request has been automatically marked as stale because it has not had recent activity for 90 days.
+            It will be closed in 7 days if no further activity occurs.
+            
+            If this PR is still relevant, please:
+            - Add a comment to keep it open
+            - Remove the `stale` label
+            - Rebase or update the PR if needed
+            
+            Thank you for your contributions! 🙏
+          
+          close-pr-message: |
+            This pull request was automatically closed because it has been stale for 7 days with no activity.
+            
+            If you believe this PR should remain open, please reopen it and provide an update.
+          
+          stale-pr-label: 'stale'
+          
+          # Exempt labels (issues/PRs with these labels will never be marked as stale)
+          exempt-issue-labels: 'priority: critical,type: security,type: enhancement,good-first-issue'
+          exempt-pr-labels: 'priority: critical,type: security,status: in-progress,status: needs-changes'
+          
+          # Additional configuration
+          operations-per-run: 100
+          remove-stale-when-updated: true
+          debug-only: false

@@ -156,76 +156,91 @@ jobs:
           fi
 
       - name: Notify Slack
-        uses: 8398a7/action-slack@v3
+        uses: slackapi/slack-github-action@v2.0.0
         with:
-          status: custom
-          custom_payload: |
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          payload: |
             {
-              "channel": "#cicd-notifications",
-              "username": "DB Watcher CI",
-              "icon_emoji": ":gear:",
-              "attachments": [{
-                "color": "${{ steps.ci_status.outputs.color }}",
-                "fallback": "DB Watcher CI: ${{ steps.ci_status.outputs.status }}",
-                "title": "${{ steps.ci_status.outputs.emoji }} DB Watcher CI: ${{ steps.ci_status.outputs.status }}",
-                "title_link": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-                "text": "CI workflow completed for branch `${{ github.ref_name }}`",
-                "fields": [
-                  {
-                    "title": "📂 Repository",
-                    "value": "<https://github.com/${{ github.repository }}|${{ github.repository }}>",
-                    "short": true
-                  },
-                  {
-                    "title": "🌿 Branch",
-                    "value": "`${{ github.ref_name }}`",
-                    "short": true
-                  },
-                  {
-                    "title": "⚡ Trigger",
-                    "value": "${{ github.event_name }}",
-                    "short": true
-                  },
-                  {
-                    "title": "📊 Overall Status",
-                    "value": "${{ steps.ci_status.outputs.status }}",
-                    "short": true
-                  },
-                  {
-                    "title": "🧪 Tests",
-                    "value": "${{ needs.test.result == 'success' && '✅' || '❌' }} ${{ needs.test.result }}",
-                    "short": true
-                  },
-                  {
-                    "title": "🔍 Code Quality",
-                    "value": "${{ needs.quality.result == 'success' && '✅' || '❌' }} ${{ needs.quality.result }}",
-                    "short": true
-                  },
-                  {
-                    "title": "🔒 Security Scan",
-                    "value": "${{ needs.security.result == 'success' && '✅' || '❌' }} ${{ needs.security.result }}",
-                    "short": true
-                  },
-                  {
-                    "title": "🔗 Compatibility",
-                    "value": "${{ needs.compatibility.result == 'success' && '✅' || '❌' }} ${{ needs.compatibility.result }}",
-                    "short": true
-                  },
-                  {
-                    "title": "👤 Triggered By",
-                    "value": "${{ github.actor }}",
-                    "short": true
-                  },
-                  {
-                    "title": "🔗 Actions",
-                    "value": "<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Details>",
-                    "short": true
+              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "text": "${{ steps.ci_status.outputs.emoji }} DB Watcher CI: ${{ steps.ci_status.outputs.status }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ steps.ci_status.outputs.emoji }} DB Watcher CI: ${{ steps.ci_status.outputs.status }}"
                   }
-                ],
-                "footer": "DB Watcher CI • Powered by GitHub Actions",
-                "footer_icon": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-                "ts": "${{ github.event.head_commit.timestamp || github.event.pull_request.updated_at }}"
-              }]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "CI workflow completed for branch `${{ github.ref_name }}`"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View Details"
+                    },
+                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*📂 Repository:*\n<https://github.com/${{ github.repository }}|${{ github.repository }}>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*🌿 Branch:*\n`${{ github.ref_name }}`"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*⚡ Trigger:*\n${{ github.event_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*👤 Triggered By:*\n${{ github.actor }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*📊 Overall Status:*\n${{ steps.ci_status.outputs.status }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*🧪 Tests:*\n${{ needs.test.result == 'success' && '✅' || '❌' }} ${{ needs.test.result }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*🔍 Code Quality:*\n${{ needs.quality.result == 'success' && '✅' || '❌' }} ${{ needs.quality.result }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*🔒 Security Scan:*\n${{ needs.security.result == 'success' && '✅' || '❌' }} ${{ needs.security.result }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*🔗 Compatibility:*\n${{ needs.compatibility.result == 'success' && '✅' || '❌' }} ${{ needs.compatibility.result }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "Triggered by ${{ github.actor }} • DB Watcher CI • Powered by GitHub Actions"
+                    }
+                  ]
+                }
+              ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

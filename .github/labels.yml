@@ -305,3 +305,7 @@
 - name: "needs-triage"
   color: ededed
   description: 🏷️ Needs initial triage and labeling
+
+- name: "stale"
+  color: fef2c0
+  description: ⏰ Issue or PR has been inactive for 90+ days
