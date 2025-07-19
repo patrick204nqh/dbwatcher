@@ -1,0 +1,32 @@
+# type(scope): description in imperative mood, don't end with period
+# No more than 50 chars. #### 50 chars is here: #
+
+# Remember blank line between title and body.
+
+# Body: Explain *what* and *why* (not *how*). Include GitHub issue if any.
+# Wrap at 72 chars. ################################## which is here: #
+
+# At the end: Include Co-authored-by for all contributors.
+# Co-authored-by: name <user@users.noreply.github.com>
+
+# CONVENTIONAL COMMIT TYPES:
+# feat: A new feature
+# fix: A bug fix
+# docs: Documentation only changes
+# style: Changes that do not affect the meaning of the code
+# refactor: A code change that neither fixes a bug nor adds a feature
+# perf: A code change that improves performance
+# test: Adding missing tests or correcting existing tests
+# chore: Changes to the build process or auxiliary tools
+# ci: Changes to CI configuration files and scripts
+
+# COMMON SCOPES FOR DBWATCHER:
+# dashboard, sessions, diagrams, api, storage, middleware, ui, config
+
+# EXAMPLES:
+# feat(dashboard): add system information panel
+# fix(diagram): resolve mermaid rendering issue
+# refactor(sessions): improve data structure for timeline
+# docs(readme): update installation instructions
+# test(storage): add unit tests for session query
+# chore(deps): update ruby gems to latest versions

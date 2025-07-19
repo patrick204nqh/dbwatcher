@@ -1,27 +1,43 @@
 {
-  // Auto-formatting settings
+  // =============================================================================
+  // EDITOR SETTINGS
+  // =============================================================================
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.formatOnType": false,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.trimAutoWhitespace": true,
+  "editor.rulers": [120],
+  "editor.minimap.enabled": false,
+  "editor.wordWrap": "bounded",
+  "editor.wordWrapColumn": 120,
   "editor.codeActionsOnSave": {
-    "source.fixAll.rubocop": "explicit"
+    "source.fixAll.rubocop": "explicit",
+    "source.organizeImports": "never"
   },
 
-  // Language-specific formatting
+  // =============================================================================
+  // LANGUAGE-SPECIFIC SETTINGS
+  // =============================================================================
   "[ruby]": {
     "editor.defaultFormatter": "Shopify.ruby-lsp",
     "editor.formatOnSave": true,
-    "editor.tabSize": 2,
-    "editor.insertSpaces": true,
     "editor.semanticHighlighting.enabled": true,
-    "editor.formatOnType": true,
-    "editor.rulers": [140],
-    "editor.trimAutoWhitespace": true
+    "editor.rulers": [120, 140],
+    "editor.suggest.snippetsPreventQuickSuggestions": false
+  },
+  "[erb]": {
+    "editor.defaultFormatter": "Shopify.ruby-lsp",
+    "editor.formatOnSave": true
+  },
+  "[rbs]": {
+    "editor.defaultFormatter": "soutaro.rbs-syntax",
+    "editor.formatOnSave": true,
+    "editor.semanticHighlighting.enabled": true
   },
   "[markdown]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
-    "editor.tabSize": 2,
     "editor.wordWrap": "on",
     "editor.quickSuggestions": {
       "comments": "off",
@@ -29,89 +45,71 @@
       "other": "off"
     }
   },
-  "[rbs]": {
-    "editor.defaultFormatter": "soutaro.rbs-syntax",
-    "editor.formatOnSave": true,
-    "editor.tabSize": 2,
-    "editor.insertSpaces": true,
-    "editor.semanticHighlighting.enabled": true,
-    "editor.rulers": [120],
-    "editor.trimAutoWhitespace": true
-  },
   "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
-    "editor.tabSize": 2,
-    "editor.insertSpaces": true,
     "editor.quickSuggestions": {
       "strings": true
-    },
-    "editor.suggest.insertMode": "replace"
+    }
   },
   "[jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
-    "editor.tabSize": 2,
-    "editor.insertSpaces": true,
     "editor.quickSuggestions": {
       "strings": true
-    },
-    "editor.suggest.insertMode": "replace"
+    }
   },
   "[yaml]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
-    "editor.tabSize": 2,
-    "editor.insertSpaces": true,
-    "editor.autoIndent": "advanced",
-    "editor.quickSuggestions": {
-      "other": true,
-      "comments": false,
-      "strings": true
-    }
+    "editor.autoIndent": "advanced"
   },
   "[yml]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
-    "editor.tabSize": 2,
-    "editor.insertSpaces": true,
-    "editor.autoIndent": "advanced",
-    "editor.quickSuggestions": {
-      "other": true,
-      "comments": false,
-      "strings": true
-    }
+    "editor.autoIndent": "advanced"
   },
 
-  // File associations
+  // =============================================================================
+  // FILE ASSOCIATIONS
+  // =============================================================================
   "files.associations": {
     "*.gemspec": "ruby",
-    "Gemfile": "ruby",
-    "Rakefile": "ruby",
-    ".rubocop.yml": "yaml",
+    "*.rb": "ruby",
+    "*.rake": "ruby",
+    "*.erb": "erb",
     "*.rbs": "rbs",
+    "Gemfile": "ruby",
+    "Gemfile.lock": "ruby",
+    "Rakefile": "ruby",
     "Steepfile": "ruby",
+    ".rubocop.yml": "yaml",
+    ".rubocop.yaml": "yaml",
     "*.yaml": "yaml",
     "*.yml": "yaml",
-    ".yamllint": "yaml",
-    ".yamllint.yaml": "yaml",
-    ".yamllint.yml": "yaml",
-    "*.json": "json",
-    "*.jsonc": "jsonc",
-    ".vscode/*.json": "jsonc",
-    "tsconfig*.json": "jsonc",
-    ".eslintrc": "jsonc",
-    ".babelrc": "jsonc",
-    ".prettierrc": "jsonc"
+    ".vscode/*.json": "jsonc"
   },
 
-  // Auto-save settings
+  // =============================================================================
+  // FILE MANAGEMENT
+  // =============================================================================
   "files.autoSave": "onFocusChange",
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
+  "files.exclude": {
+    "**/coverage": true,
+    "**/node_modules": true,
+    "**/tmp": true,
+    "**/.git": true
+  },
+  "search.exclude": {
+    "**/coverage": true,
+    "**/node_modules": true,
+    "**/tmp": true,
+    "**/.git": true,
+    "**/pkg": true
+  },
 
-  // Ruby LSP specific settings
+  // =============================================================================
+  // RUBY DEVELOPMENT
+  // =============================================================================
   "rubyLsp.enabledFeatures": {
     "codeActions": true,
     "diagnostics": true,
@@ -133,26 +131,55 @@
     "typeHierarchy": true
   },
   "rubyLsp.formatter": "rubocop",
-
-  // Rubocop specific settings
-  "ruby.rubocop.configFilePath": ".rubocop.yml",
-  "ruby.rubocop.suppressRubocopWarnings": false,
-
-  // Steep type checker settings
-  "steep.enabled": true,
-  "steep.checkOnSave": true,
-  "steep.diagnosticsEnabled": true,
-  "steep.signatureHelp": true,
-  "steep.hover": true,
-
-  // RBS validation settings
-  "ruby.rbs": {
-    "enabled": true,
-    "diagnostics": true
+  "rubyLsp.rubyVersionManager": {
+    "identifier": "auto"
   },
 
-  // Additional helpful settings
+  // =============================================================================
+  // GIT SETTINGS
+  // =============================================================================
+  "git.openRepositoryInParentFolders": "always",
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+
+  // =============================================================================
+  // TERMINAL SETTINGS
+  // =============================================================================
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.copyOnSelection": true,
+  "terminal.integrated.fontSize": 14,
+
+  // =============================================================================
+  // WORKSPACE SETTINGS
+  // =============================================================================
   "breadcrumbs.enabled": true,
-  "editor.minimap.enabled": true,
-  "workbench.editor.enablePreview": false
+  "workbench.editor.enablePreview": false,
+  "workbench.editor.closeOnFileDelete": true,
+  "workbench.startupEditor": "newUntitledFile",
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+
+  // =============================================================================
+  // AI ASSISTANCE (GitHub Copilot + MCP)
+  // =============================================================================
+  "github.copilot.enable": {
+    "*": true,
+    "yaml": true,
+    "plaintext": false,
+    "markdown": true,
+    "ruby": true
+  },
+  "chat.agent.enabled": true,
+  "chat.mcp.discovery.enabled": true,
+  "github.copilot.chat.agent.runTasks": true,
+  "github.copilot.chat.agent.autoFix": true,
+  "chat.tools.autoApprove": false,
+
+  // =============================================================================
+  // DEBUGGING
+  // =============================================================================
+  "debug.console.fontSize": 14,
+  "debug.console.wordWrap": true
 }
