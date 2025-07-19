@@ -166,7 +166,7 @@ module Dbwatcher
         #
         # @return [void]
         def ensure_system_info_enabled
-          return if Dbwatcher.configuration.collect_system_info
+          return if Dbwatcher.configuration.system_info
 
           render json: {
             error: "System information collection is disabled",

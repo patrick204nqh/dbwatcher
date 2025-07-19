@@ -81,30 +81,37 @@ Visit `/dbwatcher` in your browser to explore tracked operations.
 
 ## Configuration
 
-Create a configuration file in `config/initializers/dbwatcher.rb`:
+dbwatcher works out of the box with zero configuration. Just install and visit `/dbwatcher` in your app.
 
-```ruby
-Dbwatcher.configure do |config|
-  # Storage configuration
-  config.storage_path = Rails.root.join('tmp', 'dbwatcher')
-  config.enabled = Rails.env.development?
-  config.max_sessions = 50
-  config.auto_clean_after_days = 7
+**Note**: Configuration has been simplified with sensible defaults for better performance and easier maintenance.
 
-  # Query tracking configuration
-  config.track_queries = false  # Set to true to track all SQL queries
-  config.slow_query_threshold = 200  # milliseconds
+### Complete Configuration Reference
 
-  # Diagram visualization options
-  config.diagram_show_attributes = true
-  config.diagram_show_cardinality = true
-  config.diagram_direction = "LR"  # LR (left-to-right) or TB (top-to-bottom)
+<details>
+<summary>All Available Configuration Options</summary>
 
-  # System information collection
-  config.collect_system_info = true
-  config.system_info_refresh_interval = 5 * 60  # 5 minutes in seconds
-end
-```
+| Option                        | Type    | Default           | Description                              |
+| ----------------------------- | ------- | ----------------- | ---------------------------------------- |
+| **Core Settings**             |
+| `enabled`                     | Boolean | `true`            | Enable/disable DBWatcher                 |
+| `storage_path`                | String  | `"tmp/dbwatcher"` | Where to store session data              |
+| **Session Management**        |
+| `max_sessions`                | Integer | `50`              | Maximum sessions to keep                 |
+| `auto_clean_days`             | Integer | `7`               | Delete sessions older than N days        |
+| **Query Tracking**            |
+| `track_queries`               | Boolean | `false`           | Track all SQL queries (memory intensive) |
+| **System Information**        |
+| `system_info`                 | Boolean | `true`            | Collect system info for debugging        |
+| `debug_mode`                  | Boolean | `false`           | Enable debug logging                     |
+| **Advanced Diagram Options**  |
+| `diagram_show_attributes`     | Boolean | `true`            | Show model attributes in diagrams        |
+| `diagram_show_cardinality`    | Boolean | `true`            | Show relationship cardinality            |
+| `diagram_show_methods`        | Boolean | `false`           | Show model methods in diagrams           |
+| `diagram_max_attributes`      | Integer | `10`              | Max attributes to show per model         |
+| `diagram_attribute_types`     | Boolean | `true`            | Show attribute types                     |
+| `diagram_relationship_labels` | Boolean | `true`            | Show relationship labels                 |
+
+</details>
 
 ## Advanced Features
 

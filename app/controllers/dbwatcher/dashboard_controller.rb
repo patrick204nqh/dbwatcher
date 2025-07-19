@@ -10,7 +10,7 @@ module Dbwatcher
       @active_tab = params[:tab] || "overview"
 
       # Add system information if enabled
-      return unless Dbwatcher.configuration.collect_system_info
+      return unless Dbwatcher.configuration.system_info
 
       @system_info_summary = system_info_storage.summary
       @system_info = system_info_storage.cached_info

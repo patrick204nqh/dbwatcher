@@ -105,7 +105,7 @@ module Dbwatcher
       # retention period. This helps manage storage space usage.
       #
       # @return [void]
-      # @see Configuration#auto_clean_after_days
+      # @see Configuration#auto_clean_days
       def cleanup_old_sessions
         session_storage.cleanup_old_sessions
       end

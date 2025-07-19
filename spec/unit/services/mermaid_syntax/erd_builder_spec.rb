@@ -118,7 +118,7 @@ RSpec.describe Dbwatcher::Services::MermaidSyntax::ErdBuilder do
     end
 
     context "with table case options" do
-      it "preserves original table case when enabled" do
+      it "always preserves original table case" do
         builder = described_class.new(preserve_table_case: true)
         result = builder.build_from_dataset(simple_dataset)
 
@@ -126,12 +126,13 @@ RSpec.describe Dbwatcher::Services::MermaidSyntax::ErdBuilder do
         expect(result).to include("posts {")
       end
 
-      it "converts table names to uppercase when disabled" do
+      it "preserves case even when preserve_table_case is false" do
         builder = described_class.new(preserve_table_case: false)
         result = builder.build_from_dataset(simple_dataset)
 
-        expect(result).to include("USERS {")
-        expect(result).to include("POSTS {")
+        # Now always preserves original case regardless of configuration
+        expect(result).to include("users {")
+        expect(result).to include("posts {")
       end
     end
 
