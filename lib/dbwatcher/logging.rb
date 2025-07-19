@@ -40,8 +40,8 @@ module Dbwatcher
     # Check if debug logging is enabled
     # @return [Boolean] true if debug logging is enabled
     def debug_enabled?
-      return Dbwatcher.configuration.debug_logging if defined?(Dbwatcher.configuration) &&
-                                                      Dbwatcher.configuration.respond_to?(:debug_logging)
+      return Dbwatcher.configuration.debug_mode if defined?(Dbwatcher.configuration) &&
+                                                   Dbwatcher.configuration.respond_to?(:debug_mode)
       return Rails.env.development? if defined?(Rails)
 
       false

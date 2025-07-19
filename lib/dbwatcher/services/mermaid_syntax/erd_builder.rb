@@ -70,7 +70,7 @@ module Dbwatcher
         # @param entity [DiagramData::Entity] entity to render
         # @return [Array<String>] entity definition lines
         def build_erd_entity(entity)
-          table_name = Sanitizer.table_name(entity.name, preserve_table_case?)
+          table_name = Sanitizer.table_name(entity.name)
           lines = ["    #{table_name} {"]
 
           # Add attributes if enabled and available
@@ -92,7 +92,7 @@ module Dbwatcher
         # @return [String] formatted entity name
         def format_entity_name(entity_id, dataset)
           entity_name = dataset.get_entity(entity_id)&.name || entity_id
-          Sanitizer.table_name(entity_name, preserve_table_case?)
+          Sanitizer.table_name(entity_name)
         end
 
         # Build relationship definition

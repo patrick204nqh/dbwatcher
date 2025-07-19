@@ -9,7 +9,7 @@ RSpec.describe Dbwatcher::Services::SystemInfo::SystemInfoCollector do
   let(:mock_runtime_info) { { ruby_version: "3.1.0", rails_version: "7.0.0" } }
 
   before do
-    allow(Dbwatcher.configuration).to receive(:collect_system_info).and_return(true)
+    allow(Dbwatcher.configuration).to receive(:system_info).and_return(true)
     allow(Dbwatcher::Services::SystemInfo::MachineInfoCollector).to receive(:call).and_return(mock_machine_info)
     allow(Dbwatcher::Services::SystemInfo::DatabaseInfoCollector).to receive(:call).and_return(mock_database_info)
     allow(Dbwatcher::Services::SystemInfo::RuntimeInfoCollector).to receive(:call).and_return(mock_runtime_info)
@@ -42,7 +42,7 @@ RSpec.describe Dbwatcher::Services::SystemInfo::SystemInfoCollector do
 
     context "when system info collection is disabled" do
       before do
-        allow(Dbwatcher.configuration).to receive(:collect_system_info).and_return(false)
+        allow(Dbwatcher.configuration).to receive(:system_info).and_return(false)
       end
 
       it "returns empty hashes for all collectors" do

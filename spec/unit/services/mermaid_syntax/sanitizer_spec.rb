@@ -54,17 +54,16 @@ RSpec.describe Dbwatcher::Services::MermaidSyntax::Sanitizer do
   end
 
   describe ".table_name" do
-    it "handles table names with configuration" do
-      allow(Dbwatcher.configuration).to receive(:diagram_preserve_table_case).and_return(true)
+    it "always preserves table case" do
       expect(described_class.table_name("user_profiles")).to eq("user_profiles")
-
-      allow(Dbwatcher.configuration).to receive(:diagram_preserve_table_case).and_return(false)
-      expect(described_class.table_name("user_profiles")).to eq("USER_PROFILES")
+      expect(described_class.table_name("UserProfiles")).to eq("UserProfiles")
+      expect(described_class.table_name("legacy_users")).to eq("legacy_users")
     end
 
-    it "handles custom table names" do
-      expect(described_class.table_name("legacy_users", true)).to eq("legacy_users")
-      expect(described_class.table_name("legacy_users", false)).to eq("LEGACY_USERS")
+    it "handles special characters" do
+      expect(described_class.table_name("user-profiles")).to eq("user_profiles")
+      expect(described_class.table_name("user profiles")).to eq("user_profiles")
+      expect(described_class.table_name("user@profiles")).to eq("user_profiles")
     end
   end
 

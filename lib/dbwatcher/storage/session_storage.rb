@@ -282,14 +282,14 @@ module Dbwatcher
       #
       # @return [Boolean] true if cleanup is enabled
       def cleanup_enabled?
-        Dbwatcher.configuration.auto_clean_after_days&.positive?
+        Dbwatcher.configuration.auto_clean_days&.positive?
       end
 
       # Calculates cleanup cutoff date
       #
       # @return [Time] cutoff date for cleanup
       def calculate_cleanup_cutoff
-        days = Dbwatcher.configuration.auto_clean_after_days
+        days = Dbwatcher.configuration.auto_clean_days
         current_time - (days * 24 * 60 * 60)
       end
 

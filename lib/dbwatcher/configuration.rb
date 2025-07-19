@@ -3,104 +3,84 @@
 module Dbwatcher
   # Configuration class for DBWatcher
   #
-  # This class manages all configuration options for DBWatcher, including
-  # storage, tracking, and diagram visualization settings.
+  # Simplified configuration with logical groupings and sensible defaults
   class Configuration
-    # Storage configuration
-    attr_accessor :storage_path, :enabled, :max_sessions, :auto_clean_after_days
+    # Core settings - what users need most
+    attr_accessor :enabled, :storage_path
 
-    # Query tracking configuration
-    attr_accessor :track_queries, :slow_query_threshold, :max_query_logs_per_day
+    # Session management - how data is stored and cleaned
+    attr_accessor :max_sessions, :auto_clean_days
 
-    # Routing configuration
-    attr_accessor :mount_path
+    # Query tracking - performance monitoring
+    attr_accessor :track_queries
 
-    # Diagram configuration
-    attr_accessor :diagram_show_attributes, :diagram_show_methods, :diagram_show_cardinality,
-                  :diagram_max_attributes, :diagram_attribute_types, :diagram_relationship_labels,
-                  :diagram_preserve_table_case, :diagram_direction, :diagram_cardinality_format,
-                  :diagram_show_attribute_count, :diagram_show_method_count
+    # System info - debugging and monitoring
+    attr_accessor :system_info, :debug_mode
 
-    # System information configuration
-    attr_accessor :collect_system_info, :system_info_refresh_interval,
-                  :collect_sensitive_env_vars, :system_info_cache_duration,
-                  :system_info_include_performance_metrics
-
-    # Logging configuration
-    attr_accessor :debug_logging
+    # Advanced diagram options - available but not commonly needed
+    attr_accessor :diagram_show_methods, :diagram_max_attributes,
+                  :diagram_attribute_types, :diagram_relationship_labels,
+                  :diagram_show_attributes, :diagram_show_cardinality
 
     # Initialize with default values
     def initialize
-      # Storage configuration defaults
-      @storage_path = default_storage_path
+      # Core settings
       @enabled = true
+      @storage_path = default_storage_path
+
+      # Session management
       @max_sessions = 50
-      @auto_clean_after_days = 7
+      @auto_clean_days = 7
 
-      # Query tracking configuration defaults
+      # Query tracking
       @track_queries = false
-      @slow_query_threshold = 200 # milliseconds
-      @max_query_logs_per_day = 1000
 
-      # Routing configuration defaults
-      @mount_path = "/dbwatcher"
+      # System info
+      @system_info = true
+      @debug_mode = false
 
-      # Initialize diagram configuration with defaults
-      initialize_diagram_config
-
-      # Initialize system information configuration with defaults
-      initialize_system_info_config
-
-      # Initialize logging configuration with defaults
-      initialize_logging_config
-    end
-
-    # Initialize diagram configuration with default values
-    def initialize_diagram_config
-      @diagram_show_attributes = true
-      @diagram_show_methods = false # Hide methods by default
-      @diagram_show_cardinality = true
+      # Advanced diagram options - sensible defaults
+      @diagram_show_methods = false
       @diagram_max_attributes = 10
-      @diagram_attribute_types = true # Changed from array to boolean
-      @diagram_relationship_labels = true # Changed from symbol to boolean
-      @diagram_preserve_table_case = false # Changed from true to false
-      @diagram_direction = "LR" # Left to right by default
-      @diagram_cardinality_format = :simple # Use simpler 1:N format
-      @diagram_show_attribute_count = true
-      @diagram_show_method_count = true
+      @diagram_attribute_types = true
+      @diagram_relationship_labels = true
+      @diagram_show_attributes = true
+      @diagram_show_cardinality = true
     end
 
-    # Initialize system information configuration with default values
-    def initialize_system_info_config
-      @collect_system_info = true
-      @system_info_refresh_interval = 5 * 60 # 5 minutes in seconds
-      @collect_sensitive_env_vars = false
-      @system_info_cache_duration = 60 * 60 # 1 hour in seconds
-      @system_info_include_performance_metrics = true
+    # Fixed defaults for options that are still used in codebase but not configurable
+    def slow_query_threshold
+      200 # Fixed default value
     end
 
-    # Initialize logging configuration with default values
-    def initialize_logging_config
-      @debug_logging = false
+    def diagram_direction
+      "LR" # Fixed default value
+    end
+
+    # Fixed defaults for complex options that are still used in codebase but not configurable
+    def max_query_logs_per_day = 1000
+    def system_info_refresh_interval = 5 * 60
+    def system_info_cache_duration = 60 * 60
+
+    def collect_sensitive_env_vars?
+      false
+    end
+
+    def system_info_include_performance_metrics?
+      true
     end
 
     # Validate configuration
-    #
-    # @return [Boolean] true if configuration is valid
     def valid?
       validate_storage_path
       validate_max_sessions
-      validate_auto_clean_after_days
-      validate_slow_query_threshold
-      validate_max_query_logs_per_day
+      validate_auto_clean_days
       true
     end
 
     private
 
     # Default storage path based on Rails or current directory
-    #
-    # @return [String] default storage path
     def default_storage_path
       if defined?(Rails) && Rails.respond_to?(:root) && Rails.root
         Rails.root.join("tmp", "dbwatcher").to_s
@@ -127,25 +107,11 @@ module Dbwatcher
       raise ConfigurationError, "max_sessions must be a positive integer"
     end
 
-    # Validate auto clean after days
-    def validate_auto_clean_after_days
-      return if auto_clean_after_days.is_a?(Integer) && auto_clean_after_days.positive?
+    # Validate auto clean days
+    def validate_auto_clean_days
+      return if auto_clean_days.is_a?(Integer) && auto_clean_days.positive?
 
-      raise ConfigurationError, "auto_clean_after_days must be a positive integer"
-    end
-
-    # Validate slow query threshold
-    def validate_slow_query_threshold
-      return if slow_query_threshold.is_a?(Integer) && slow_query_threshold.positive?
-
-      raise ConfigurationError, "slow_query_threshold must be a positive integer"
-    end
-
-    # Validate max query logs per day
-    def validate_max_query_logs_per_day
-      return if max_query_logs_per_day.is_a?(Integer) && max_query_logs_per_day.positive?
-
-      raise ConfigurationError, "max_query_logs_per_day must be a positive integer"
+      raise ConfigurationError, "auto_clean_days must be a positive integer"
     end
   end
 

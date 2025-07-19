@@ -5,13 +5,11 @@ Rails.application.configure do
   # Add DBWatcher middleware to track HTTP requests
   config.middleware.use Dbwatcher::Middleware
 
-  # Configure DBWatcher settings
+  # Simple configuration using new cleaner option names
   Dbwatcher.configure do |config|
     config.enabled = true
-    config.auto_clean_after_days = 7
     config.max_sessions = 100
-
-    # Enable debug logging in development environment
-    config.debug_logging = true
+    config.auto_clean_days = 7
+    config.debug_mode = true
   end
 end

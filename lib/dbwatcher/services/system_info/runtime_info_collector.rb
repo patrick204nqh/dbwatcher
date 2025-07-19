@@ -136,7 +136,7 @@ module Dbwatcher
         #
         # @return [Hash] loaded gems with versions
         def collect_loaded_gems
-          return {} unless Dbwatcher.configuration.system_info_include_performance_metrics
+          return {} unless Dbwatcher.configuration.system_info_include_performance_metrics?
 
           gems = {}
           Gem.loaded_specs.each do |name, spec|
@@ -154,7 +154,7 @@ module Dbwatcher
         def collect_load_path_info
           {
             size: $LOAD_PATH.size,
-            paths: Dbwatcher.configuration.system_info_include_performance_metrics ? $LOAD_PATH.first(10) : []
+            paths: Dbwatcher.configuration.system_info_include_performance_metrics? ? $LOAD_PATH.first(10) : []
           }
         rescue StandardError => e
           log_error "Failed to get load path info: #{e.message}"
@@ -166,7 +166,7 @@ module Dbwatcher
         # @return [Hash] filtered environment variables
         # rubocop:disable Metrics/MethodLength
         def collect_environment_variables
-          return {} unless Dbwatcher.configuration.collect_sensitive_env_vars
+          return {} unless Dbwatcher.configuration.collect_sensitive_env_vars?
 
           env_vars = {}
 
@@ -280,14 +280,14 @@ module Dbwatcher
                 300
               end,
             collect_sensitive_env_vars:
-              if config.respond_to?(:collect_sensitive_env_vars)
-                config.collect_sensitive_env_vars
+              if config.respond_to?(:collect_sensitive_env_vars?)
+                config.collect_sensitive_env_vars?
               else
                 false
               end,
             system_info_include_performance_metrics:
-              if config.respond_to?(:system_info_include_performance_metrics)
-                config.system_info_include_performance_metrics
+              if config.respond_to?(:system_info_include_performance_metrics?)
+                config.system_info_include_performance_metrics?
               else
                 true
               end

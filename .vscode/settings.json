@@ -146,7 +146,7 @@
   // =============================================================================
   // TERMINAL SETTINGS
   // =============================================================================
-  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.defaultProfile.linux": "zsh",
   "terminal.integrated.defaultProfile.osx": "zsh",
   "terminal.integrated.copyOnSelection": true,
   "terminal.integrated.fontSize": 14,

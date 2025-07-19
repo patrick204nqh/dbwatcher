@@ -77,7 +77,7 @@ module Dbwatcher
         #
         # @return [Hash] machine information or empty hash on error
         def collect_machine_info
-          return {} unless Dbwatcher.configuration.collect_system_info
+          return {} unless Dbwatcher.configuration.system_info
 
           MachineInfoCollector.call
         rescue StandardError => e
@@ -89,7 +89,7 @@ module Dbwatcher
         #
         # @return [Hash] database information or empty hash on error
         def collect_database_info
-          return {} unless Dbwatcher.configuration.collect_system_info
+          return {} unless Dbwatcher.configuration.system_info
 
           DatabaseInfoCollector.call
         rescue StandardError => e
@@ -101,7 +101,7 @@ module Dbwatcher
         #
         # @return [Hash] runtime information or empty hash on error
         def collect_runtime_info
-          return {} unless Dbwatcher.configuration.collect_system_info
+          return {} unless Dbwatcher.configuration.system_info
 
           RuntimeInfoCollector.call
         rescue StandardError => e

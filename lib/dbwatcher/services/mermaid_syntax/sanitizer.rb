@@ -48,22 +48,12 @@ module Dbwatcher
           # Sanitize table name for Mermaid ERD
           #
           # @param name [String] raw table name
-          # @param preserve_case [Boolean] whether to preserve original case
-          # @return [String] sanitized table name
-          def table_name(name, preserve_case = nil)
+          # @return [String] sanitized table name (preserves original case)
+          def table_name(name)
             return "UNKNOWN_TABLE" unless name.is_a?(String) && !name.empty?
 
-            preserve = if preserve_case.nil?
-                         Dbwatcher.configuration.diagram_preserve_table_case
-                       else
-                         preserve_case
-                       end
-
-            if preserve
-              name.to_s.gsub(/[^a-zA-Z0-9_]/, "_")
-            else
-              name.to_s.upcase.gsub(/[^A-Z0-9_]/, "_")
-            end
+            # Always preserve original case
+            name.to_s.gsub(/[^a-zA-Z0-9_]/, "_")
           end
 
           # Sanitize method name for Mermaid class diagrams

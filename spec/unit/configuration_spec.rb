@@ -17,7 +17,7 @@ RSpec.describe Dbwatcher::Configuration do
 
     it "has reasonable defaults" do
       expect(subject.max_sessions).to be_a(Integer)
-      expect(subject.auto_clean_after_days).to be_a(Integer)
+      expect(subject.auto_clean_days).to be_a(Integer)
     end
   end
 
