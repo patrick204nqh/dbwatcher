@@ -1,0 +1,26 @@
+{
+  "display_information": {
+    "name": "DB Watcher CICD",
+    "description": "Automated CI/CD notifications for DB Watcher Ruby gem",
+    "background_color": "#2c3e50"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "DB Watcher CICD",
+      "always_online": true
+    }
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": [
+        "chat:write",
+        "chat:write.public"
+      ]
+    }
+  },
+  "settings": {
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}

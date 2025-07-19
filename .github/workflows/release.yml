@@ -314,59 +314,83 @@ jobs:
 
       - name: Notify Slack - Release Complete
         if: success()
-        uses: 8398a7/action-slack@v3
+        uses: slackapi/slack-github-action@v2.0.0
         with:
-          status: success
-          custom_payload: |
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          payload: |
             {
-              "channel": "#cicd-notifications",
-              "username": "DB Watcher Release",
-              "icon_emoji": ":rocket:",
-              "attachments": [{
-                "color": "good",
-                "fallback": "DB Watcher v${{ needs.validate-release.outputs.version }} released successfully!",
-                "title": "🚀 DB Watcher v${{ needs.validate-release.outputs.version }} Released Successfully!",
-                "title_link": "https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate-release.outputs.version }}",
-                "text": "A new version of DB Watcher has been published to RubyGems and is ready for use! 🎉",
-                "fields": [
-                  {
-                    "title": "📦 Version",
-                    "value": "`v${{ needs.validate-release.outputs.version }}`",
-                    "short": true
-                  },
-                  {
-                    "title": "⚡ Trigger",
-                    "value": "${{ github.event_name == 'workflow_dispatch' && '🔧 Manual Release' || '🏷️ Tag Push' }}",
-                    "short": true
-                  },
-                  {
-                    "title": "📥 Installation",
-                    "value": "```gem install dbwatcher -v ${{ needs.validate-release.outputs.version }}```",
-                    "short": false
-                  },
-                  {
-                    "title": "🔗 Quick Links",
-                    "value": "📦 <https://rubygems.org/gems/dbwatcher/versions/${{ needs.validate-release.outputs.version }}|RubyGems Package> • 📚 <https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate-release.outputs.version }}|Release Notes> • 📖 <https://github.com/${{ github.repository }}|Documentation>",
-                    "short": false
-                  },
-                  {
-                    "title": "👤 Released By",
-                    "value": "${{ github.actor }}",
-                    "short": true
-                  },
-                  {
-                    "title": "📂 Repository",
-                    "value": "<https://github.com/${{ github.repository }}|${{ github.repository }}>",
-                    "short": true
+              "text": "🚀 DB Watcher v${{ needs.validate-release.outputs.version }} Released Successfully!",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚀 DB Watcher v${{ needs.validate-release.outputs.version }} Released Successfully!"
                   }
-                ],
-                "footer": "Released via GitHub Actions • Thanks for using DB Watcher! 💎",
-                "footer_icon": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-                "ts": ${{ github.event.head_commit.timestamp }}
-              }]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "A new version of DB Watcher has been published to RubyGems and is ready for use! 🎉"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View Release"
+                    },
+                    "url": "https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate-release.outputs.version }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*📂 Repository:*\n<https://github.com/${{ github.repository }}|${{ github.repository }}>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*📦 Version:*\n`v${{ needs.validate-release.outputs.version }}`"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*⚡ Trigger:*\n${{ github.event_name == 'workflow_dispatch' && '🔧 Manual Release' || '🏷️ Tag Push' }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*👤 Released By:*\n${{ github.actor }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*📥 Installation:*\n```gem install dbwatcher -v ${{ needs.validate-release.outputs.version }}```"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*🔗 Quick Links:*\n📦 <https://rubygems.org/gems/dbwatcher/versions/${{ needs.validate-release.outputs.version }}|RubyGems Package> • 📚 <https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate-release.outputs.version }}|Release Notes> • 📖 <https://github.com/${{ github.repository }}|Documentation>"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "Triggered by ${{ github.actor }} • DB Watcher Release • Powered by GitHub Actions"
+                    }
+                  ]
+                }
+              ]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
   notify-failure:
     needs: [validate-release, build-and-publish, post-release]
@@ -392,61 +416,80 @@ jobs:
           fi
 
       - name: Notify Slack - Release Failure
-        uses: 8398a7/action-slack@v3
+        uses: slackapi/slack-github-action@v2.0.0
         with:
-          status: failure
-          custom_payload: |
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          payload: |
             {
-              "channel": "#cicd-notifications",
-              "username": "DB Watcher Release",
-              "icon_emoji": ":x:",
-              "attachments": [{
-                "color": "danger",
-                "fallback": "DB Watcher release failed!",
-                "title": "❌ DB Watcher Release Failed",
-                "title_link": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-                "text": "The release process encountered an error and needs attention. Please check the logs for details.",
-                "fields": [
-                  {
-                    "title": "💥 Failed Step",
-                    "value": "${{ steps.failed_job.outputs.failed_step }}",
-                    "short": true
-                  },
-                  {
-                    "title": "📦 Version",
-                    "value": "`v${{ needs.validate-release.outputs.version || 'Unknown' }}`",
-                    "short": true
-                  },
-                  {
-                    "title": "🔍 Failure Reason",
-                    "value": "${{ steps.failed_job.outputs.failed_reason }}",
-                    "short": false
-                  },
-                  {
-                    "title": "📂 Repository",
-                    "value": "<https://github.com/${{ github.repository }}|${{ github.repository }}>",
-                    "short": true
-                  },
-                  {
-                    "title": "🔧 Workflow Run",
-                    "value": "<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|🔍 View Detailed Logs>",
-                    "short": true
-                  },
-                  {
-                    "title": "👤 Triggered By",
-                    "value": "${{ github.actor }}",
-                    "short": true
-                  },
-                  {
-                    "title": "📚 Troubleshooting",
-                    "value": "<https://github.com/${{ github.repository }}/blob/main/docs/RELEASE_GUIDE.md#-troubleshooting|Release Guide> • <https://github.com/${{ github.repository }}/blob/main/docs/SLACK_INTEGRATION.md|Slack Integration>",
-                    "short": true
+              "text": "❌ DB Watcher Release Failed",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "❌ DB Watcher Release Failed"
                   }
-                ],
-                "footer": "Release process failed • Check logs and try again",
-                "footer_icon": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-                "ts": ${{ github.event.head_commit.timestamp }}
-              }]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "The release process encountered an error and needs attention. Please check the logs for details."
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View Logs"
+                    },
+                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*📂 Repository:*\n<https://github.com/${{ github.repository }}|${{ github.repository }}>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*📦 Version:*\n`v${{ needs.validate-release.outputs.version || 'Unknown' }}`"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*💥 Failed Step:*\n${{ steps.failed_job.outputs.failed_step }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*👤 Triggered By:*\n${{ github.actor }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*🔍 Failure Reason:*\n${{ steps.failed_job.outputs.failed_reason }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*📚 Troubleshooting Resources:*\n<https://github.com/${{ github.repository }}/blob/main/docs/RELEASE_GUIDE.md#-troubleshooting|Release Guide> • <https://github.com/${{ github.repository }}/blob/main/docs/SLACK_INTEGRATION.md|Slack Integration>"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "Triggered by ${{ github.actor }} • DB Watcher Release • Check logs and try again"
+                    }
+                  ]
+                }
+              ]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
