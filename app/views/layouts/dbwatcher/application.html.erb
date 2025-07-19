@@ -131,17 +131,16 @@
             <div class="flex items-center gap-3" x-show="!sidebarCollapsed">
               <%= image_tag "dbwatcher/dbwatcher-tranparent_512x512.png",
                     alt: "DBWatcher Logo",
-                    class: "w-8 h-8" %>
+                    class: "w-10 h-10" %>
               <div class="flex flex-col">
-                <span class="text-sm font-bold text-white">dbwatcher</span>
-                <span class="text-xs text-gray-300">Database Monitor</span>
+                <span class="text-base font-bold text-white">dbwatcher</span>
               </div>
             </div>
             <!-- Collapsed state logo -->
             <div class="flex items-center justify-center w-full" x-show="sidebarCollapsed">
               <%= image_tag "dbwatcher/dbwatcher-tranparent_512x512.png",
-                    alt: "DBWatcher Logo",
-                    class: "w-6 h-6" %>
+                    alt: "dbwatcher Logo",
+                    class: "w-8 h-8" %>
             </div>
             <button @click="sidebarCollapsed = !sidebarCollapsed"
                     class="p-1 hover:bg-gray-800 rounded text-gray-400">
