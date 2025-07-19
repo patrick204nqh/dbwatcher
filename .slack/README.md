@@ -14,9 +14,7 @@ Slack bot integration for DB Watcher CI/CD pipeline notifications.
 6. Go to **"Install App"** → **"Install to Workspace"**
 7. Copy the **"Bot User OAuth Token"** (starts with `xoxb-`)
 
-**Optional: Add Custom App Icon**
-8. Go to **"Basic Information"** → **"Display Information"**
-9. Click **"Add App Icon"** and upload a 512x512px PNG icon
+**Optional: Add Custom App Icon** 8. Go to **"Basic Information"** → **"Display Information"** 9. Click **"Add App Icon"** and upload a 512x512px PNG icon
 
 ### Option 2: Manual Setup
 
@@ -49,6 +47,7 @@ Slack bot integration for DB Watcher CI/CD pipeline notifications.
 Go to your repository → **Settings** → **Secrets and variables** → **Actions**
 
 1. **SLACK_BOT_TOKEN**
+
    - Name: `SLACK_BOT_TOKEN`
    - Value: Your bot token from step 7/8 above (`xoxb-...`)
 
@@ -99,15 +98,18 @@ No additional workflow changes are needed.
 ## Troubleshooting
 
 ### No messages received
+
 - Check bot is invited to channel: `/invite @DB Watcher CICD`
 - Verify channel ID is correct (use ID like `C1234567890`, not channel name)
 - Ensure bot token is valid and saved in GitHub secrets
 
 ### Permission errors
+
 - Verify bot has `chat:write` and `chat:write.public` scopes
 - Re-install the app if scopes were added after installation
 
 ### Messages look wrong
+
 - Check GitHub Actions logs for errors
 - Verify both secrets are configured correctly
 - Test with the manual workflow trigger first

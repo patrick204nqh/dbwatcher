@@ -12,10 +12,7 @@
   },
   "oauth_config": {
     "scopes": {
-      "bot": [
-        "chat:write",
-        "chat:write.public"
-      ]
+      "bot": ["chat:write", "chat:write.public"]
     }
   },
   "settings": {
