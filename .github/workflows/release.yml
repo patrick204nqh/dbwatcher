@@ -316,9 +316,10 @@ jobs:
         if: success()
         uses: slackapi/slack-github-action@v2.0.0
         with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
             {
+              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
               "text": "🚀 DB Watcher v${{ needs.validate-release.outputs.version }} Released Successfully!",
               "blocks": [
                 {
@@ -389,8 +390,6 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
   notify-failure:
     needs: [validate-release, build-and-publish, post-release]
@@ -418,9 +417,10 @@ jobs:
       - name: Notify Slack - Release Failure
         uses: slackapi/slack-github-action@v2.0.0
         with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
             {
+              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
               "text": "❌ DB Watcher Release Failed",
               "blocks": [
                 {
@@ -491,5 +491,3 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

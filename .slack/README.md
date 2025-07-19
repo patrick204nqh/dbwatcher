@@ -121,6 +121,16 @@ Add this to a workflow to debug:
   run: |
     echo "Channel ID exists: ${{ secrets.SLACK_CHANNEL_ID != '' }}"
     echo "Bot token exists: ${{ secrets.SLACK_BOT_TOKEN != '' }}"
+
+- name: Test Slack Message
+  uses: slackapi/slack-github-action@v2.0.0
+  with:
+    token: ${{ secrets.SLACK_BOT_TOKEN }}
+    payload: |
+      {
+        "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+        "text": "Test message from DB Watcher"
+      }
 ```
 
 ## Security Notes
