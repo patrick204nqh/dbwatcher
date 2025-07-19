@@ -91,8 +91,7 @@ module Dbwatcher
 
         private
 
-        attr_reader :session, :session_tables, :models
-        attr_reader :model_discovery, :association_extractor, :dataset_builder
+        attr_reader :session, :session_tables, :models, :model_discovery, :association_extractor, :dataset_builder
 
         # Log analysis results for debugging
         #
