@@ -66,20 +66,29 @@ module Dbwatcher
         # @param change [Hash] change data
         # @return [String, nil] record ID if available
         def extract_record_id(change)
-          return change[:record_id] if change[:record_id]
-          return change[:id] if change[:id]
+          change[:record_id] || change[:id] || extract_id_from_changes(change[:changes])
+        end
 
-          # Handle changes that might be array or hash
-          changes = change[:changes]
+        # Extract ID from changes data (hash or array format)
+        #
+        # @param changes [Hash, Array, nil] changes data
+        # @return [String, nil] extracted ID
+        def extract_id_from_changes(changes)
           return nil unless changes
 
-          if changes.is_a?(Hash)
-            changes[:id]
-          elsif changes.is_a?(Array)
-            # Look for id in array of column changes
-            id_change = changes.find { |c| c.is_a?(Hash) && c[:column] == "id" }
-            id_change&.dig(:new_value) || id_change&.dig(:old_value)
+          case changes
+          when Hash then changes[:id]
+          when Array then extract_id_from_array_changes(changes)
           end
+        end
+
+        # Extract ID from array of column changes
+        #
+        # @param changes [Array] array of column changes
+        # @return [String, nil] extracted ID value
+        def extract_id_from_array_changes(changes)
+          id_change = changes.find { |c| c.is_a?(Hash) && c[:column] == "id" }
+          id_change&.dig(:new_value) || id_change&.dig(:old_value)
         end
 
         # Format changes for timeline display
