@@ -6,7 +6,7 @@
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "18"
+      "version": "22"
     },
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.11"
@@ -51,6 +51,10 @@
       "label": "Dummy App Server", 
       "onAutoForward": "notify"
     }
+  },
+  
+  "containerEnv": {
+    "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}"
   },
   
   "postCreateCommand": "bash .devcontainer/setup.sh",
