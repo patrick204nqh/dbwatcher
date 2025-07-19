@@ -53,8 +53,11 @@ module Testing
       update_user_login_counts
       update_comment_approval
       update_post_view_counts
+      update_user_skills_experience
+      update_category_relationships
+      update_skill_proficiency_levels
 
-      success(nil, "Mass updates completed! Updated multiple records across tables")
+      success(nil, "Mass updates completed! Updated multiple records across tables including relationships")
     end
 
     def perform_cascade_deletes
@@ -127,6 +130,15 @@ module Testing
 
         # Create many user roles (reduced from 25 to 8)
         insert_counts[:user_roles] = create_many_user_roles(8)
+
+        # Create many user skills (has_many_through relationships)
+        insert_counts[:user_skills] = create_many_user_skills(15)
+
+        # Create many category-user relationships (HABTM)
+        insert_counts[:category_users] = create_many_category_users(12)
+
+        # Create many attachments (polymorphic)
+        insert_counts[:attachments] = create_many_attachments(20)
       end
 
       total_inserts = insert_counts.values.sum
@@ -150,6 +162,15 @@ module Testing
 
       # Update profiles
       update_counts[:profiles] = batch_update_profiles
+
+      # Update user skills (has_many_through)
+      update_counts[:user_skills] = batch_update_user_skills
+
+      # Update category relationships (HABTM)
+      update_counts[:category_relationships] = batch_update_category_relationships
+
+      # Update attachments (polymorphic)
+      update_counts[:attachments] = batch_update_attachments
 
       total_updates = update_counts.values.sum
       success(
@@ -236,7 +257,7 @@ module Testing
 
     # Helper methods for operations
     def create_test_user
-      User.create!(
+      user = User.create!(
         name: "Transaction User #{Time.current.to_i}",
         email: "transaction_#{Time.current.to_i}@example.com",
         age: rand(25..65),
@@ -246,6 +267,23 @@ module Testing
         preferences: { created_in: "transaction", test: true }.to_json,
         notes: "Created via complex transaction test"
       )
+
+      # Add HABTM categories
+      categories = Category.limit(3).order("RANDOM()")
+      user.categories = categories if categories.any?
+
+      # Add has_many_through skills
+      skills = Skill.limit(4).order("RANDOM()")
+      skills.each do |skill|
+        UserSkill.create!(
+          user: user,
+          skill: skill,
+          proficiency_level: %w[beginner intermediate advanced].sample,
+          years_experience: rand(0..10)
+        )
+      end
+
+      user
     end
 
     def create_user_profile(user)
@@ -316,14 +354,20 @@ module Testing
     end
 
     def find_user_with_associations
-      User.joins(:posts, :comments).includes(:profile, :user_roles).first
+      User.joins(:posts, :comments)
+          .includes(:profile, :user_roles, :categories, :skills, :user_skills, :attachments, :uploaded_attachments)
+          .first
     end
 
     def extract_user_data(user)
       {
         name: user.name,
         posts_count: user.posts.count,
-        comments_count: user.comments.count
+        comments_count: user.comments.count,
+        categories_count: user.categories.count,
+        skills_count: user.skills.count,
+        attachments_count: user.attachments.count,
+        uploaded_attachments_count: user.uploaded_attachments.count
       }
     end
 
@@ -597,6 +641,55 @@ module Testing
       updated_count
     end
 
+    def batch_update_user_skills
+      user_skills = UserSkill.limit(8)
+      updated_count = 0
+      user_skills.find_each do |user_skill|
+        user_skill.update!(
+          years_experience: [user_skill.years_experience + 1, 20].min,
+          updated_at: Time.current
+        )
+        updated_count += 1
+      end
+      updated_count
+    end
+
+    def batch_update_category_relationships
+      # Add categories to users with fewer than 4 categories
+      users_needing_categories = User.joins(:categories)
+                                     .group("users.id")
+                                     .having("COUNT(categories.id) < 4")
+                                     .limit(3)
+
+      updated_count = 0
+      users_needing_categories.each do |user|
+        available_category = Category.where.not(id: user.category_ids).first
+        if available_category
+          user.categories << available_category
+          updated_count += 1
+        end
+      end
+      updated_count
+    end
+
+    def batch_update_attachments
+      attachments = Attachment.limit(5)
+      updated_count = 0
+      attachments.find_each do |attachment|
+        attachment.update!(
+          file_size: [attachment.file_size + rand(1000..10_000), 10_000_000].min,
+          metadata: if attachment.metadata.present?
+                      JSON.parse(attachment.metadata).merge(last_accessed: Time.current).to_json
+                    else
+                      { last_accessed: Time.current }.to_json
+                    end,
+          updated_at: Time.current
+        )
+        updated_count += 1
+      end
+      updated_count
+    end
+
     def delete_old_comments
       comments = Comment.where(created_at: ..30.days.ago, approved: false)
       deleted_count = 0
@@ -766,6 +859,122 @@ module Testing
           approved: i.even? # Mix of approved/unapproved for update testing
         )
         created_count += 1
+      end
+
+      created_count
+    end
+
+    # New methods for handling HABTM and has_many_through relationships
+    def update_user_skills_experience
+      UserSkill.limit(10).find_each do |user_skill|
+        user_skill.update!(years_experience: user_skill.years_experience + 1)
+      end
+    end
+
+    def update_category_relationships
+      # Add new categories to users who have fewer than 3
+      User.joins(:categories)
+          .group("users.id")
+          .having("COUNT(categories.id) < 3")
+          .limit(5)
+          .each do |user|
+            available_categories = Category.where.not(id: user.category_ids).limit(2)
+            user.categories.concat(available_categories) if available_categories.any?
+          end
+    end
+
+    def update_skill_proficiency_levels
+      # Upgrade beginner skills to intermediate
+      UserSkill.where(proficiency_level: "beginner").limit(5).find_each do |user_skill|
+        user_skill.update!(proficiency_level: "intermediate")
+      end
+    end
+
+    def create_many_user_skills(count)
+      users = User.limit(count / 2).pluck(:id)
+      skills = Skill.limit(count / 3).pluck(:id)
+      return 0 if users.empty? || skills.empty?
+
+      created_count = 0
+      count.times do
+        user_id = users.sample
+        skill_id = skills.sample
+
+        # Skip if combination already exists
+        next if UserSkill.exists?(user_id: user_id, skill_id: skill_id)
+
+        UserSkill.create!(
+          user_id: user_id,
+          skill_id: skill_id,
+          proficiency_level: %w[beginner intermediate advanced expert].sample,
+          years_experience: rand(0..15)
+        )
+        created_count += 1
+      end
+
+      created_count
+    end
+
+    def create_many_category_users(count)
+      users = User.limit(count / 2).pluck(:id)
+      categories = Category.pluck(:id)
+      return 0 if users.empty? || categories.empty?
+
+      created_count = 0
+      count.times do
+        user = User.find(users.sample)
+        category = Category.find(categories.sample)
+
+        # Skip if relationship already exists
+        next if user.categories.include?(category)
+
+        user.categories << category
+        created_count += 1
+      end
+
+      created_count
+    end
+
+    def create_many_attachments(count)
+      # Get various attachable entities
+      users = User.limit(count / 4).pluck(:id)
+      posts = Post.limit(count / 4).pluck(:id)
+      profiles = Profile.limit(count / 4).pluck(:id)
+      comments = Comment.limit(count / 4).pluck(:id)
+
+      return 0 if users.empty?
+
+      created_count = 0
+      attachable_data = [
+        { type: "User", ids: users },
+        { type: "Post", ids: posts },
+        { type: "Profile", ids: profiles },
+        { type: "Comment", ids: comments }
+      ].reject { |data| data[:ids].empty? }
+
+      count.times do |i|
+        attachable = attachable_data.sample
+
+        Attachment.create!(
+          attachable_type: attachable[:type],
+          attachable_id: attachable[:ids].sample,
+          user_id: users.sample,
+          filename: "bulk_attachment_#{i + 1}.#{%w[jpg png pdf docx mp3 mp4].sample}",
+          content_type: ["image/jpeg", "image/png", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "audio/mp3", "video/mp4"].sample,
+          file_size: rand(1024..5_000_000),
+          attachment_type: %w[image document video audio].sample,
+          url: "https://cdn.example.com/bulk/attachment_#{i + 1}",
+          metadata: {
+            bulk_created: true,
+            batch_id: Time.current.to_i,
+            attachable_type: attachable[:type],
+            created_by: "bulk_operations"
+          }.to_json
+        )
+        created_count += 1
+      rescue ActiveRecord::RecordInvalid
+        # Skip invalid records
+        next
       end
 
       created_count

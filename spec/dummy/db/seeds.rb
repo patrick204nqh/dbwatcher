@@ -2,8 +2,9 @@
 
 puts "🌱 Seeding test data for DBWatcher testing..."
 
-# Clear existing data in dependency order
-[Comment, PostTag, Post, Profile, UserRole, User, Tag, Role].each(&:destroy_all)
+# Clear existing data in dependency order (most dependent first)
+ActiveRecord::Base.connection.execute("DELETE FROM attachments")
+[Comment, PostTag, UserSkill, Post, Profile, UserRole, User, Tag, Role, Category, Skill].each(&:destroy_all)
 
 puts "🗑️  Cleared existing data"
 
@@ -24,6 +25,28 @@ user_role = Role.create!(
   description: "Basic user access",
   permissions: { can_edit: false, can_delete: false, can_publish: false }.to_json
 )
+
+# Create categories
+puts "📂 Creating categories..."
+categories = %w[Technology Business Design Health Education Travel Sports Music Art Finance].map do |name|
+  Category.create!(
+    name: name,
+    description: "Category for #{name} related content and user interests"
+  )
+end
+
+# Create skills
+puts "💡 Creating skills..."
+skills = [
+  "Ruby", "Rails", "JavaScript", "React", "Node.js", "Python", "Java", "SQL", 
+  "Docker", "AWS", "Git", "MongoDB", "PostgreSQL", "Redis", "GraphQL", 
+  "Vue.js", "Angular", "TypeScript", "Go", "Kubernetes"
+].map do |name|
+  Skill.create!(
+    name: name,
+    description: "Professional skill in #{name}"
+  )
+end
 
 # Create tags
 puts "🏷️  Creating tags..."
@@ -76,6 +99,51 @@ users = []
     )
   end
 
+  # Assign random categories (HABTM relationship)
+  user.categories = categories.sample(rand(2..5))
+
+  # Assign random skills (has_many_through relationship)
+  skills.sample(rand(3..8)).each do |skill|
+    UserSkill.create!(
+      user: user,
+      skill: skill,
+      proficiency_level: %w[beginner intermediate advanced expert].sample,
+      years_experience: rand(0..15)
+    )
+  end
+
+  # Add profile avatar attachment
+  if [true, false, false].sample # 33% chance
+    user.attachments.create!(
+      user: user,
+      filename: "avatar_user_#{user.id}.jpg",
+      content_type: "image/jpeg",
+      file_size: rand(50_000..500_000),
+      attachment_type: "image",
+      url: "https://cdn.example.com/avatars/user_#{user.id}.jpg",
+      metadata: {
+        alt_text: "Profile picture for #{user.name}",
+        is_avatar: true,
+        dimensions: { width: 400, height: 400 }
+      }.to_json
+    )
+  end
+
+  # Add profile attachments (resume, portfolio, etc.)
+  user.profile.attachments.create!(
+    user: user,
+    filename: "resume_#{user.name.gsub(' ', '_').downcase}.pdf",
+    content_type: "application/pdf",
+    file_size: rand(100_000..2_000_000),
+    attachment_type: "document",
+    url: "https://cdn.example.com/resumes/#{user.id}/resume.pdf",
+    metadata: {
+      document_type: "resume",
+      pages: rand(1..5),
+      last_updated: Time.current
+    }.to_json
+  ) if [true, false].sample # 50% chance
+
   users << user
 end
 
@@ -112,6 +180,27 @@ users.each do |user|
 
     # Add random tags to posts
     post.tags = tags.sample(rand(2..5))
+    
+    # Add attachments to some posts
+    if [true, false].sample # 50% chance
+      attachment_count = rand(1..3)
+      attachment_count.times do |attach_idx|
+        post.attachments.create!(
+          user: user,
+          filename: "post_#{post.id}_attachment_#{attach_idx + 1}.#{%w[jpg png pdf docx mp4].sample}",
+          content_type: ["image/jpeg", "image/png", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "video/mp4"].sample,
+          file_size: rand(1024..5_000_000),
+          attachment_type: %w[image document video].sample,
+          url: "https://cdn.example.com/attachments/post_#{post.id}_#{attach_idx + 1}",
+          metadata: {
+            alt_text: "Post attachment #{attach_idx + 1}",
+            description: "Sample attachment for post #{post.title}",
+            uploaded_at: Time.current
+          }.to_json
+        )
+      end
+    end
+    
     posts << post
   end
 end
@@ -139,6 +228,23 @@ published_posts.each do |post|
       ].sample + " (Comment from #{commenter.name})",
       approved: [true, true, true, false].sample # 75% approved
     )
+
+    # Add attachment to some comments
+    if [true, false, false, false].sample # 25% chance
+      comment.attachments.create!(
+        user: commenter,
+        filename: "comment_screenshot_#{comment.id}.png",
+        content_type: "image/png",
+        file_size: rand(100_000..1_000_000),
+        attachment_type: "image",
+        url: "https://cdn.example.com/comments/#{comment.id}/screenshot.png",
+        metadata: {
+          alt_text: "Screenshot attached to comment",
+          comment_id: comment.id,
+          is_screenshot: true
+        }.to_json
+      )
+    end
 
     # Add some replies to comments
     next unless [true, false].sample # 50% chance of replies
@@ -193,6 +299,26 @@ puts "Comments: #{Comment.count} (#{Comment.where(approved: true).count} approve
 puts "Tags: #{Tag.count}"
 puts "Roles: #{Role.count}"
 puts "User Roles: #{UserRole.count}"
+puts "Categories: #{Category.count}"
+puts "Skills: #{Skill.count}"
+puts "User Skills: #{UserSkill.count}"
+puts "Attachments: #{Attachment.count}"
+puts
+puts "🔗 Relationship Summary:"
+puts "HABTM (Users ↔ Categories): #{User.joins(:categories).count} connections"
+puts "Has Many Through (Users ↔ Skills): #{UserSkill.count} connections"
+puts "Polymorphic (Attachments): #{Attachment.count} total attachments"
+puts "Users with multiple skills: #{User.joins(:skills).group('users.id').having('COUNT(skills.id) > 1').count.size}"
+puts "Users with multiple categories: #{User.joins(:categories).group('users.id').having('COUNT(categories.id) > 1').count.size}"
+puts
+puts "📎 Attachment Summary:"
+puts "Post attachments: #{Attachment.where(attachable_type: 'Post').count}"
+puts "User attachments: #{Attachment.where(attachable_type: 'User').count}"
+puts "Profile attachments: #{Attachment.where(attachable_type: 'Profile').count}"
+puts "Comment attachments: #{Attachment.where(attachable_type: 'Comment').count}"
+puts "Images: #{Attachment.where(attachment_type: 'image').count}"
+puts "Documents: #{Attachment.where(attachment_type: 'document').count}"
+puts "Videos: #{Attachment.where(attachment_type: 'video').count}"
 puts
 puts "🎯 Ready for DBWatcher testing!"
 puts "🔗 Visit your Rails app and add ?dbwatch=true to any URL to start tracking"
