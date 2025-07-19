@@ -1,7 +1,8 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/patrick204nqh/dbwatcher/master/app/assets/images/dbwatcher/dbwatcher_512x512.png" alt="dbwatcher Logo" width="120" height="120">
 
-  # dbwatcher
+# dbwatcher
+
 </div>
 
 [![CI](https://github.com/patrick204nqh/dbwatcher/actions/workflows/ci.yml/badge.svg)](https://github.com/patrick204nqh/dbwatcher/actions/workflows/ci.yml)
