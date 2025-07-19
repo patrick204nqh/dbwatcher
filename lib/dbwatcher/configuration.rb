@@ -60,9 +60,15 @@ module Dbwatcher
     # Fixed defaults for complex options that are still used in codebase but not configurable
     def max_query_logs_per_day = 1000
     def system_info_refresh_interval = 5 * 60
-    def collect_sensitive_env_vars = false
     def system_info_cache_duration = 60 * 60
-    def system_info_include_performance_metrics = true
+
+    def collect_sensitive_env_vars?
+      false
+    end
+
+    def system_info_include_performance_metrics?
+      true
+    end
 
     # Validate configuration
     def valid?
