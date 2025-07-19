@@ -118,10 +118,11 @@
           </div>
         <% else %>
           <div class="p-8 text-center text-gray-500">
-            <svg class="w-8 h-8 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
+            <%= image_tag "dbwatcher/dbwatcher-tranparent_512x512.png", 
+                  alt: "DBWatcher Logo", 
+                  class: "w-12 h-12 mx-auto opacity-30 mb-2" %>
             <p class="text-sm">No recent sessions</p>
+            <p class="text-xs text-gray-400 mt-1">Start tracking with <code>?dbwatch=true</code></p>
           </div>
         <% end %>
       </div>
@@ -175,11 +176,11 @@
           </div>
         <% else %>
           <div class="p-8 text-center text-gray-500">
-            <svg class="w-8 h-8 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h2a2 2 0 012 2v2H8V5z"/>
-            </svg>
+            <%= image_tag "dbwatcher/dbwatcher-tranparent_512x512.png", 
+                  alt: "DBWatcher Logo", 
+                  class: "w-12 h-12 mx-auto opacity-30 mb-2" %>
             <p class="text-sm">No active tables</p>
+            <p class="text-xs text-gray-400 mt-1">Tables will appear when data changes</p>
           </div>
         <% end %>
       </div>
