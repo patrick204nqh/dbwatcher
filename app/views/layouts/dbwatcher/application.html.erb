@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
 
+    <!-- Favicon -->
+    <%= favicon_link_tag asset_path('dbwatcher/favicon.ico') %>
+    <%= favicon_link_tag asset_path('dbwatcher/favicon-96x96.png'), sizes: '96x96', type: 'image/png' %>
+    <%= favicon_link_tag asset_path('dbwatcher/apple-touch-icon.png'), rel: 'apple-touch-icon', sizes: '180x180' %>
+    <%= favicon_link_tag asset_path('dbwatcher/web-app-manifest-192x192.png'), sizes: '192x192', type: 'image/png' %>
+    <%= favicon_link_tag asset_path('dbwatcher/web-app-manifest-512x512.png'), sizes: '512x512', type: 'image/png' %>
+    <link rel="manifest" href="<%= asset_path('dbwatcher/site.webmanifest') %>"
+
     <!-- Alpine.js and Plugins - ensure plugins load BEFORE Alpine.js core -->
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -119,12 +127,21 @@
              :style="{ width: sidebarCollapsed ? '48px' : sidebarWidth + 'px' }">
         <div class="flex flex-col h-full">
           <!-- Logo -->
-          <div class="h-10 flex items-center justify-between px-3 border-b border-gray-700">
-            <div class="flex items-center gap-2" x-show="!sidebarCollapsed">
-              <svg class="w-5 h-5 text-gold-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-              </svg>
-              <span class="text-sm font-medium text-white">DB Watcher</span>
+          <div class="h-12 flex items-center justify-between px-3 border-b border-gray-700 bg-gray-800">
+            <div class="flex items-center gap-3" x-show="!sidebarCollapsed">
+              <%= image_tag "dbwatcher/dbwatcher-tranparent_512x512.png",
+                    alt: "DBWatcher Logo",
+                    class: "w-8 h-8" %>
+              <div class="flex flex-col">
+                <span class="text-sm font-bold text-white">dbwatcher</span>
+                <span class="text-xs text-gray-300">Database Monitor</span>
+              </div>
+            </div>
+            <!-- Collapsed state logo -->
+            <div class="flex items-center justify-center w-full" x-show="sidebarCollapsed">
+              <%= image_tag "dbwatcher/dbwatcher-tranparent_512x512.png",
+                    alt: "DBWatcher Logo",
+                    class: "w-6 h-6" %>
             </div>
             <button @click="sidebarCollapsed = !sidebarCollapsed"
                     class="p-1 hover:bg-gray-800 rounded text-gray-400">

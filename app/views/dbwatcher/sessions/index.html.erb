@@ -46,12 +46,12 @@
   <% if @sessions.empty? %>
     <div class="flex items-center justify-center h-full text-gray-500">
       <div class="text-center">
-        <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-        </svg>
-        <p class="text-xs">No tracking sessions yet</p>
-        <p class="text-xs text-gray-400">Start tracking with <code class="bg-gray-200 px-1 rounded">Dbwatcher.track { ... }</code></p>
+        <%= image_tag "dbwatcher/dbwatcher-tranparent_512x512.png", 
+              alt: "DBWatcher Logo", 
+              class: "mx-auto w-16 h-16 opacity-30 mb-4" %>
+        <p class="text-sm font-medium text-gray-600">No tracking sessions yet</p>
+        <p class="text-xs text-gray-400 mt-2">Start tracking with <code class="bg-gray-200 px-1 rounded">Dbwatcher.track { ... }</code></p>
+        <p class="text-xs text-gray-400 mt-1">or add <code class="bg-gray-200 px-1 rounded">?dbwatch=true</code> to any URL</p>
       </div>
     </div>
   <% else %>
