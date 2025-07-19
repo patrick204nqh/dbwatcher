@@ -47,22 +47,15 @@ Rails.application.routes.draw do
   # Roles for permissions
   resources :roles, except: [:show]
 
-  # Testing actions accessible from root path
-  post :complex_transaction, to: "testing#complex_transaction"
+  # Simplified Testing Actions
+  post :basic_operations, to: "testing#basic_operations"
   post :mass_updates, to: "testing#mass_updates"
-  post :cascade_deletes, to: "testing#cascade_deletes"
-  post :nested_operations, to: "testing#nested_operations"
-  post :bulk_operations, to: "testing#bulk_operations"
-  post :concurrent_updates, to: "testing#concurrent_updates"
+  post :high_volume_operations, to: "testing#high_volume_operations"
+  post :test_relationships, to: "testing#test_relationships"
   post :trigger_errors, to: "testing#trigger_errors"
   post :reset_data, to: "testing#reset_data"
-  post :high_volume_inserts, to: "testing#high_volume_inserts"
-  post :high_volume_updates, to: "testing#high_volume_updates"
-  post :high_volume_deletes, to: "testing#high_volume_deletes"
-  post :mixed_high_volume_operations, to: "testing#mixed_high_volume_operations"
-  post :batch_processing, to: "testing#batch_processing"
 
-  # Quick access routes for testing
-  get "/quick_test", to: "testing#quick_test"
+  # Quick access routes
+  get "/quick_stats", to: "testing#quick_stats"
   get "/stats", to: "application#stats"
 end

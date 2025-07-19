@@ -8,6 +8,11 @@ class User < ApplicationRecord
   has_one :profile, dependent: :destroy
   has_many :user_roles, dependent: :destroy
   has_many :roles, through: :user_roles
+  has_and_belongs_to_many :categories
+  has_many :user_skills, dependent: :destroy
+  has_many :skills, through: :user_skills
+  has_many :attachments, as: :attachable, dependent: :destroy
+  has_many :uploaded_attachments, class_name: "Attachment", foreign_key: "user_id", dependent: :destroy
 
   validates :email, presence: true, uniqueness: true
   validates :name, presence: true

@@ -9,9 +9,11 @@ class TestingController < ApplicationController
     # Just render the testing interface
   end
 
-  # Complex transaction with multiple models and relationships
-  def complex_transaction
-    handle_database_operation(:complex_transaction)
+  # === CORE OPERATIONS ===
+
+  # Basic CRUD operations with relationships
+  def basic_operations
+    handle_database_operation(:basic_operations)
   end
 
   # Mass updates across multiple tables
@@ -19,38 +21,27 @@ class TestingController < ApplicationController
     handle_database_operation(:mass_updates)
   end
 
-  # Cascade deletes to test relationship handling
-  def cascade_deletes
-    handle_database_operation(:cascade_deletes)
+  # High-volume operations - inserts, updates, deletes
+  def high_volume_operations
+    handle_database_operation(:mixed_high_volume_operations)
   end
 
-  # Create with nested associations using accepts_nested_attributes
-  def create_with_associations
-    handle_database_operation(:nested_operations)
+  # === RELATIONSHIP TESTING ===
+
+  # Test all relationship types: has_many, belongs_to, HABTM, has_many_through, polymorphic
+  def test_relationships
+    handle_database_operation(:test_relationships)
   end
 
-  # Trigger intentional errors for testing error handling
+  # === UTILITY OPERATIONS ===
+
+  # Trigger intentional errors for error handling testing
   def trigger_errors
     handle_database_operation(:trigger_errors)
   end
 
-  # Complex nested operations
-  def nested_operations
-    handle_database_operation(:nested_operations)
-  end
-
-  # Bulk operations with different patterns
-  def bulk_operations
-    handle_database_operation(:bulk_operations)
-  end
-
-  # Simulate concurrent updates (for testing race conditions)
-  def concurrent_updates
-    handle_database_operation(:concurrent_updates)
-  end
-
-  # Quick test for rapid iterations
-  def quick_test
+  # Quick database statistics
+  def quick_stats
     result = StatisticsService.call
     render json: result.data
   end
@@ -58,31 +49,6 @@ class TestingController < ApplicationController
   # Reset all test data to default state
   def reset_data
     reset_database
-  end
-
-  # High-volume insert operations - creates many records across tables
-  def high_volume_inserts
-    handle_database_operation(:high_volume_inserts)
-  end
-
-  # High-volume update operations - updates many records across tables
-  def high_volume_updates
-    handle_database_operation(:high_volume_updates)
-  end
-
-  # High-volume delete operations - deletes many records across tables
-  def high_volume_deletes
-    handle_database_operation(:high_volume_deletes)
-  end
-
-  # Mixed high-volume operations - combination of many inserts, updates, and deletes
-  def mixed_high_volume_operations
-    handle_database_operation(:mixed_high_volume_operations)
-  end
-
-  # Batch processing simulation - processes records in batches
-  def batch_processing
-    handle_database_operation(:batch_processing)
   end
 
   private
