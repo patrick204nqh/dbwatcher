@@ -81,35 +81,44 @@ Visit `/dbwatcher` in your browser to explore tracked operations.
 
 ## Configuration
 
-dbwatcher works out of the box with zero configuration. Just install and visit `/dbwatcher` in your app.
+**dbwatcher** works out of the box with zero configuration - simply install the gem and visit `/dbwatcher` in your Rails application.
 
-**Note**: Configuration has been simplified with sensible defaults for better performance and easier maintenance.
-
-### Complete Configuration Reference
+### Configuration Options
 
 <details>
-<summary>All Available Configuration Options</summary>
+<summary>View All Configuration Settings</summary>
 
-| Option                        | Type    | Default           | Description                              |
-| ----------------------------- | ------- | ----------------- | ---------------------------------------- |
+| Setting                       | Type    | Default           | Description                                         |
+| ----------------------------- | ------- | ----------------- | --------------------------------------------------- |
 | **Core Settings**             |
-| `enabled`                     | Boolean | `true`            | Enable/disable DBWatcher                 |
-| `storage_path`                | String  | `"tmp/dbwatcher"` | Where to store session data              |
+| `enabled`                     | Boolean | `true`            | Enable or disable DBWatcher                         |
+| `storage_path`                | String  | `"tmp/dbwatcher"` | Directory for session data storage                  |
 | **Session Management**        |
-| `max_sessions`                | Integer | `50`              | Maximum sessions to keep                 |
-| `auto_clean_days`             | Integer | `7`               | Delete sessions older than N days        |
+| `max_sessions`                | Integer | `50`              | Maximum number of sessions to retain                |
+| `auto_clean_days`             | Integer | `7`               | Automatically delete sessions older than N days     |
 | **Query Tracking**            |
-| `track_queries`               | Boolean | `false`           | Track all SQL queries (memory intensive) |
+| `track_queries`               | Boolean | `false`           | Enable full SQL query tracking (resource intensive) |
 | **System Information**        |
-| `system_info`                 | Boolean | `true`            | Collect system info for debugging        |
-| `debug_mode`                  | Boolean | `false`           | Enable debug logging                     |
-| **Advanced Diagram Options**  |
-| `diagram_show_attributes`     | Boolean | `true`            | Show model attributes in diagrams        |
-| `diagram_show_cardinality`    | Boolean | `true`            | Show relationship cardinality            |
-| `diagram_show_methods`        | Boolean | `false`           | Show model methods in diagrams           |
-| `diagram_max_attributes`      | Integer | `10`              | Max attributes to show per model         |
-| `diagram_attribute_types`     | Boolean | `true`            | Show attribute types                     |
-| `diagram_relationship_labels` | Boolean | `true`            | Show relationship labels                 |
+| `system_info`                 | Boolean | `true`            | Collect system information for debugging            |
+| `debug_mode`                  | Boolean | `false`           | Enable detailed debug logging                       |
+| **Database Diagram Options**  |
+| `diagram_show_attributes`     | Boolean | `true`            | Display model attributes in diagrams                |
+| `diagram_show_cardinality`    | Boolean | `true`            | Show relationship cardinality indicators            |
+| `diagram_show_methods`        | Boolean | `false`           | Include model methods in diagrams                   |
+| `diagram_max_attributes`      | Integer | `10`              | Maximum attributes displayed per model              |
+| `diagram_attribute_types`     | Boolean | `true`            | Show data types for attributes                      |
+| `diagram_relationship_labels` | Boolean | `true`            | Display labels on relationship lines                |
+
+### Configuration Example
+
+```ruby
+# config/environments/development.rb
+Rails.application.configure do
+  config.dbwatcher.enabled = true
+  config.dbwatcher.max_sessions = 100
+  config.dbwatcher.track_queries = true
+end
+```
 
 </details>
 
