@@ -38,8 +38,8 @@ end
 # Create skills
 puts "💡 Creating skills..."
 skills = [
-  "Ruby", "Rails", "JavaScript", "React", "Node.js", "Python", "Java", "SQL", 
-  "Docker", "AWS", "Git", "MongoDB", "PostgreSQL", "Redis", "GraphQL", 
+  "Ruby", "Rails", "JavaScript", "React", "Node.js", "Python", "Java", "SQL",
+  "Docker", "AWS", "Git", "MongoDB", "PostgreSQL", "Redis", "GraphQL",
   "Vue.js", "Angular", "TypeScript", "Go", "Kubernetes"
 ].map do |name|
   Skill.create!(
@@ -130,19 +130,21 @@ users = []
   end
 
   # Add profile attachments (resume, portfolio, etc.)
-  user.profile.attachments.create!(
-    user: user,
-    filename: "resume_#{user.name.gsub(' ', '_').downcase}.pdf",
-    content_type: "application/pdf",
-    file_size: rand(100_000..2_000_000),
-    attachment_type: "document",
-    url: "https://cdn.example.com/resumes/#{user.id}/resume.pdf",
-    metadata: {
-      document_type: "resume",
-      pages: rand(1..5),
-      last_updated: Time.current
-    }.to_json
-  ) if [true, false].sample # 50% chance
+  if [true, false].sample
+    user.profile.attachments.create!(
+      user: user,
+      filename: "resume_#{user.name.gsub(" ", "_").downcase}.pdf",
+      content_type: "application/pdf",
+      file_size: rand(100_000..2_000_000),
+      attachment_type: "document",
+      url: "https://cdn.example.com/resumes/#{user.id}/resume.pdf",
+      metadata: {
+        document_type: "resume",
+        pages: rand(1..5),
+        last_updated: Time.current
+      }.to_json
+    )
+  end
 
   users << user
 end
@@ -180,7 +182,7 @@ users.each do |user|
 
     # Add random tags to posts
     post.tags = tags.sample(rand(2..5))
-    
+
     # Add attachments to some posts
     if [true, false].sample # 50% chance
       attachment_count = rand(1..3)
@@ -200,7 +202,7 @@ users.each do |user|
         )
       end
     end
-    
+
     posts << post
   end
 end
@@ -308,17 +310,17 @@ puts "🔗 Relationship Summary:"
 puts "HABTM (Users ↔ Categories): #{User.joins(:categories).count} connections"
 puts "Has Many Through (Users ↔ Skills): #{UserSkill.count} connections"
 puts "Polymorphic (Attachments): #{Attachment.count} total attachments"
-puts "Users with multiple skills: #{User.joins(:skills).group('users.id').having('COUNT(skills.id) > 1').count.size}"
-puts "Users with multiple categories: #{User.joins(:categories).group('users.id').having('COUNT(categories.id) > 1').count.size}"
+puts "Users with multiple skills: #{User.joins(:skills).group("users.id").having("COUNT(skills.id) > 1").count.size}"
+puts "Users with multiple categories: #{User.joins(:categories).group("users.id").having("COUNT(categories.id) > 1").count.size}"
 puts
 puts "📎 Attachment Summary:"
-puts "Post attachments: #{Attachment.where(attachable_type: 'Post').count}"
-puts "User attachments: #{Attachment.where(attachable_type: 'User').count}"
-puts "Profile attachments: #{Attachment.where(attachable_type: 'Profile').count}"
-puts "Comment attachments: #{Attachment.where(attachable_type: 'Comment').count}"
-puts "Images: #{Attachment.where(attachment_type: 'image').count}"
-puts "Documents: #{Attachment.where(attachment_type: 'document').count}"
-puts "Videos: #{Attachment.where(attachment_type: 'video').count}"
+puts "Post attachments: #{Attachment.where(attachable_type: "Post").count}"
+puts "User attachments: #{Attachment.where(attachable_type: "User").count}"
+puts "Profile attachments: #{Attachment.where(attachable_type: "Profile").count}"
+puts "Comment attachments: #{Attachment.where(attachable_type: "Comment").count}"
+puts "Images: #{Attachment.where(attachment_type: "image").count}"
+puts "Documents: #{Attachment.where(attachment_type: "document").count}"
+puts "Videos: #{Attachment.where(attachment_type: "video").count}"
 puts
 puts "🎯 Ready for DBWatcher testing!"
 puts "🔗 Visit your Rails app and add ?dbwatch=true to any URL to start tracking"

@@ -12,7 +12,7 @@ class User < ApplicationRecord
   has_many :user_skills, dependent: :destroy
   has_many :skills, through: :user_skills
   has_many :attachments, as: :attachable, dependent: :destroy
-  has_many :uploaded_attachments, class_name: 'Attachment', foreign_key: 'user_id', dependent: :destroy
+  has_many :uploaded_attachments, class_name: "Attachment", foreign_key: "user_id", dependent: :destroy
 
   validates :email, presence: true, uniqueness: true
   validates :name, presence: true
