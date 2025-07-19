@@ -1,0 +1,60 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "github-token",
+      "description": "GitHub Personal Access Token",
+      "password": true
+    }
+  ],
+  "servers": {
+    "github": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "GITHUB_TOKEN=${input:github-token}",
+        "ghcr.io/github/github-mcp-server:latest"
+      ]
+    },
+    "context7": {
+      "type": "stdio", 
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    },
+    "rails": {
+      "type": "stdio",
+      "command": "rails-mcp-server"
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "mcp.server.filesystem", "--base-directory", "/workspaces/dbwatcher"]
+    },
+    "fetch": {
+      "type": "stdio", 
+      "command": "python",
+      "args": ["-m", "mcp.server.fetch"]
+    },
+    "git": {
+      "type": "stdio",
+      "command": "python", 
+      "args": ["-m", "mcp.server.git", "--repository", "/workspaces/dbwatcher"]
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "mcp.server.memory"]
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "python", 
+      "args": ["-m", "mcp.server.sequential_thinking"]
+    },
+    "time": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "mcp.server.time"]
+    }
+  }
+}
