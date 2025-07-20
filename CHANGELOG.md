@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.5] - 2025-07-20
+
+### Added
+
+- Implement base class for diagram data objects and refactor related classes
+- Add GitHub Personal Access Token configuration to environment files and update MCP server settings
+- Add DevContainer setup and update MCP server configurations
+- Add ActiveRecord introspection and association analysis utilities
+- Enhance record ID extraction to support changes in hash and array formats
+- Enhance record ID extraction to handle nested changes and arrays
+- Update logo size and text styling in application layout
+- Implement attachments, categories, and skills models with associations and validations
+- Update Node.js version to 22 and add example for GITHUB_TOKEN in .envrc
+- Add devcontainer and setup scripts for development environment
+- Add rulesets for main branch and release tag protection
+- Add auto-merge workflow for Dependabot pull requests
+- Add stale label and workflow for managing inactive issues and PRs
+- Update README and views to enhance branding with DBWatcher logo and favicon
+- Add web app manifest and icons for dbwatcher
+
+
+### Changed
+
+- Enhance sticky column and scrollbar styles with improved opacity and transition effects
+- Enhance auto-merge workflow with improved variable handling and safety checks
+- Improve layout and styling of sessions index page
+- Update configuration methods for clarity and consistency
+- Simplify configuration options and update related code references
+- Consolidate and rename testing operations for clarity and consistency
+- Standardize quotes and formatting in model and migration files
+- Deps-dev(deps-dev): bump cucumber-html-formatter from 21.12.0 to 21.13.0
+
+
+### Fixed
+
+- Ensure proper newline at end of file in multiple Ruby modules
+
+### Documentation
+
+- Add a blank line for improved readability in README
+- Update screenshots in README and screenshots.md for improved clarity and version accuracy
+- Update README to enhance clarity and add resource links
+- Enhance README configuration section for clarity and detail
+- Update README to include RubyGems downloads and license badge
+- Update README with configuration options and usage examples
+
+
+### CI/CD
+
+- Update Slack integration to use chat.postMessage method for notifications feat: add .gitignore for Qlty configuration files feat: add .yamllint.yaml configuration for YAML linting feat: add qlty.toml configuration for Qlty CLI and Cloud docs: update Slack integration README to reflect new method usage
+- Update Slack notification integration to use bot token and improve message structure
+- Update Slack notification integration to use new Slack API and improve message formatting
+- Bump crazy-max/ghaction-github-labeler
+
+
 ## [1.1.4] - 2025-07-12
 ### Added
 
