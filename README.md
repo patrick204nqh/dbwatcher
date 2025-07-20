@@ -2,6 +2,7 @@
   <img src="https://raw.githubusercontent.com/patrick204nqh/dbwatcher/master/app/assets/images/dbwatcher/dbwatcher_512x512.png" alt="dbwatcher Logo" width="120" height="120">
 
 # dbwatcher
+##### 🔍 Track, visualize, and debug database operations in your Rails applications
 
 </div>
 
@@ -14,6 +15,15 @@
 [![Code Coverage](https://qlty.sh/gh/patrick204nqh/projects/dbwatcher/coverage.svg)](https://qlty.sh/gh/patrick204nqh/projects/dbwatcher)
 
 A Rails gem that tracks and visualizes database operations in your application. Built for developers who need to understand complex data flows and debug database interactions.
+
+## Why dbwatcher?
+
+When developing Rails applications, understanding what database operations occur during code execution can be challenging. **dbwatcher** provides a simple way to:
+
+- Track database changes within specific code blocks
+- Monitor SQL operations during HTTP requests
+- Visualize database relationships and model associations
+- Debug complex data flows with an intuitive web interface
 
 ## Key Features
 
@@ -204,6 +214,13 @@ bundle exec brakeman   # Security analysis
 8. Open a Pull Request
 
 [Contributing guidelines →](CONTRIBUTING.md)
+
+## Resources
+
+- [Documentation](https://rubydoc.info/gems/dbwatcher)
+- [Changelog](CHANGELOG.md)
+- [Report Bug](https://github.com/patrick204nqh/dbwatcher/issues/new)
+- [Request Feature](https://github.com/patrick204nqh/dbwatcher/issues/new)
 
 ## License
 
