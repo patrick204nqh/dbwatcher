@@ -41,46 +41,39 @@
   </div>
 
   <!-- Content Area -->
-  <div class="flex-1 overflow-auto p-4">
-
-  <% if @sessions.empty? %>
-    <div class="flex items-center justify-center h-full text-gray-500">
-      <div class="text-center">
+  <div class="flex-1 overflow-auto">
+    <% if @sessions.empty? %>
+      <div class="p-8 text-center text-gray-500">
         <%= image_tag "dbwatcher/dbwatcher-tranparent_512x512.png", 
               alt: "DBWatcher Logo", 
-              class: "mx-auto w-16 h-16 opacity-30 mb-4" %>
-        <p class="text-sm font-medium text-gray-600">No tracking sessions yet</p>
-        <p class="text-xs text-gray-400 mt-2">Start tracking with <code class="bg-gray-200 px-1 rounded">Dbwatcher.track { ... }</code></p>
-        <p class="text-xs text-gray-400 mt-1">or add <code class="bg-gray-200 px-1 rounded">?dbwatch=true</code> to any URL</p>
+              class: "mx-auto w-12 h-12 opacity-30 mb-3" %>
+        <p class="text-sm font-medium text-gray-600 mb-2">No tracking sessions yet</p>
+        <p class="text-xs text-gray-400">Start tracking with <code class="bg-gray-100 px-1 rounded text-xs">Dbwatcher.track { ... }</code></p>
+        <p class="text-xs text-gray-400 mt-1">or add <code class="bg-gray-100 px-1 rounded text-xs">?dbwatch=true</code> to any URL</p>
       </div>
-    </div>
-  <% else %>
-    <div class="bg-white border border-gray-300 rounded shadow-sm">
-      <table class="compact-table sessions-table w-full">
+    <% else %>
+      <table class="compact-table w-full">
         <thead>
           <tr>
-            <th class="text-left" style="min-width:180px; max-width:260px; width:18%">Session ID</th>
-            <th class="text-left" style="min-width:160px; max-width:260px; width:22%">Name</th>
-            <th class="text-center" style="width:100px">Status</th>
-            <th class="text-center" style="width:100px">Changes</th>
-            <th class="text-right" style="width:120px">Started</th>
-            <th class="text-right" style="width:120px">Duration</th>
-            <th class="text-center" style="width:80px">Actions</th>
+            <th class="text-left" style="width: 18%; min-width: 180px">Session ID</th>
+            <th class="text-left" style="width: 22%; min-width: 160px">Name</th>
+            <th class="text-center" style="width: 100px">Status</th>
+            <th class="text-center" style="width: 100px">Changes</th>
+            <th class="text-right" style="width: 120px">Started</th>
+            <th class="text-right" style="width: 120px">Duration</th>
+            <th class="text-center" style="width: 80px">Actions</th>
           </tr>
         </thead>
         <tbody>
           <% @sessions.each do |session| %>
             <tr class="session-row">
-              <td style="min-width:180px; max-width:260px; width:18%">
-                <span class="font-mono text-xs">
-                  <%= safe_value(session, :id) %>
-                </span>
+              <td class="font-mono text-xs">
+                <%= safe_value(session, :id) %>
               </td>
-              <td style="min-width:160px; max-width:260px; width:22%" title="<%= safe_value(session, :name) %>">
+              <td title="<%= safe_value(session, :name) %>">
                 <%= link_to display_session_name(safe_value(session, :name)),
                     session_path(safe_value(session, :id)),
-                    class: "text-navy-dark hover:text-blue-medium whitespace-normal break-words inline-block",
-                    style: "max-width:260px; overflow-x:auto; display:inline-block;" %>
+                    class: "text-navy-dark hover:text-blue-medium" %>
               </td>
               <td class="text-center">
                 <%= render 'dbwatcher/shared/badge',
@@ -106,44 +99,34 @@
                     ) rescue 'N/A' %>
                 <% end %>
               </td>
-              <td class="text-center actions-cell">
-                <div class="flex gap-1 justify-end">
-                  <%= link_to session_path(safe_value(session, :id)),
-                      class: "compact-button bg-navy-dark text-white hover:bg-blue-medium",
-                      title: "View session details" do %>
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                    </svg>
-                  <% end %>
-                </div>
+              <td class="text-center">
+                <%= link_to "View", session_path(safe_value(session, :id)),
+                    class: "compact-button bg-navy-dark text-white hover:bg-blue-medium",
+                    title: "View session details" %>
               </td>
             </tr>
           <% end %>
         </tbody>
       </table>
-    </div>
 
-    <!-- No Results Message -->
-    <div
-      x-show="filterText && document.querySelectorAll('.session-row:not(.hidden)').length === 0"
-      x-cloak
-      class="mt-4 text-center py-8 bg-gray-50 border border-gray-200 rounded">
-      <p class="text-gray-500">No sessions match your filter criteria</p>
-      <button
-        @click="filterText = ''"
-        class="mt-2 text-blue-medium hover:text-blue-700 text-sm">
-        Clear filter
-      </button>
-    </div>
-  <% end %>
+      <!-- No Results Message -->
+      <div
+        x-show="filterText && document.querySelectorAll('.session-row:not(.hidden)').length === 0"
+        x-cloak
+        class="p-8 text-center text-gray-500 bg-gray-50">
+        <p class="mb-2">No sessions match your filter criteria</p>
+        <button
+          @click="filterText = ''"
+          class="compact-button bg-gray-500 text-white hover:bg-gray-600">
+          Clear filter
+        </button>
+      </div>
+    <% end %>
+  </div>
 
   <!-- Status Bar -->
-  <div class="h-6 bg-gray-100 border-t border-gray-300 flex items-center px-4 text-xs text-gray-600 mt-4">
-    <span x-show="!filterText"><%= @sessions.count %> sessions total •
-    <%= @sessions.count { |s| session_active?(s) } %> active</span>
+  <div class="h-6 bg-gray-100 border-t border-gray-300 flex items-center px-4 text-xs text-gray-600">
+    <span x-show="!filterText"><%= @sessions.count %> sessions total • <%= @sessions.count { |s| session_active?(s) } %> active</span>
     <span x-show="filterText" x-text="`${document.querySelectorAll('.session-row:not(.hidden)').length} of ${<%= @sessions.count %>} sessions shown`"></span>
     <span class="ml-auto">Last updated: <%= Time.current.strftime("%H:%M:%S") %></span>
   </div>
