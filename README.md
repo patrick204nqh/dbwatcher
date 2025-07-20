@@ -38,11 +38,11 @@ When developing Rails applications, understanding what database operations occur
 
 ### Dashboard Interface
 
-![image](https://github.com/user-attachments/assets/92c94bdc-06fd-463e-a11f-f931a8ff5346)
+![image](https://github.com/user-attachments/assets/063e6030-c53e-4338-9332-94173542aca5)
 
 ### Session View
 
-![image](https://github.com/user-attachments/assets/cae4c820-d7d9-4d16-b8fa-5978e0578ff8)
+![image](https://github.com/user-attachments/assets/790b0f37-ca76-48d8-83d2-5a6fb1a1dee8)
 
 [View more screenshots in here →](docs/screenshots.md)
 
