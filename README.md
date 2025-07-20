@@ -1,10 +1,11 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/patrick204nqh/dbwatcher/master/app/assets/images/dbwatcher/dbwatcher_512x512.png" alt="dbwatcher Logo" width="120" height="120">
 
-# dbwatcher
+  <h1 align="center">dbwatcher</h1>
 
-##### 🔍 Track, visualize, and debug database operations in your Rails applications
-
+  <p align="center">
+    <em>🔍 Track, visualize, and debug database operations in your Rails applications</em>
+  </p>
 </div>
 
 [![CI](https://github.com/patrick204nqh/dbwatcher/actions/workflows/ci.yml/badge.svg)](https://github.com/patrick204nqh/dbwatcher/actions/workflows/ci.yml)
