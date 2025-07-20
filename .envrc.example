@@ -1,5 +1,2 @@
 # GitHub Personal Access Token
-export GITHUB_TOKEN="your_github_token_here"
-
-# Uncomment and set if needed for GitHub CLI
-# export GH_TOKEN="$GITHUB_TOKEN"
+export GITHUB_PERSONAL_ACCESS_TOKEN="your_github_token_here"

@@ -1,12 +1,4 @@
 {
-  "inputs": [
-    {
-      "type": "promptString",
-      "id": "github-token",
-      "description": "GitHub Personal Access Token",
-      "password": true
-    }
-  ],
   "servers": {
     "github": {
       "type": "stdio",
@@ -16,9 +8,10 @@
         "-i",
         "--rm",
         "-e",
-        "GITHUB_TOKEN=${input:github-token}",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
         "ghcr.io/github/github-mcp-server:latest"
-      ]
+      ],
+      "envFile": "${workspaceFolder}/.env"
     },
     "context7": {
       "type": "stdio",
@@ -33,9 +26,8 @@
         "-i",
         "--rm",
         "-v",
-        "/workspaces/dbwatcher:/mnt/src",
+        "${workspaceFolder}:/mnt/src",
         "mcp/filesystem",
-        "--base-directory",
         "/mnt/src"
       ]
     },
@@ -52,7 +44,7 @@
         "-i",
         "--rm",
         "-v",
-        "/workspaces/dbwatcher:/mnt/src",
+        "${workspaceFolder}:/mnt/src",
         "mcp/git",
         "--repository",
         "/mnt/src"
