@@ -1,7 +1,7 @@
 /**
  * DBWatcher Application Styles
  * Compiled CSS for all components
- * Generated at 2025-07-11 21:59:56 +0700
+ * Generated at 2025-07-20 11:15:05 +0700
  */
 
 /**
@@ -572,6 +572,10 @@ pre[x-ref="codeContainer"]::-webkit-scrollbar-thumb:hover {
   z-index: 20;
   background: #f3f3f3;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  will-change: transform;
+  transform: translateZ(0);
+  opacity: 1;
+  transition: opacity 0.1s ease-out;
 }
 
 .tabulator .tabulator-header .tabulator-col.sticky-left-1 {
@@ -580,6 +584,10 @@ pre[x-ref="codeContainer"]::-webkit-scrollbar-thumb:hover {
   z-index: 19;
   background: #f3f3f3;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  will-change: transform;
+  transform: translateZ(0);
+  opacity: 1;
+  transition: opacity 0.1s ease-out;
 }
 
 .tabulator .tabulator-header .tabulator-col.sticky-left-2 {
@@ -588,6 +596,10 @@ pre[x-ref="codeContainer"]::-webkit-scrollbar-thumb:hover {
   z-index: 18;
   background: #f3f3f3;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  will-change: transform;
+  transform: translateZ(0);
+  opacity: 1;
+  transition: opacity 0.1s ease-out;
 }
 
 .tabulator .tabulator-tableholder .tabulator-table .tabulator-row {
@@ -646,53 +658,75 @@ pre[x-ref="codeContainer"]::-webkit-scrollbar-thumb:hover {
 .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell.sticky-left-0 {
   position: sticky;
   left: 0;
-  background: white;
+  background: white !important;
+  background-color: white !important;
   z-index: 5;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  will-change: transform;
+  transform: translateZ(0);
+  opacity: 1 !important;
+  transition: opacity 0.1s ease-out;
 }
 
 .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell.sticky-left-1 {
   position: sticky;
   left: 60px;
-  background: white;
+  background: white !important;
+  background-color: white !important;
   z-index: 4;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  will-change: transform;
+  transform: translateZ(0);
+  opacity: 1 !important;
+  transition: opacity 0.1s ease-out;
 }
 
 .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell.sticky-left-2 {
   position: sticky;
   left: 108px;
-  background: white;
+  background: white !important;
+  background-color: white !important;
   z-index: 3;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  will-change: transform;
+  transform: translateZ(0);
+  opacity: 1 !important;
+  transition: opacity 0.1s ease-out;
 }
 
 .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover .tabulator-cell.sticky-left-2 {
   background: #f9fafb;
+  opacity: 1;
 }
 
 .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert .tabulator-cell.sticky-left-2 {
   background-color: rgba(16, 185, 129, 0.05);
+  opacity: 1;
 }
 
 .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update .tabulator-cell.sticky-left-2 {
   background-color: rgba(108, 173, 223, 0.05);
+  opacity: 1;
 }
 
 .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete .tabulator-cell.sticky-left-2 {
   background-color: rgba(239, 68, 68, 0.05);
+  opacity: 1;
 }
 
 .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert:hover .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert:hover .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-insert:hover .tabulator-cell.sticky-left-2 {
   background-color: rgba(16, 185, 129, 0.1);
+  opacity: 1;
 }
 
 .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update:hover .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update:hover .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-update:hover .tabulator-cell.sticky-left-2 {
   background-color: rgba(108, 173, 223, 0.1);
+  opacity: 1;
 }
 
 .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete:hover .tabulator-cell.sticky-left-0, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete:hover .tabulator-cell.sticky-left-1, .tabulator .tabulator-tableholder .tabulator-table .tabulator-row.operation-delete:hover .tabulator-cell.sticky-left-2 {
   background-color: rgba(239, 68, 68, 0.1);
+  opacity: 1;
 }
 
 .row-detail {
