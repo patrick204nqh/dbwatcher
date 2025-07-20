@@ -22,22 +22,27 @@ jobs:
     steps:
       - name: Check if PR is ready for auto-merge
         id: check
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          HAS_AUTO_MERGE_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'auto-merge-candidate') }}
         run: |
           # Check if this is a safe dependency update
-          if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
+          if [[ "$GITHUB_ACTOR" == "dependabot[bot]" ]]; then
             # Parse dependabot PR title to determine update type
-            TITLE="${{ github.event.pull_request.title }}"
+            # Use printf %q to safely quote the title for shell operations
+            SAFE_TITLE=$(printf '%q' "$PR_TITLE")
 
             # Extract dependency info from title format: "Bump gem-name from x.y.z to a.b.c"
-            if echo "$TITLE" | grep -qE "Bump.*from.*to"; then
+            if printf '%s' "$PR_TITLE" | grep -qE "Bump.*from.*to"; then
               # Check if it's a patch or minor update (safer for auto-merge)
-              if echo "$TITLE" | grep -qE "(patch|security)" ||
-                 echo "$TITLE" | grep -qE "from [0-9]+\.[0-9]+\.[0-9]+ to [0-9]+\.[0-9]+\.[0-9]+$"; then
+              if printf '%s' "$PR_TITLE" | grep -qE "(patch|security)" ||
+                 printf '%s' "$PR_TITLE" | grep -qE "from [0-9]+\.[0-9]+\.[0-9]+ to [0-9]+\.[0-9]+\.[0-9]+$"; then
                 echo "safe_update=true" >> $GITHUB_OUTPUT
                 echo "reason=patch_or_security" >> $GITHUB_OUTPUT
-              elif echo "$TITLE" | grep -qE "from [0-9]+\.[0-9]+\.[0-9]+ to [0-9]+\.[0-9]+\.[0-9]+"; then
+              elif printf '%s' "$PR_TITLE" | grep -qE "from [0-9]+\.[0-9]+\.[0-9]+ to [0-9]+\.[0-9]+\.[0-9]+"; then
                 # Minor version update - still relatively safe for dev dependencies
-                if echo "$TITLE" | grep -qE "(rspec|rubocop|rake|cucumber|yard|pry)"; then
+                if printf '%s' "$PR_TITLE" | grep -qE "(rspec|rubocop|rake|cucumber|yard|pry)"; then
                   echo "safe_update=true" >> $GITHUB_OUTPUT
                   echo "reason=dev_dependency_minor" >> $GITHUB_OUTPUT
                 else
@@ -52,7 +57,7 @@ jobs:
               echo "safe_update=false" >> $GITHUB_OUTPUT
               echo "reason=unknown_format" >> $GITHUB_OUTPUT
             fi
-          elif [[ "${{ contains(github.event.pull_request.labels.*.name, 'auto-merge-candidate') }}" == "true" ]]; then
+          elif [[ "$HAS_AUTO_MERGE_LABEL" == "true" ]]; then
             echo "safe_update=true" >> $GITHUB_OUTPUT
             echo "reason=manual_label" >> $GITHUB_OUTPUT
           else
@@ -102,23 +107,29 @@ jobs:
 
       - name: Auto-approve dependabot PRs
         if: steps.check.outputs.safe_update == 'true' && github.actor == 'dependabot[bot]'
-        run: |
-          gh pr review "${{ github.event.pull_request.number }}" --approve --body "Auto-approved safe dependency update (${{ steps.check.outputs.reason }})"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          APPROVAL_REASON: ${{ steps.check.outputs.reason }}
+        run: |
+          gh pr review "$PR_NUMBER" --approve --body "Auto-approved safe dependency update ($APPROVAL_REASON)"
 
       - name: Enable auto-merge
         if: steps.check.outputs.safe_update == 'true'
-        run: |
-          gh pr merge "${{ github.event.pull_request.number }}" --auto --squash --delete-branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr merge "$PR_NUMBER" --auto --squash --delete-branch
 
       - name: Add comment for rejected auto-merge
         if: steps.check.outputs.safe_update == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REASON: ${{ steps.check.outputs.reason }}
         run: |
-          REASON="${{ steps.check.outputs.reason }}"
-          case $REASON in
+          case "$REASON" in
             "major_update")
               MESSAGE="🚫 Auto-merge skipped: Major version updates require manual review for breaking changes."
               ;;
@@ -133,9 +144,7 @@ jobs:
               ;;
           esac
 
-          gh pr comment "${{ github.event.pull_request.number }}" --body "$MESSAGE"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          gh pr comment "$PR_NUMBER" --body "$MESSAGE"
 
   notify-auto-merge:
     runs-on: ubuntu-latest
@@ -145,19 +154,23 @@ jobs:
       - name: Notify Slack about auto-merge
         if: needs.auto-merge.result == 'success'
         uses: slackapi/slack-github-action@v2.0.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          REPOSITORY: ${{ github.repository }}
         with:
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
-          method: chat.postMessage
           payload: |
             {
-              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "channel": "$SLACK_CHANNEL_ID",
               "text": "🤖 Auto-merged dependency update",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🤖 *Auto-merged dependency update*\n\n*PR:* <${{ github.event.pull_request.html_url }}|${{ github.event.pull_request.title }}>\n*Repository:* <https://github.com/${{ github.repository }}|${{ github.repository }}>"
+                    "text": "🤖 *Auto-merged dependency update*\n\n*PR:* <${PR_URL}|${PR_TITLE}>\n*Repository:* <https://github.com/${REPOSITORY}|${REPOSITORY}>"
                   }
                 }
               ]
