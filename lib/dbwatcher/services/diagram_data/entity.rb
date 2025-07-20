@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "base"
+
 module Dbwatcher
   module Services
     module DiagramData
@@ -20,7 +22,7 @@ module Dbwatcher
       #   )
       #   entity.valid? # => true
       #   entity.to_h   # => { id: "users", name: "User", ... }
-      class Entity
+      class Entity < Base
         attr_accessor :id, :name, :type, :attributes, :metadata
 
         # Initialize entity
@@ -31,6 +33,7 @@ module Dbwatcher
         # @param attributes [Array<Attribute>] entity attributes/properties
         # @param metadata [Hash] additional type-specific information
         def initialize(id:, name:, type: "default", attributes: [], metadata: {})
+          super() # Initialize parent class
           @id = id.to_s
           @name = name.to_s
           @type = type.to_s
@@ -38,16 +41,23 @@ module Dbwatcher
           @metadata = metadata.is_a?(Hash) ? metadata : {}
         end
 
-        # Check if entity is valid
-        #
-        # @return [Boolean] true if entity has required fields
-        def valid?
-          validation_errors.empty?
+        # Implementation for Base class
+        def comparable_attributes
+          [id, name, type, attributes, metadata]
         end
 
-        # Get validation errors
-        #
-        # @return [Array<String>] array of validation error messages
+        # Implementation for Base class
+        def serializable_attributes
+          {
+            id: id,
+            name: name,
+            type: type,
+            attributes: attributes.map(&:to_h),
+            metadata: metadata
+          }
+        end
+
+        # Implementation for Base class
         def validation_errors
           errors = []
           errors << "ID cannot be blank" if id.nil? || id.to_s.strip.empty?
@@ -91,80 +101,21 @@ module Dbwatcher
           attributes.select(&:foreign_key?)
         end
 
-        # Serialize entity to hash
-        #
-        # @return [Hash] serialized entity data
-        def to_h
-          {
-            id: id,
-            name: name,
-            type: type,
-            attributes: attributes.map(&:to_h),
-            metadata: metadata
-          }
-        end
-
-        # Serialize entity to JSON
-        #
-        # @return [String] JSON representation
-        def to_json(*args)
-          to_h.to_json(*args)
-        end
-
-        # Create entity from hash
-        #
-        # @param hash [Hash] entity data
-        # @return [Entity] new entity instance
-        def self.from_h(hash)
+        # Override base class method to handle attributes array
+        def self.extract_constructor_args(hash)
           attrs = []
           if hash[:attributes] || hash["attributes"]
             attr_data = hash[:attributes] || hash["attributes"]
             attrs = attr_data.map { |attr| Attribute.from_h(attr) }
           end
 
-          new(
+          {
             id: hash[:id] || hash["id"],
             name: hash[:name] || hash["name"],
             type: hash[:type] || hash["type"] || "default",
             attributes: attrs,
             metadata: hash[:metadata] || hash["metadata"] || {}
-          )
-        end
-
-        # Create entity from JSON
-        #
-        # @param json [String] JSON string
-        # @return [Entity] new entity instance
-        def self.from_json(json)
-          from_h(JSON.parse(json))
-        end
-
-        # Check equality with another entity
-        #
-        # @param other [Entity] other entity to compare
-        # @return [Boolean] true if entities are equal
-        def ==(other)
-          return false unless other.is_a?(Entity)
-
-          id == other.id &&
-            name == other.name &&
-            type == other.type &&
-            attributes == other.attributes &&
-            metadata == other.metadata
-        end
-
-        # Generate hash code for entity
-        #
-        # @return [Integer] hash code
-        def hash
-          [id, name, type, attributes, metadata].hash
-        end
-
-        # String representation of entity
-        #
-        # @return [String] string representation
-        def to_s
-          "#{self.class.name}(id: #{id}, name: #{name}, type: #{type})"
+          }
         end
 
         # Detailed string representation

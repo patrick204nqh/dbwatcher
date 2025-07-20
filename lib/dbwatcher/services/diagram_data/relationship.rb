@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "base"
 require_relative "relationship_params"
 
 module Dbwatcher
@@ -21,7 +22,7 @@ module Dbwatcher
       #   )
       #   relationship.valid? # => true
       #   relationship.to_h   # => { source_id: "users", target_id: "orders", ... }
-      class Relationship
+      class Relationship < Base
         attr_accessor :source_id, :target_id, :type, :label, :cardinality, :metadata
 
         # Valid cardinality types
@@ -57,6 +58,7 @@ module Dbwatcher
         # @param params [RelationshipParams, Hash] relationship parameters
         # @return [Relationship] new relationship instance
         def initialize(params)
+          super() # Initialize parent class
           params = RelationshipParams.new(params) if params.is_a?(Hash)
 
           @source_id = params.source_id.to_s
@@ -108,10 +110,18 @@ module Dbwatcher
           ERD_NOTATIONS[infer_cardinality] || DEFAULT_ERD_NOTATION
         end
 
-        # Serialize relationship to hash
-        #
-        # @return [Hash] serialized relationship data
-        def to_h
+        # Override base class method to handle simple hash initialization
+        def self.extract_constructor_args(hash)
+          hash
+        end
+
+        # Implementation for Base class
+        def comparable_attributes
+          [source_id, target_id, type, label, cardinality, metadata]
+        end
+
+        # Implementation for Base class
+        def serializable_attributes
           {
             source_id: source_id,
             target_id: target_id,
@@ -120,67 +130,6 @@ module Dbwatcher
             cardinality: cardinality,
             metadata: metadata
           }
-        end
-
-        # Serialize relationship to JSON
-        #
-        # @return [String] JSON representation
-        def to_json(*args)
-          to_h.to_json(*args)
-        end
-
-        # Create relationship from hash
-        #
-        # @param hash [Hash] relationship data
-        # @return [Relationship] new relationship instance
-        def self.from_h(hash)
-          hash = hash.transform_keys(&:to_sym) if hash.keys.first.is_a?(String)
-          new(hash)
-        end
-
-        # Create relationship from JSON
-        #
-        # @param json [String] JSON string
-        # @return [Relationship] new relationship instance
-        def self.from_json(json)
-          from_h(JSON.parse(json))
-        end
-
-        # Check equality with another relationship
-        #
-        # @param other [Relationship] other relationship to compare
-        # @return [Boolean] true if relationships are equal
-        def ==(other)
-          return false unless other.is_a?(Relationship)
-
-          source_id == other.source_id &&
-            target_id == other.target_id &&
-            type == other.type &&
-            label == other.label &&
-            cardinality == other.cardinality &&
-            metadata == other.metadata
-        end
-
-        # Generate hash code for relationship
-        #
-        # @return [Integer] hash code
-        def hash
-          [source_id, target_id, type, label, cardinality, metadata].hash
-        end
-
-        # String representation of relationship
-        #
-        # @return [String] string representation
-        def to_s
-          "#{self.class.name}(source: #{source_id}, target: #{target_id}, type: #{type})"
-        end
-
-        # Detailed string representation
-        #
-        # @return [String] detailed string representation
-        def inspect
-          "#{self.class.name}(source: #{source_id.inspect}, target: #{target_id.inspect}, " \
-            "type: #{type.inspect}, label: #{label.inspect}, cardinality: #{cardinality.inspect})"
         end
       end
     end

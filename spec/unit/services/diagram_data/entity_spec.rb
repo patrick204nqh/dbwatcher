@@ -202,7 +202,12 @@ RSpec.describe Dbwatcher::Services::DiagramData::Entity do
 
   describe "#to_s" do
     it "returns readable string representation" do
-      expect(entity.to_s).to eq("#{described_class.name}(id: users, name: User, type: table)")
+      result = entity.to_s
+      expect(result).to include("id: users")
+      expect(result).to include("name: User")
+      expect(result).to include("type: table")
+      expect(result).to start_with("#{described_class.name}(")
+      expect(result).to end_with(")")
     end
   end
 

@@ -318,10 +318,12 @@ RSpec.describe Dbwatcher::Services::DiagramData::Relationship do
     it "returns detailed string representation" do
       result = relationship.inspect
 
-      expect(result).to include("source: \"users\"")
-      expect(result).to include("target: \"orders\"")
+      expect(result).to include("source_id: \"users\"")
+      expect(result).to include("target_id: \"orders\"")
       expect(result).to include("type: \"has_many\"")
       expect(result).to include("label: \"orders\"")
+      expect(result).to start_with("#{described_class.name}(")
+      expect(result).to end_with(")")
     end
   end
 end
