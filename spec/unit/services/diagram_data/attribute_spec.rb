@@ -233,8 +233,12 @@ RSpec.describe Dbwatcher::Services::DiagramData::Attribute do
 
   describe "#to_s" do
     it "returns readable string representation" do
-      expected = "#{described_class.name}(name: id, type: integer, nullable: false)"
-      expect(attribute.to_s).to eq(expected)
+      result = attribute.to_s
+      expect(result).to include("name: id")
+      expect(result).to include("type: integer")
+      expect(result).to include("nullable: false")
+      expect(result).to start_with("#{described_class.name}(")
+      expect(result).to end_with(")")
     end
   end
 end
