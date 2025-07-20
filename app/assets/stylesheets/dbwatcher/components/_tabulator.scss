@@ -35,24 +35,39 @@
         position: sticky;
         left: 0;
         z-index: 20;
-        background: #f3f3f3;
+        background: #f3f3f3 !important;
+        background-color: #f3f3f3 !important;
         box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+        will-change: transform;
+        transform: translateZ(0);
+        opacity: 1 !important;
+        transition: opacity 0.1s ease-out;
       }
 
       &.sticky-left-1 {
         position: sticky;
         left: 60px;
         z-index: 19;
-        background: #f3f3f3;
+        background: #f3f3f3 !important;
+        background-color: #f3f3f3 !important;
         box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+        will-change: transform;
+        transform: translateZ(0);
+        opacity: 1 !important;
+        transition: opacity 0.1s ease-out;
       }
 
       &.sticky-left-2 {
         position: sticky;
         left: 108px;
         z-index: 18;
-        background: #f3f3f3;
+        background: #f3f3f3 !important;
+        background-color: #f3f3f3 !important;
         box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+        will-change: transform;
+        transform: translateZ(0);
+        opacity: 1 !important;
+        transition: opacity 0.1s ease-out;
       }
     }
   }
@@ -115,25 +130,40 @@
           &.sticky-left-0 {
             position: sticky;
             left: 0;
-            background: white;
+            background: white !important;
+            background-color: white !important;
             z-index: 5;
             box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+            will-change: transform;
+            transform: translateZ(0);
+            opacity: 1 !important;
+            transition: opacity 0.1s ease-out;
           }
 
           &.sticky-left-1 {
             position: sticky;
             left: 60px;
-            background: white;
+            background: white !important;
+            background-color: white !important;
             z-index: 4;
             box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+            will-change: transform;
+            transform: translateZ(0);
+            opacity: 1 !important;
+            transition: opacity 0.1s ease-out;
           }
 
           &.sticky-left-2 {
             position: sticky;
             left: 108px;
-            background: white;
+            background: white !important;
+            background-color: white !important;
             z-index: 3;
             box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+            will-change: transform;
+            transform: translateZ(0);
+            opacity: 1 !important;
+            transition: opacity 0.1s ease-out;
           }
         }
 
@@ -143,7 +173,9 @@
             &.sticky-left-0,
             &.sticky-left-1,
             &.sticky-left-2 {
-              background: #f9fafb;
+              background: #f9fafb !important;
+              background-color: #f9fafb !important;
+              opacity: 1 !important;
             }
           }
         }
@@ -151,38 +183,50 @@
         // Operation-specific sticky cell backgrounds
         &.operation-insert .tabulator-cell {
           &.sticky-left-0, &.sticky-left-1, &.sticky-left-2 {
-            background-color: rgba(16, 185, 129, 0.05);
+            background: rgba(16, 185, 129, 0.05) !important;
+            background-color: rgba(16, 185, 129, 0.05) !important;
+            opacity: 1 !important;
           }
         }
 
         &.operation-update .tabulator-cell {
           &.sticky-left-0, &.sticky-left-1, &.sticky-left-2 {
-            background-color: rgba(108, 173, 223, 0.05);
+            background: rgba(108, 173, 223, 0.05) !important;
+            background-color: rgba(108, 173, 223, 0.05) !important;
+            opacity: 1 !important;
           }
         }
 
         &.operation-delete .tabulator-cell {
           &.sticky-left-0, &.sticky-left-1, &.sticky-left-2 {
-            background-color: rgba(239, 68, 68, 0.05);
+            background: rgba(239, 68, 68, 0.05) !important;
+            background-color: rgba(239, 68, 68, 0.05) !important;
+            opacity: 1 !important;
           }
         }
 
         // Operation-specific sticky cell hover backgrounds
         &.operation-insert:hover .tabulator-cell {
           &.sticky-left-0, &.sticky-left-1, &.sticky-left-2 {
-            background-color: rgba(16, 185, 129, 0.1);
+            background: rgba(16, 185, 129, 0.1) !important;
+            background-color: rgba(16, 185, 129, 0.1) !important;
+            opacity: 1 !important;
           }
         }
 
         &.operation-update:hover .tabulator-cell {
           &.sticky-left-0, &.sticky-left-1, &.sticky-left-2 {
-            background-color: rgba(108, 173, 223, 0.1);
+            background: rgba(108, 173, 223, 0.1) !important;
+            background-color: rgba(108, 173, 223, 0.1) !important;
+            opacity: 1 !important;
           }
         }
 
         &.operation-delete:hover .tabulator-cell {
           &.sticky-left-0, &.sticky-left-1, &.sticky-left-2 {
-            background-color: rgba(239, 68, 68, 0.1);
+            background: rgba(239, 68, 68, 0.1) !important;
+            background-color: rgba(239, 68, 68, 0.1) !important;
+            opacity: 1 !important;
           }
         }
       }
