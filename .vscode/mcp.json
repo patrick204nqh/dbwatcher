@@ -25,44 +25,53 @@
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp@latest"]
     },
-    "rails": {
-      "type": "stdio",
-      "command": "rails-mcp-server"
-    },
     "filesystem": {
       "type": "stdio",
-      "command": "python",
+      "command": "docker",
       "args": [
-        "-m",
-        "mcp.server.filesystem",
+        "run",
+        "-i",
+        "--rm",
+        "-v",
+        "/workspaces/dbwatcher:/mnt/src",
+        "mcp/filesystem",
         "--base-directory",
-        "/workspaces/dbwatcher"
+        "/mnt/src"
       ]
     },
     "fetch": {
       "type": "stdio",
-      "command": "python",
-      "args": ["-m", "mcp.server.fetch"]
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "mcp/fetch"]
     },
     "git": {
       "type": "stdio",
-      "command": "python",
-      "args": ["-m", "mcp.server.git", "--repository", "/workspaces/dbwatcher"]
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-v",
+        "/workspaces/dbwatcher:/mnt/src",
+        "mcp/git",
+        "--repository",
+        "/mnt/src"
+      ]
     },
     "memory": {
       "type": "stdio",
-      "command": "python",
-      "args": ["-m", "mcp.server.memory"]
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "mcp/memory"]
     },
     "sequential-thinking": {
       "type": "stdio",
-      "command": "python",
-      "args": ["-m", "mcp.server.sequential_thinking"]
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "mcp/sequentialthinking"]
     },
     "time": {
       "type": "stdio",
-      "command": "python",
-      "args": ["-m", "mcp.server.time"]
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "mcp/time"]
     }
   }
 }
