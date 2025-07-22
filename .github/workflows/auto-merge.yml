@@ -33,53 +33,42 @@ jobs:
       - name: Check if PR is ready for auto-merge
         id: check
         env:
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
           PR_TITLE: ${{ github.event.pull_request.title }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          HAS_AUTO_MERGE_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'auto-merge-candidate') }}
         run: |
-          # Debug: Print PR title for troubleshooting
-          echo "DEBUG: PR_TITLE='$PR_TITLE'"
-          echo "DEBUG: GITHUB_ACTOR='$GITHUB_ACTOR'"
-
-          # Check if this is a safe dependency update
-          if [[ "$GITHUB_ACTOR" == "dependabot[bot]" ]]; then
-            # Parse dependabot PR title to determine update type
-            # Use printf %q to safely quote the title for shell operations
-            SAFE_TITLE=$(printf '%q' "$PR_TITLE")
-
-            # Extract dependency info from various dependabot title formats:
-            # "Bump gem-name from x.y.z to a.b.c"
-            # "build(deps): bump gem from x.y.z to a.b.c"
-            # "chore(deps-dev): bump gem from x.y.z to a.b.c"
-            if printf '%s' "$PR_TITLE" | grep -qE "(Bump|bump).*from.*to|deps.*update.*to"; then
-              # Check if it's a patch or minor update (safer for auto-merge)
-              if printf '%s' "$PR_TITLE" | grep -qE "(patch|security)" ||
-                 printf '%s' "$PR_TITLE" | grep -qE "(from|to) [0-9]+\.[0-9]+\.[0-9]+"; then
-                echo "safe_update=true" >> $GITHUB_OUTPUT
-                echo "reason=patch_or_security" >> $GITHUB_OUTPUT
-              elif printf '%s' "$PR_TITLE" | grep -qE "(from|to) [0-9]+\.[0-9]+"; then
-                # Minor version update - still relatively safe for dev dependencies
-                if printf '%s' "$PR_TITLE" | grep -qE "(rspec|rubocop|rake|cucumber|yard|pry)"; then
-                  echo "safe_update=true" >> $GITHUB_OUTPUT
-                  echo "reason=dev_dependency_minor" >> $GITHUB_OUTPUT
-                else
-                  echo "safe_update=false" >> $GITHUB_OUTPUT
-                  echo "reason=production_minor_update" >> $GITHUB_OUTPUT
-                fi
-              else
-                echo "safe_update=false" >> $GITHUB_OUTPUT
-                echo "reason=major_update" >> $GITHUB_OUTPUT
-              fi
+          # Debug info
+          echo "PR Labels: $PR_LABELS"
+          echo "PR Title: $PR_TITLE"
+          
+          # Check for safe auto-merge conditions
+          if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
+            # Security updates are always safe
+            if echo "$PR_LABELS" | grep -q "security"; then
+              echo "safe_update=true" >> $GITHUB_OUTPUT
+              echo "reason=security_update" >> $GITHUB_OUTPUT
+            # Patch updates (x.y.Z) are safe
+            elif echo "$PR_TITLE" | grep -qE "(from [0-9]+\.[0-9]+\.[0-9]+ to [0-9]+\.[0-9]+\.[0-9]+)"; then
+              echo "safe_update=true" >> $GITHUB_OUTPUT
+              echo "reason=patch_update" >> $GITHUB_OUTPUT
+            # Group updates for dependencies are safe (Dependabot already groups compatible updates)
+            elif echo "$PR_TITLE" | grep -qE "(group with [0-9]+ updates?)"; then
+              echo "safe_update=true" >> $GITHUB_OUTPUT
+              echo "reason=group_update" >> $GITHUB_OUTPUT
+            # Dev dependencies minor updates are safe
+            elif echo "$PR_LABELS" | grep -q "javascript" && echo "$PR_TITLE" | grep -qE "(from [0-9]+\.[0-9]+ to [0-9]+\.[0-9]+)"; then
+              echo "safe_update=true" >> $GITHUB_OUTPUT
+              echo "reason=dev_minor_update" >> $GITHUB_OUTPUT
             else
               echo "safe_update=false" >> $GITHUB_OUTPUT
-              echo "reason=unknown_format" >> $GITHUB_OUTPUT
+              echo "reason=requires_manual_review" >> $GITHUB_OUTPUT
             fi
-          elif [[ "$HAS_AUTO_MERGE_LABEL" == "true" ]]; then
+          # Manual override with label
+          elif echo "$PR_LABELS" | grep -q "auto-merge-candidate"; then
             echo "safe_update=true" >> $GITHUB_OUTPUT
-            echo "reason=manual_label" >> $GITHUB_OUTPUT
+            echo "reason=manual_override" >> $GITHUB_OUTPUT
           else
             echo "safe_update=false" >> $GITHUB_OUTPUT
-            echo "reason=not_eligible" >> $GITHUB_OUTPUT
+            echo "reason=not_dependabot" >> $GITHUB_OUTPUT
           fi
 
       - name: Wait for CI checks
@@ -147,14 +136,11 @@ jobs:
           REASON: ${{ steps.check.outputs.reason }}
         run: |
           case "$REASON" in
-            "major_update")
-              MESSAGE="🚫 Auto-merge skipped: Major version updates require manual review for breaking changes."
+            "requires_manual_review")
+              MESSAGE="⚠️ Auto-merge skipped: This update requires manual review (likely a major version change)."
               ;;
-            "production_minor_update")
-              MESSAGE="⚠️ Auto-merge skipped: Production dependency minor updates require manual review."
-              ;;
-            "unknown_format")
-              MESSAGE="❓ Auto-merge skipped: Unable to determine update type from PR title."
+            "not_dependabot")
+              MESSAGE="ℹ️ Auto-merge skipped: Only Dependabot PRs are eligible for auto-merge."
               ;;
             *)
               MESSAGE="ℹ️ Auto-merge skipped: $REASON"
