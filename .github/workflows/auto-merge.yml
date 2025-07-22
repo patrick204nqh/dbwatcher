@@ -23,6 +23,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Generate dbwatcher-ci App Token
+        id: app_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.DBWATCHER_CI_APP_ID }}
+          private-key: ${{ secrets.DBWATCHER_CI_PRIVATE_KEY }}
+
       - name: Check if PR is ready for auto-merge
         id: check
         env:
@@ -30,20 +37,27 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           HAS_AUTO_MERGE_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'auto-merge-candidate') }}
         run: |
+          # Debug: Print PR title for troubleshooting
+          echo "DEBUG: PR_TITLE='$PR_TITLE'"
+          echo "DEBUG: GITHUB_ACTOR='$GITHUB_ACTOR'"
+
           # Check if this is a safe dependency update
           if [[ "$GITHUB_ACTOR" == "dependabot[bot]" ]]; then
             # Parse dependabot PR title to determine update type
             # Use printf %q to safely quote the title for shell operations
             SAFE_TITLE=$(printf '%q' "$PR_TITLE")
 
-            # Extract dependency info from title format: "Bump gem-name from x.y.z to a.b.c"
-            if printf '%s' "$PR_TITLE" | grep -qE "Bump.*from.*to"; then
+            # Extract dependency info from various dependabot title formats:
+            # "Bump gem-name from x.y.z to a.b.c"
+            # "build(deps): bump gem from x.y.z to a.b.c"
+            # "chore(deps-dev): bump gem from x.y.z to a.b.c"
+            if printf '%s' "$PR_TITLE" | grep -qE "(Bump|bump).*from.*to|deps.*update.*to"; then
               # Check if it's a patch or minor update (safer for auto-merge)
               if printf '%s' "$PR_TITLE" | grep -qE "(patch|security)" ||
-                 printf '%s' "$PR_TITLE" | grep -qE "from [0-9]+\.[0-9]+\.[0-9]+ to [0-9]+\.[0-9]+\.[0-9]+$"; then
+                 printf '%s' "$PR_TITLE" | grep -qE "(from|to) [0-9]+\.[0-9]+\.[0-9]+"; then
                 echo "safe_update=true" >> $GITHUB_OUTPUT
                 echo "reason=patch_or_security" >> $GITHUB_OUTPUT
-              elif printf '%s' "$PR_TITLE" | grep -qE "from [0-9]+\.[0-9]+\.[0-9]+ to [0-9]+\.[0-9]+\.[0-9]+"; then
+              elif printf '%s' "$PR_TITLE" | grep -qE "(from|to) [0-9]+\.[0-9]+"; then
                 # Minor version update - still relatively safe for dev dependencies
                 if printf '%s' "$PR_TITLE" | grep -qE "(rspec|rubocop|rake|cucumber|yard|pry)"; then
                   echo "safe_update=true" >> $GITHUB_OUTPUT
@@ -73,7 +87,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          check-name: 'Test Suite'
+          check-name: "Test Suite"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 30
           allowed-conclusions: success
@@ -83,7 +97,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          check-name: 'Code Quality'
+          check-name: "Code Quality"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 30
           allowed-conclusions: success
@@ -93,7 +107,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          check-name: 'Security Scan'
+          check-name: "Security Scan"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 30
           allowed-conclusions: success
@@ -103,7 +117,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          check-name: 'Compatibility Check'
+          check-name: "Compatibility Check"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 30
           allowed-conclusions: success
@@ -111,7 +125,7 @@ jobs:
       - name: Auto-approve dependabot PRs
         if: steps.check.outputs.safe_update == 'true' && github.actor == 'dependabot[bot]'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           APPROVAL_REASON: ${{ steps.check.outputs.reason }}
         run: |
@@ -120,7 +134,7 @@ jobs:
       - name: Enable auto-merge
         if: steps.check.outputs.safe_update == 'true'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           gh pr merge "$PR_NUMBER" --auto --squash --delete-branch
@@ -128,7 +142,7 @@ jobs:
       - name: Add comment for rejected auto-merge
         if: steps.check.outputs.safe_update == 'false'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REASON: ${{ steps.check.outputs.reason }}
         run: |
@@ -164,6 +178,8 @@ jobs:
             {
               "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
               "text": "🤖 Auto-merged: ${{ github.event.pull_request.title }}",
+              "username": "dbwatcher",
+              "icon_emoji": ":mag:",
               "blocks": [
                 {
                   "type": "section",

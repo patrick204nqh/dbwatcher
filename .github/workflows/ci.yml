@@ -3,6 +3,7 @@ name: CI
 permissions:
   actions: write
   contents: read
+  pull-requests: write
   id-token: write
 
 on:
@@ -126,11 +127,23 @@ jobs:
           echo "✅ Dependencies check completed"
 
   notify:
-    name: Slack Notification
+    name: CI Notification
     runs-on: ubuntu-latest
     needs: [test, quality, security, compatibility]
     if: always()
     steps:
+      - name: Checkout repository
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+
+      - name: Generate dbwatcher-ci App Token
+        if: github.event_name == 'pull_request'
+        id: app_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.DBWATCHER_CI_APP_ID }}
+          private-key: ${{ secrets.DBWATCHER_CI_PRIVATE_KEY }}
+
       - name: Determine CI status
         id: ci_status
         run: |
@@ -154,6 +167,34 @@ jobs:
             echo "color=warning" >> $GITHUB_OUTPUT
             echo "emoji=⚠️" >> $GITHUB_OUTPUT
           fi
+
+      - name: PR Quality Report
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          # Report on all PRs
+          STATUS="${{ steps.ci_status.outputs.emoji }} **CI Status: ${{ steps.ci_status.outputs.status }}**"
+
+          # Build status summary for all checks
+          CHECKS=""
+          [[ "${{ needs.test.result }}" == "success" ]] && CHECKS+="✅ Tests passed"$'\n' || CHECKS+="❌ Tests failed"$'\n'
+          [[ "${{ needs.quality.result }}" == "success" ]] && CHECKS+="✅ Code quality passed"$'\n' || CHECKS+="❌ Code quality issues"$'\n'
+          [[ "${{ needs.security.result }}" == "success" ]] && CHECKS+="✅ Security scan passed"$'\n' || CHECKS+="❌ Security scan failed"$'\n'
+          [[ "${{ needs.compatibility.result }}" == "success" ]] && CHECKS+="✅ Compatibility passed"$'\n' || CHECKS+="❌ Compatibility issues"$'\n'
+
+          # Create report body
+          cat > pr_report.md << EOF
+          ## 🔍 CI Quality Check
+
+          $STATUS
+
+          $CHECKS
+          **[View Details →](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
+          EOF
+
+          # Post comment
+          gh pr comment ${{ github.event.pull_request.number }} --body-file pr_report.md
 
       - name: Notify Slack
         uses: slackapi/slack-github-action@v2.0.0
@@ -188,7 +229,7 @@ jobs:
                       "text": "*Tests*\n${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}"
                     },
                     {
-                      "type": "mrkdwn", 
+                      "type": "mrkdwn",
                       "text": "*Quality*\n${{ needs.quality.result == 'success' && '✅ Passed' || '❌ Failed' }}"
                     },
                     {
