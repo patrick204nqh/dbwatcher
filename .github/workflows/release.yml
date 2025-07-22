@@ -327,16 +327,32 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🚀 **Released v${{ needs.validate-release.outputs.version }}** by ${{ github.actor }} 🎉\n<https://rubygems.org/gems/dbwatcher/versions/${{ needs.validate-release.outputs.version }}|RubyGems> • <https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate-release.outputs.version }}|Release Notes>"
+                    "text": "🚀 *Released v${{ needs.validate-release.outputs.version }}* 🎉"
                   },
                   "accessory": {
                     "type": "button",
                     "text": {
                       "type": "plain_text",
-                      "text": "View"
+                      "text": "View Release"
                     },
                     "url": "https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate-release.outputs.version }}"
                   }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<https://rubygems.org/gems/dbwatcher/versions/${{ needs.validate-release.outputs.version }}|:gem: RubyGems> \u2022 <https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate-release.outputs.version }}|:memo: Release Notes>"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "Released by ${{ github.actor }} \u2022 <https://github.com/${{ github.repository }}|${{ github.repository }}>"
+                    }
+                  ]
                 }
               ]
             }
@@ -378,16 +394,32 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "❌ **Release failed** v${{ needs.validate-release.outputs.version || 'Unknown' }} by ${{ github.actor }}\n${{ steps.failed_job.outputs.failed_step }}: ${{ steps.failed_job.outputs.failed_reason }}"
+                    "text": "❌ *Release failed* v${{ needs.validate-release.outputs.version || 'Unknown' }}"
                   },
                   "accessory": {
                     "type": "button",
                     "text": {
                       "type": "plain_text",
-                      "text": "View"
+                      "text": "View Logs"
                     },
                     "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                   }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Failed at:* ${{ steps.failed_job.outputs.failed_step }}\n*Reason:* ${{ steps.failed_job.outputs.failed_reason }}"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "Triggered by ${{ github.actor }} \u2022 <https://github.com/${{ github.repository }}|${{ github.repository }}>"
+                    }
+                  ]
                 }
               ]
             }

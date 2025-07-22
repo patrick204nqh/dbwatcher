@@ -169,16 +169,46 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ steps.ci_status.outputs.emoji }} **CI ${{ steps.ci_status.outputs.status }}** - `${{ github.ref_name }}` by ${{ github.actor }}\n${{ needs.test.result == 'success' && '✅' || '❌' }} Tests • ${{ needs.quality.result == 'success' && '✅' || '❌' }} Quality • ${{ needs.security.result == 'success' && '✅' || '❌' }} Security • ${{ needs.compatibility.result == 'success' && '✅' || '❌' }} Compatibility"
+                    "text": "${{ steps.ci_status.outputs.emoji }} *CI ${{ steps.ci_status.outputs.status }}* on `${{ github.ref_name }}`"
                   },
                   "accessory": {
                     "type": "button",
                     "text": {
                       "type": "plain_text",
-                      "text": "View"
+                      "text": "View Run"
                     },
                     "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                   }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Tests*\n${{ needs.test.result == 'success' && '✅ Passed' || '❌ Failed' }}"
+                    },
+                    {
+                      "type": "mrkdwn", 
+                      "text": "*Quality*\n${{ needs.quality.result == 'success' && '✅ Passed' || '❌ Failed' }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Security*\n${{ needs.security.result == 'success' && '✅ Passed' || '❌ Failed' }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Compatibility*\n${{ needs.compatibility.result == 'success' && '✅ Passed' || '❌ Failed' }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "Triggered by ${{ github.actor }} • <https://github.com/${{ github.repository }}|${{ github.repository }}>"
+                    }
+                  ]
                 }
               ]
             }

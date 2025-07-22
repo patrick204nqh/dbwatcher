@@ -169,16 +169,32 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🤖 **Auto-merged** dependency update by ${{ github.actor }}\n${{ github.event.pull_request.title }}"
+                    "text": "🤖 *Auto-merged* dependency update"
                   },
                   "accessory": {
                     "type": "button",
                     "text": {
                       "type": "plain_text",
-                      "text": "View"
+                      "text": "View PR"
                     },
                     "url": "${{ github.event.pull_request.html_url }}"
                   }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "_${{ github.event.pull_request.title }}_"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "By ${{ github.actor }} • <https://github.com/${{ github.repository }}|${{ github.repository }}>"
+                    }
+                  ]
                 }
               ]
             }
