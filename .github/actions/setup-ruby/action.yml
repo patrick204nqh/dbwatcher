@@ -1,0 +1,58 @@
+name: 'Setup Ruby Environment'
+description: 'Install Ruby with consistent caching and bundler setup'
+inputs:
+  ruby-version:
+    description: 'Ruby version to install'
+    required: true
+  cache-key-suffix:
+    description: 'Additional suffix for cache key'
+    required: false
+    default: ''
+  working-directory:
+    description: 'Working directory for bundle operations'
+    required: false
+    default: '.'
+  bundler-cache:
+    description: 'Enable bundler caching'
+    required: false
+    default: 'true'
+outputs:
+  ruby-version:
+    description: 'Installed Ruby version'
+    value: ${{ steps.setup.outputs.ruby-version }}
+  cache-hit:
+    description: 'Whether cache was hit'
+    value: ${{ steps.setup.outputs.cache-hit }}
+  bundler-version:
+    description: 'Bundler version'
+    value: ${{ steps.info.outputs.bundler-version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Ruby ${{ inputs.ruby-version }}
+      id: setup
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ inputs.ruby-version }}
+        bundler-cache: ${{ inputs.bundler-cache }}
+        working-directory: ${{ inputs.working-directory }}
+        cache-version: 1${{ inputs.cache-key-suffix }}
+
+    - name: Ruby and Bundler info
+      id: info
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "Ruby version: $(ruby --version)"
+        echo "Bundler version: $(bundle --version)"
+        echo "Gem environment:"
+        gem env
+
+        BUNDLER_VERSION=$(bundle --version | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
+        echo "bundler-version=$BUNDLER_VERSION" >> $GITHUB_OUTPUT
+
+        echo "Bundle config:"
+        bundle config list
+
+        echo "✅ Ruby environment setup complete"

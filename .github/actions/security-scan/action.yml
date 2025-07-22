@@ -1,0 +1,65 @@
+name: 'Security Scan'
+description: 'Run security checks and upload reports'
+inputs:
+  timeout:
+    description: 'Scan timeout in seconds'
+    required: false
+    default: '600'
+  working-directory:
+    description: 'Working directory'
+    required: false
+    default: '.'
+  upload-artifacts:
+    description: 'Upload security reports as artifacts'
+    required: false
+    default: 'true'
+outputs:
+  result:
+    description: 'Security scan result (success, failure, error)'
+    value: ${{ steps.scan.outputs.result }}
+  report-path:
+    description: 'Path to security report'
+    value: ${{ steps.scan.outputs.report-path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run security checks
+      id: scan
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      timeout-minutes: ${{ fromJson(inputs.timeout) / 60 }}
+      run: |
+        echo "🔒 Running security checks..."
+
+        # Create reports directory
+        mkdir -p tmp/security-reports
+
+        # Run security rake task
+        if bundle exec rake security; then
+          echo "result=success" >> $GITHUB_OUTPUT
+          echo "✅ Security checks passed"
+        else
+          echo "result=failure" >> $GITHUB_OUTPUT
+          echo "❌ Security checks failed"
+          exit 1
+        fi
+
+        # Set report path
+        REPORT_PATH="tmp/security-reports"
+        echo "report-path=$REPORT_PATH" >> $GITHUB_OUTPUT
+
+        # List any generated reports
+        if [ -d "$REPORT_PATH" ]; then
+          echo "📋 Security reports generated:"
+          find "$REPORT_PATH" -name "*.json" -o -name "*.html" -o -name "*.txt" | head -10
+        fi
+
+    - name: Upload security artifacts
+      if: inputs.upload-artifacts == 'true' && always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports-${{ github.run_id }}
+        path: ${{ inputs.working-directory }}/tmp/security-reports/
+        retention-days: 30
+        if-no-files-found: ignore

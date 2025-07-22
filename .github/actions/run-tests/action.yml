@@ -1,0 +1,134 @@
+name: 'Run Tests'
+description: 'Execute test suites with configurable parameters and coverage collection'
+inputs:
+  test-suite:
+    description: 'Test suite to run (unit, acceptance, all)'
+    required: false
+    default: 'all'
+  coverage:
+    description: 'Enable coverage collection'
+    required: false
+    default: 'true'
+  ruby-version:
+    description: 'Ruby version (for reporting)'
+    required: false
+    default: ''
+  timeout:
+    description: 'Test timeout in seconds'
+    required: false
+    default: '1800'
+  working-directory:
+    description: 'Working directory'
+    required: false
+    default: '.'
+outputs:
+  test-result:
+    description: 'Test result (success, failure, error)'
+    value: ${{ steps.run-tests.outputs.result }}
+  coverage-percentage:
+    description: 'Coverage percentage (if available)'
+    value: ${{ steps.coverage.outputs.percentage }}
+  unit-result:
+    description: 'Unit test result'
+    value: ${{ steps.unit.outputs.result }}
+  acceptance-result:
+    description: 'Acceptance test result'
+    value: ${{ steps.acceptance.outputs.result }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up test database
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "🗄️ Setting up test database..."
+        cd spec/dummy
+        bundle install --quiet
+        bundle exec rails db:drop db:create db:migrate RAILS_ENV=test
+        echo "✅ Test database ready"
+
+    - name: Run unit tests
+      id: unit
+      if: inputs.test-suite == 'unit' || inputs.test-suite == 'all'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      timeout-minutes: ${{ fromJson(inputs.timeout) / 60 }}
+      run: |
+        echo "🧪 Running unit tests..."
+        if bundle exec rake unit; then
+          echo "result=success" >> $GITHUB_OUTPUT
+          echo "✅ Unit tests passed"
+        else
+          echo "result=failure" >> $GITHUB_OUTPUT
+          echo "❌ Unit tests failed"
+          exit 1
+        fi
+
+    - name: Run acceptance tests
+      id: acceptance
+      if: inputs.test-suite == 'acceptance' || inputs.test-suite == 'all'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      timeout-minutes: ${{ fromJson(inputs.timeout) / 60 }}
+      run: |
+        echo "🥒 Running acceptance tests..."
+        if bundle exec rake acceptance; then
+          echo "result=success" >> $GITHUB_OUTPUT
+          echo "✅ Acceptance tests passed"
+        else
+          echo "result=failure" >> $GITHUB_OUTPUT
+          echo "❌ Acceptance tests failed"
+          exit 1
+        fi
+
+    - name: Process coverage results
+      id: coverage
+      if: inputs.coverage == 'true' && always()
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ -f "coverage/.resultset.json" ]; then
+          echo "📊 Processing coverage results..."
+
+          # Extract coverage percentage if available
+          if command -v jq >/dev/null 2>&1; then
+            COVERAGE_PERCENT=$(jq -r '.RSpec.coverage.lines.percent // "unknown"' coverage/.resultset.json)
+            echo "Coverage: $COVERAGE_PERCENT%"
+            echo "percentage=$COVERAGE_PERCENT" >> $GITHUB_OUTPUT
+          else
+            echo "percentage=unknown" >> $GITHUB_OUTPUT
+          fi
+
+          # Create coverage summary
+          echo "📈 Coverage report generated at coverage/"
+          if [ -d "coverage" ]; then
+            ls -la coverage/
+          fi
+        else
+          echo "⚠️ No coverage data found"
+          echo "percentage=0" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Determine overall result
+      id: run-tests
+      shell: bash
+      run: |
+        UNIT_RESULT="${{ steps.unit.outputs.result }}"
+        ACCEPTANCE_RESULT="${{ steps.acceptance.outputs.result }}"
+
+        # Determine overall result based on what was run
+        if [[ "${{ inputs.test-suite }}" == "unit" ]]; then
+          echo "result=$UNIT_RESULT" >> $GITHUB_OUTPUT
+        elif [[ "${{ inputs.test-suite }}" == "acceptance" ]]; then
+          echo "result=$ACCEPTANCE_RESULT" >> $GITHUB_OUTPUT
+        else
+          # Both suites ran
+          if [[ "$UNIT_RESULT" == "success" && "$ACCEPTANCE_RESULT" == "success" ]]; then
+            echo "result=success" >> $GITHUB_OUTPUT
+          else
+            echo "result=failure" >> $GITHUB_OUTPUT
+          fi
+        fi
+
+        echo "🏁 Test execution completed"

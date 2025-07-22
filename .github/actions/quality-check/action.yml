@@ -1,0 +1,80 @@
+name: 'Quality Check'
+description: 'Run code quality checks with RuboCop and linting'
+inputs:
+  timeout:
+    description: 'Quality check timeout in seconds'
+    required: false
+    default: '300'
+  working-directory:
+    description: 'Working directory'
+    required: false
+    default: '.'
+  format:
+    description: 'RuboCop output format'
+    required: false
+    default: 'progress'
+  upload-artifacts:
+    description: 'Upload quality reports as artifacts'
+    required: false
+    default: 'true'
+outputs:
+  result:
+    description: 'Quality check result (success, failure, error)'
+    value: ${{ steps.rubocop.outputs.result }}
+  violations-count:
+    description: 'Number of violations found'
+    value: ${{ steps.rubocop.outputs.violations-count }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run RuboCop
+      id: rubocop
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      timeout-minutes: ${{ fromJson(inputs.timeout) / 60 }}
+      run: |
+        echo "📊 Running RuboCop quality checks..."
+
+        # Create reports directory
+        mkdir -p tmp/quality-reports
+
+        # Run RuboCop with multiple formats
+        if bundle exec rubocop \
+          --format progress \
+          --format json --out tmp/quality-reports/rubocop.json \
+          --format html --out tmp/quality-reports/rubocop.html; then
+          echo "result=success" >> $GITHUB_OUTPUT
+          echo "violations-count=0" >> $GITHUB_OUTPUT
+          echo "✅ Quality checks passed - no violations found"
+        else
+          RUBOCOP_EXIT_CODE=$?
+          echo "result=failure" >> $GITHUB_OUTPUT
+
+          # Try to extract violation count from JSON report
+          if [ -f "tmp/quality-reports/rubocop.json" ] && command -v jq >/dev/null 2>&1; then
+            VIOLATIONS=$(jq '.summary.offense_count // 0' tmp/quality-reports/rubocop.json)
+            echo "violations-count=$VIOLATIONS" >> $GITHUB_OUTPUT
+            echo "❌ Quality checks failed - $VIOLATIONS violations found"
+          else
+            echo "violations-count=unknown" >> $GITHUB_OUTPUT
+            echo "❌ Quality checks failed - violation count unknown"
+          fi
+
+          # Show summary of violations
+          echo "📋 RuboCop Summary:"
+          if [ -f "tmp/quality-reports/rubocop.json" ] && command -v jq >/dev/null 2>&1; then
+            jq -r '.summary' tmp/quality-reports/rubocop.json 2>/dev/null || echo "Could not parse summary"
+          fi
+
+          exit $RUBOCOP_EXIT_CODE
+        fi
+
+    - name: Upload quality artifacts
+      if: inputs.upload-artifacts == 'true' && always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: quality-reports-${{ github.run_id }}
+        path: ${{ inputs.working-directory }}/tmp/quality-reports/
+        retention-days: 30
+        if-no-files-found: ignore

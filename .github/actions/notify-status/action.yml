@@ -1,0 +1,216 @@
+name: 'Notify Status'
+description: 'Send notifications to Slack and GitHub with consistent formatting'
+inputs:
+  context:
+    description: 'Notification context (ci, release, auto-merge)'
+    required: true
+  status:
+    description: 'Overall status (success, failure, partial)'
+    required: true
+  slack-channel:
+    description: 'Slack channel for notification'
+    required: false
+  slack-token-secret:
+    description: 'Secret name for Slack token'
+    required: false
+    default: 'SLACK_BOT_TOKEN'
+  pr-number:
+    description: 'Pull request number for GitHub notifications'
+    required: false
+  github-token:
+    description: 'GitHub token for PR comments'
+    required: false
+  test-result:
+    description: 'Test job result'
+    required: false
+  security-result:
+    description: 'Security job result'
+    required: false
+  quality-result:
+    description: 'Quality job result'
+    required: false
+  compatibility-result:
+    description: 'Compatibility job result'
+    required: false
+  details-url:
+    description: 'URL to workflow run details'
+    required: false
+    default: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Determine notification details
+      id: details
+      shell: bash
+      run: |
+        STATUS="${{ inputs.status }}"
+        CONTEXT="${{ inputs.context }}"
+
+        # Set emoji and color based on status
+        case "$STATUS" in
+          "success")
+            echo "emoji=✅" >> $GITHUB_OUTPUT
+            echo "color=good" >> $GITHUB_OUTPUT
+            ;;
+          "failure")
+            echo "emoji=❌" >> $GITHUB_OUTPUT
+            echo "color=danger" >> $GITHUB_OUTPUT
+            ;;
+          "partial")
+            echo "emoji=⚠️" >> $GITHUB_OUTPUT
+            echo "color=warning" >> $GITHUB_OUTPUT
+            ;;
+          *)
+            echo "emoji=ℹ️" >> $GITHUB_OUTPUT
+            echo "color=good" >> $GITHUB_OUTPUT
+            ;;
+        esac
+
+        # Set context-specific titles
+        case "$CONTEXT" in
+          "ci")
+            echo "title=CI Status" >> $GITHUB_OUTPUT
+            ;;
+          "release")
+            echo "title=Release Status" >> $GITHUB_OUTPUT
+            ;;
+          "auto-merge")
+            echo "title=Auto-merge Status" >> $GITHUB_OUTPUT
+            ;;
+          *)
+            echo "title=Status Update" >> $GITHUB_OUTPUT
+            ;;
+        esac
+
+    - name: Build status summary
+      id: summary
+      shell: bash
+      run: |
+        # Build check summary
+        CHECKS=""
+
+        if [ -n "${{ inputs.test-result }}" ]; then
+          if [ "${{ inputs.test-result }}" == "success" ]; then
+            CHECKS+="✅ Tests passed"$'\n'
+          else
+            CHECKS+="❌ Tests failed"$'\n'
+          fi
+        fi
+
+        if [ -n "${{ inputs.quality-result }}" ]; then
+          if [ "${{ inputs.quality-result }}" == "success" ]; then
+            CHECKS+="✅ Code quality passed"$'\n'
+          else
+            CHECKS+="❌ Code quality issues"$'\n'
+          fi
+        fi
+
+        if [ -n "${{ inputs.security-result }}" ]; then
+          if [ "${{ inputs.security-result }}" == "success" ]; then
+            CHECKS+="✅ Security scan passed"$'\n'
+          else
+            CHECKS+="❌ Security scan failed"$'\n'
+          fi
+        fi
+
+        if [ -n "${{ inputs.compatibility-result }}" ]; then
+          if [ "${{ inputs.compatibility-result }}" == "success" ]; then
+            CHECKS+="✅ Compatibility passed"$'\n'
+          else
+            CHECKS+="❌ Compatibility issues"$'\n'
+          fi
+        fi
+
+        # Remove trailing newline and store
+        CHECKS=$(echo "$CHECKS" | sed '$ s/$//')
+        echo "checks<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHECKS" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Notify GitHub PR
+      if: inputs.pr-number != '' && inputs.github-token != ''
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        PR_NUMBER="${{ inputs.pr-number }}"
+        STATUS="${{ steps.details.outputs.emoji }} **${{ steps.details.outputs.title }}: ${{ inputs.status }}**"
+
+        # Create PR comment
+        cat > pr_report.md << EOF
+        ## 🔍 ${{ steps.details.outputs.title }}
+
+        $STATUS
+
+        ${{ steps.summary.outputs.checks }}
+
+        **[View Details →](${{ inputs.details-url }})**
+        EOF
+
+        # Post comment using GitHub CLI
+        if command -v gh >/dev/null 2>&1; then
+          gh pr comment "$PR_NUMBER" --body-file pr_report.md
+          echo "✅ GitHub PR notification sent"
+        else
+          echo "⚠️ GitHub CLI not available, skipping PR comment"
+        fi
+
+    - name: Notify Slack
+      if: inputs.slack-channel != '' && inputs.slack-token-secret != ''
+      uses: slackapi/slack-github-action@v2.1.1
+      with:
+        token: ${{ secrets[inputs.slack-token-secret] }}
+        method: chat.postMessage
+        payload: |
+          {
+            "channel": "${{ inputs.slack-channel }}",
+            "text": "${{ steps.details.outputs.emoji }} ${{ steps.details.outputs.title }} ${{ inputs.status }} - ${{ github.ref_name }}",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "${{ steps.details.outputs.emoji }} *${{ steps.details.outputs.title }} ${{ inputs.status }}* on `${{ github.ref_name }}`"
+                },
+                "accessory": {
+                  "type": "button",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "View Run"
+                  },
+                  "url": "${{ inputs.details-url }}"
+                }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Tests*\n${{ inputs.test-result == 'success' && '✅ Passed' || (inputs.test-result == 'failure' && '❌ Failed' || 'ℹ️ N/A') }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Quality*\n${{ inputs.quality-result == 'success' && '✅ Passed' || (inputs.quality-result == 'failure' && '❌ Failed' || 'ℹ️ N/A') }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Security*\n${{ inputs.security-result == 'success' && '✅ Passed' || (inputs.security-result == 'failure' && '❌ Failed' || 'ℹ️ N/A') }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Compatibility*\n${{ inputs.compatibility-result == 'success' && '✅ Passed' || (inputs.compatibility-result == 'failure' && '❌ Failed' || 'ℹ️ N/A') }}"
+                  }
+                ]
+              },
+              {
+                "type": "context",
+                "elements": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "Triggered by ${{ github.actor }} • <https://github.com/${{ github.repository }}|${{ github.repository }}>"
+                  }
+                ]
+              }
+            ]
+          }

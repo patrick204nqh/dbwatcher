@@ -1,0 +1,41 @@
+# Central CI Configuration
+# This file contains all configuration values for GitHub Actions workflows
+# Update this file to change behavior across all workflows
+
+ruby:
+  versions: ["3.2", "3.3"]
+  default: "3.3"
+
+timeouts:
+  test: 1800      # 30 minutes
+  security: 600   # 10 minutes
+  quality: 300    # 5 minutes
+  compatibility: 900  # 15 minutes
+
+thresholds:
+  coverage: 80
+  security: "high"
+  quality: "warning"
+
+notifications:
+  slack:
+    channels:
+      ci: "${{ secrets.SLACK_CHANNEL_ID }}"
+      releases: "${{ secrets.SLACK_CHANNEL_ID }}"
+    bot_token_secret: "SLACK_BOT_TOKEN"
+  github:
+    pr_comments: true
+    status_checks: true
+    app_id_secret: "DBWATCHER_CI_APP_ID"
+    private_key_secret: "DBWATCHER_CI_PRIVATE_KEY"
+
+features:
+  coverage_upload: true
+  security_scan: true
+  quality_check: true
+  slack_notifications: true
+  auto_merge: true
+
+environment:
+  CI: true
+  COVERAGE: true
