@@ -132,6 +132,10 @@ jobs:
     needs: [test, quality, security, compatibility]
     if: always()
     steps:
+      - name: Checkout repository
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+
       - name: Generate dbwatcher-ci App Token
         if: github.event_name == 'pull_request'
         id: app_token
@@ -139,6 +143,7 @@ jobs:
         with:
           app-id: ${{ secrets.DBWATCHER_CI_APP_ID }}
           private-key: ${{ secrets.DBWATCHER_CI_PRIVATE_KEY }}
+          
       - name: Determine CI status
         id: ci_status
         run: |
