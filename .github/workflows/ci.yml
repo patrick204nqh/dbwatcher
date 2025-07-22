@@ -168,15 +168,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
-          # Only comment on failures to avoid spam
+          # Report on all PRs
           STATUS="${{ steps.ci_status.outputs.emoji }} **CI Status: ${{ steps.ci_status.outputs.status }}**"
 
-          # Build concise status summary  
+          # Build status summary for all checks
           CHECKS=""
-          [[ "${{ needs.test.result }}" != "success" ]] && CHECKS+="❌ Tests failed"$'\n'
-          [[ "${{ needs.quality.result }}" != "success" ]] && CHECKS+="❌ Code quality issues"$'\n'
-          [[ "${{ needs.security.result }}" != "success" ]] && CHECKS+="❌ Security scan failed"$'\n'
-          [[ "${{ needs.compatibility.result }}" != "success" ]] && CHECKS+="❌ Compatibility issues"$'\n'
+          [[ "${{ needs.test.result }}" == "success" ]] && CHECKS+="✅ Tests passed"$'\n' || CHECKS+="❌ Tests failed"$'\n'
+          [[ "${{ needs.quality.result }}" == "success" ]] && CHECKS+="✅ Code quality passed"$'\n' || CHECKS+="❌ Code quality issues"$'\n'
+          [[ "${{ needs.security.result }}" == "success" ]] && CHECKS+="✅ Security scan passed"$'\n' || CHECKS+="❌ Security scan failed"$'\n'
+          [[ "${{ needs.compatibility.result }}" == "success" ]] && CHECKS+="✅ Compatibility passed"$'\n' || CHECKS+="❌ Compatibility issues"$'\n'
 
           # Create report body
           cat > pr_report.md << EOF
