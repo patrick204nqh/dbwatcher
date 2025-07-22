@@ -197,7 +197,7 @@ jobs:
           gh pr comment ${{ github.event.pull_request.number }} --body-file pr_report.md
 
       - name: Notify Slack
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v2.1.1
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           method: chat.postMessage
