@@ -9,9 +9,11 @@ Replace generic bot with branded `dbwatcher-ci[bot]` for professional CI/CD inte
 ## 🔧 Setup Steps
 
 ### 1. Create GitHub App
+
 1. **Go to:** [github.com/settings/apps](https://github.com/settings/apps)
 2. **Click:** "New GitHub App"
 3. **Configure:**
+
    ```
    Name: dbwatcher-ci
    Homepage: https://github.com/patrick204nqh/dbwatcher
@@ -20,6 +22,7 @@ Replace generic bot with branded `dbwatcher-ci[bot]` for professional CI/CD inte
    ```
 
 ### 2. Set Permissions
+
 | Permission    | Level      |
 | ------------- | ---------- |
 | Contents      | Read/Write |
@@ -28,6 +31,7 @@ Replace generic bot with branded `dbwatcher-ci[bot]` for professional CI/CD inte
 | Actions       | Read       |
 
 ### 3. Install & Configure
+
 1. **Create app** → Copy App ID
 2. **Generate private key** → Download `.pem`
 3. **Install app** → Select this repository
@@ -38,6 +42,7 @@ Replace generic bot with branded `dbwatcher-ci[bot]` for professional CI/CD inte
 ## 💻 Workflow Integration
 
 ### Standard Pattern
+
 ```yaml
 steps:
   - uses: actions/checkout@v4
@@ -58,6 +63,7 @@ steps:
 ```
 
 ### Auto-merge Example
+
 ```yaml
 name: Auto-merge
 on:
@@ -96,20 +102,24 @@ jobs:
 ## 🐛 Troubleshooting
 
 ### Token Issues
+
 - **Error:** App token generation fails
 - **Fix:** Check App ID and private key in secrets
 
 ### Permission Issues
+
 - **Error:** Bot can't comment/approve
 - **Fix:** Verify app permissions and installation
 
 ### Bot Not Showing
+
 - **Error:** Still shows `github-actions[bot]`
 - **Fix:** Ensure using `steps.bot.outputs.token`, not `secrets.GITHUB_TOKEN`
 
 ## ✅ Verification
 
 After setup, you should see:
+
 - `dbwatcher-ci[bot]` in PR comments
 - Custom avatar in bot interactions
 - Professional branded automation
