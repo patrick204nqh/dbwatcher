@@ -163,84 +163,22 @@ jobs:
           payload: |
             {
               "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
-              "text": "${{ steps.ci_status.outputs.emoji }} DB Watcher CI: ${{ steps.ci_status.outputs.status }}",
+              "text": "${{ steps.ci_status.outputs.emoji }} CI ${{ steps.ci_status.outputs.status }} - ${{ github.ref_name }}",
               "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "${{ steps.ci_status.outputs.emoji }} DB Watcher CI: ${{ steps.ci_status.outputs.status }}"
-                  }
-                },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "CI workflow completed for branch `${{ github.ref_name }}`"
+                    "text": "${{ steps.ci_status.outputs.emoji }} **CI ${{ steps.ci_status.outputs.status }}** - `${{ github.ref_name }}` by ${{ github.actor }}\n${{ needs.test.result == 'success' && '✅' || '❌' }} Tests • ${{ needs.quality.result == 'success' && '✅' || '❌' }} Quality • ${{ needs.security.result == 'success' && '✅' || '❌' }} Security • ${{ needs.compatibility.result == 'success' && '✅' || '❌' }} Compatibility"
                   },
                   "accessory": {
                     "type": "button",
                     "text": {
                       "type": "plain_text",
-                      "text": "View Details"
+                      "text": "View"
                     },
                     "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                   }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*📂 Repository:*\n<https://github.com/${{ github.repository }}|${{ github.repository }}>"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*🌿 Branch:*\n`${{ github.ref_name }}`"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*⚡ Trigger:*\n${{ github.event_name }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*👤 Triggered By:*\n${{ github.actor }}"
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*📊 Overall Status:*\n${{ steps.ci_status.outputs.status }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*🧪 Tests:*\n${{ needs.test.result == 'success' && '✅' || '❌' }} ${{ needs.test.result }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*🔍 Code Quality:*\n${{ needs.quality.result == 'success' && '✅' || '❌' }} ${{ needs.quality.result }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*🔒 Security Scan:*\n${{ needs.security.result == 'success' && '✅' || '❌' }} ${{ needs.security.result }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*🔗 Compatibility:*\n${{ needs.compatibility.result == 'success' && '✅' || '❌' }} ${{ needs.compatibility.result }}"
-                    }
-                  ]
-                },
-                {
-                  "type": "context",
-                  "elements": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "Triggered by ${{ github.actor }} • DB Watcher CI • Powered by GitHub Actions"
-                    }
-                  ]
                 }
               ]
             }

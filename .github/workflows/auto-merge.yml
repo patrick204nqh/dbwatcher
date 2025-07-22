@@ -20,6 +20,9 @@ jobs:
       )
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Check if PR is ready for auto-merge
         id: check
         env:
@@ -154,23 +157,27 @@ jobs:
       - name: Notify Slack about auto-merge
         if: needs.auto-merge.result == 'success'
         uses: slackapi/slack-github-action@v2.0.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          REPOSITORY: ${{ github.repository }}
         with:
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
           payload: |
             {
-              "channel": "$SLACK_CHANNEL_ID",
-              "text": "🤖 Auto-merged dependency update",
+              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "text": "🤖 Auto-merged: ${{ github.event.pull_request.title }}",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🤖 *Auto-merged dependency update*\n\n*PR:* <${PR_URL}|${PR_TITLE}>\n*Repository:* <https://github.com/${REPOSITORY}|${REPOSITORY}>"
+                    "text": "🤖 **Auto-merged** dependency update by ${{ github.actor }}\n${{ github.event.pull_request.title }}"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View"
+                    },
+                    "url": "${{ github.event.pull_request.html_url }}"
                   }
                 }
               ]
