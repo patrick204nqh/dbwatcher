@@ -1,32 +1,32 @@
-name: 'Quality Check'
-description: 'Run code quality checks with RuboCop and linting'
+name: "Quality Check"
+description: "Run code quality checks with RuboCop and linting"
 inputs:
   timeout:
-    description: 'Quality check timeout in seconds'
+    description: "Quality check timeout in seconds"
     required: false
-    default: '300'
+    default: "300"
   working-directory:
-    description: 'Working directory'
+    description: "Working directory"
     required: false
-    default: '.'
+    default: "."
   format:
-    description: 'RuboCop output format'
+    description: "RuboCop output format"
     required: false
-    default: 'progress'
+    default: "progress"
   upload-artifacts:
-    description: 'Upload quality reports as artifacts'
+    description: "Upload quality reports as artifacts"
     required: false
-    default: 'true'
+    default: "true"
 outputs:
   result:
-    description: 'Quality check result (success, failure, error)'
+    description: "Quality check result (success, failure, error)"
     value: ${{ steps.rubocop.outputs.result }}
   violations-count:
-    description: 'Number of violations found'
+    description: "Number of violations found"
     value: ${{ steps.rubocop.outputs.violations-count }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Run RuboCop
       id: rubocop

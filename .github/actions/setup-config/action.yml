@@ -1,83 +1,83 @@
-name: 'Setup Configuration'
-description: 'Load and parse central configuration from .github/config.yml'
+name: "Setup Configuration"
+description: "Load and parse central configuration from .github/config.yml"
 inputs:
   config-path:
-    description: 'Path to config file'
+    description: "Path to config file"
     required: false
-    default: '.github/config.yml'
+    default: ".github/config.yml"
 outputs:
   # Ruby configuration
   ruby-versions:
-    description: 'Available Ruby versions as JSON array'
+    description: "Available Ruby versions as JSON array"
     value: ${{ steps.parse.outputs.ruby-versions }}
   ruby-default:
-    description: 'Default Ruby version'
+    description: "Default Ruby version"
     value: ${{ steps.parse.outputs.ruby-default }}
-  
+
   # Timeouts
   timeout-test:
-    description: 'Test timeout in seconds'
+    description: "Test timeout in seconds"
     value: ${{ steps.parse.outputs.timeout-test }}
   timeout-security:
-    description: 'Security scan timeout in seconds'
+    description: "Security scan timeout in seconds"
     value: ${{ steps.parse.outputs.timeout-security }}
   timeout-quality:
-    description: 'Quality check timeout in seconds'
+    description: "Quality check timeout in seconds"
     value: ${{ steps.parse.outputs.timeout-quality }}
   timeout-compatibility:
-    description: 'Compatibility check timeout in seconds'
+    description: "Compatibility check timeout in seconds"
     value: ${{ steps.parse.outputs.timeout-compatibility }}
-  
+
   # Thresholds
   coverage-threshold:
-    description: 'Coverage percentage threshold'
+    description: "Coverage percentage threshold"
     value: ${{ steps.parse.outputs.coverage-threshold }}
-    
+
   # Notifications
   slack-channel-ci:
-    description: 'Slack channel for CI notifications'
+    description: "Slack channel for CI notifications"
     value: ${{ steps.parse.outputs.slack-channel-ci }}
   slack-channel-releases:
-    description: 'Slack channel for release notifications'
+    description: "Slack channel for release notifications"
     value: ${{ steps.parse.outputs.slack-channel-releases }}
   slack-bot-token-secret:
-    description: 'Secret name for Slack bot token'
+    description: "Secret name for Slack bot token"
     value: ${{ steps.parse.outputs.slack-bot-token-secret }}
   github-app-id-secret:
-    description: 'Secret name for GitHub app ID'
+    description: "Secret name for GitHub app ID"
     value: ${{ steps.parse.outputs.github-app-id-secret }}
   github-private-key-secret:
-    description: 'Secret name for GitHub private key'
+    description: "Secret name for GitHub private key"
     value: ${{ steps.parse.outputs.github-private-key-secret }}
-    
+
   # Features
   feature-coverage-upload:
-    description: 'Whether to upload coverage reports'
+    description: "Whether to upload coverage reports"
     value: ${{ steps.parse.outputs.feature-coverage-upload }}
   feature-security-scan:
-    description: 'Whether to run security scans'
+    description: "Whether to run security scans"
     value: ${{ steps.parse.outputs.feature-security-scan }}
   feature-quality-check:
-    description: 'Whether to run quality checks'
+    description: "Whether to run quality checks"
     value: ${{ steps.parse.outputs.feature-quality-check }}
   feature-slack-notifications:
-    description: 'Whether to send Slack notifications'
+    description: "Whether to send Slack notifications"
     value: ${{ steps.parse.outputs.feature-slack-notifications }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Parse configuration
       id: parse
       shell: bash
       run: |
         CONFIG_FILE="${{ inputs.config-path }}"
-        
+
         if [ ! -f "$CONFIG_FILE" ]; then
           echo "❌ Configuration file not found: $CONFIG_FILE"
           exit 1
         fi
-        
+
         # Parse YAML using yq (if available) or Python
         if command -v yq >/dev/null 2>&1; then
           # Ruby configuration
@@ -123,5 +123,5 @@ runs:
           echo "feature-quality-check=true" >> $GITHUB_OUTPUT
           echo "feature-slack-notifications=true" >> $GITHUB_OUTPUT
         fi
-        
+
         echo "✅ Configuration loaded successfully"

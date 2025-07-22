@@ -52,8 +52,8 @@ jobs:
         id: tests
         uses: ./.github/actions/run-tests
         with:
-          test-suite: 'all'
-          coverage: 'true'
+          test-suite: "all"
+          coverage: "true"
           timeout: ${{ needs.setup.outputs.timeout-test }}
 
       - name: Upload coverage to Qlty
@@ -179,10 +179,10 @@ jobs:
       - name: Send Notifications
         uses: ./.github/actions/notify-status
         with:
-          context: 'ci'
+          context: "ci"
           status: ${{ steps.ci_status.outputs.status }}
           slack-channel: ${{ secrets[needs.setup.outputs.slack-channel-ci] }}
-          slack-token-secret: ${{ needs.setup.outputs.slack-token-secret }}
+          slack-token: ${{ secrets[needs.setup.outputs.slack-token-secret] }}
           pr-number: ${{ github.event.pull_request.number }}
           github-token: ${{ steps.app_token.outputs.token }}
           test-result: ${{ needs.test.result }}

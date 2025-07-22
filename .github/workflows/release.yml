@@ -12,18 +12,33 @@ on:
   workflow_dispatch:
 
 env:
-  RUBY_VERSION: "3.3"
   DRY_RUN: "false"
 
 jobs:
+  setup:
+    name: Load Configuration
+    runs-on: ubuntu-latest
+    outputs:
+      ruby-versions: ${{ steps.config.outputs.ruby-versions }}
+      ruby-default: ${{ steps.config.outputs.ruby-default }}
+      slack-channel-releases: ${{ steps.config.outputs.slack-channel-releases }}
+      slack-token-secret: ${{ steps.config.outputs.slack-bot-token-secret }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Load Configuration
+        id: config
+        uses: ./.github/actions/setup-config
+
   validate-release:
     runs-on: ubuntu-latest
     name: Validate Release
+    needs: setup
     outputs:
       version: ${{ steps.extract_version.outputs.version }}
       should_release: ${{ steps.validate.outputs.should_release }}
       is_dry_run: ${{ steps.set_dry_run.outputs.is_dry_run }}
-      ruby_version: ${{ env.RUBY_VERSION }}
     steps:
       - name: Set dry run flag
         id: set_dry_run
@@ -50,11 +65,10 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+      - name: Setup Ruby Environment
+        uses: ./.github/actions/setup-ruby
         with:
-          ruby-version: ${{ env.RUBY_VERSION }}
-          bundler-cache: true
+          ruby-version: ${{ needs.setup.outputs.ruby-default }}
 
       - name: Validate version format
         id: validate
@@ -91,44 +105,41 @@ jobs:
           echo "should_release=true" >> $GITHUB_OUTPUT
 
   test:
-    needs: validate-release
+    needs: [setup, validate-release]
     runs-on: ubuntu-latest
     name: Test Ruby ${{ matrix.ruby }}
     if: needs.validate-release.outputs.should_release == 'true'
     strategy:
       fail-fast: true
       matrix:
-        ruby: ["3.2", "3.3"]
+        ruby: ${{ fromJSON(needs.setup.outputs.ruby-versions) }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Ruby ${{ matrix.ruby }}
-        uses: ruby/setup-ruby@v1
+      - name: Setup Ruby Environment
+        uses: ./.github/actions/setup-ruby
         with:
           ruby-version: ${{ matrix.ruby }}
-          bundler-cache: true
 
-      - name: Run comprehensive tests
-        run: |
-          echo "🧪 Running tests for Ruby ${{ matrix.ruby }}"
-          bundle exec rake spec
+      - name: Run Tests
+        uses: ./.github/actions/run-tests
+        with:
+          test-suite: "all"
+          coverage: "false"
+          ruby-version: ${{ matrix.ruby }}
 
-      - name: Run security scan
-        if: matrix.ruby == needs.validate-release.outputs.ruby_version
-        run: |
-          echo "🔒 Running security scan"
-          bundle exec brakeman --force --format json --output tmp/brakeman-release.json --exit-on-warn || true
+      - name: Run Security Scan
+        if: matrix.ruby == needs.setup.outputs.ruby-default
+        uses: ./.github/actions/security-scan
 
-      - name: Run quality checks
-        if: matrix.ruby == needs.validate-release.outputs.ruby_version
-        run: |
-          echo "📊 Running quality checks"
-          bundle exec rubocop
+      - name: Run Quality Checks
+        if: matrix.ruby == needs.setup.outputs.ruby-default
+        uses: ./.github/actions/quality-check
 
   build-and-publish:
-    needs: [validate-release, test]
+    needs: [setup, validate-release, test]
     runs-on: ubuntu-latest
     name: Build and Publish Gem
     if: needs.validate-release.outputs.should_release == 'true'
@@ -140,108 +151,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+      - name: Setup Ruby Environment
+        uses: ./.github/actions/setup-ruby
         with:
-          ruby-version: ${{ needs.validate-release.outputs.ruby_version }}
-          bundler-cache: true
+          ruby-version: ${{ needs.setup.outputs.ruby-default }}
 
-      - name: Build gem
-        id: build
-        run: |
-          VERSION="${{ needs.validate-release.outputs.version }}"
-          echo "🔨 Building gem version $VERSION"
-          gem build dbwatcher.gemspec
-
-          # Verify gem was built
-          GEM_FILE="dbwatcher-${VERSION}.gem"
-          if [ ! -f "$GEM_FILE" ]; then
-            echo "❌ Gem file not found: $GEM_FILE"
-            exit 1
-          fi
-
-          echo "✅ Gem built successfully: $GEM_FILE"
-          echo "gem_file=$GEM_FILE" >> $GITHUB_OUTPUT
-
-      - name: Test gem installation
-        run: |
-          VERSION="${{ needs.validate-release.outputs.version }}"
-          GEM_FILE="dbwatcher-${VERSION}.gem"
-
-          echo "🧪 Testing gem structure and contents"
-
-          # Extract and examine gem contents
-          gem unpack "$GEM_FILE"
-
-          # Verify gem structure
-          echo "🔍 Verifying gem structure"
-          if [ -d "dbwatcher-${VERSION}" ]; then
-            echo "✅ Gem extracted successfully"
-            ls -la "dbwatcher-${VERSION}/"
-
-            # Test that the main files exist
-            if [ -f "dbwatcher-${VERSION}/lib/dbwatcher.rb" ]; then
-              echo "✅ Main library file exists"
-            else
-              echo "❌ Main library file missing"
-              exit 1
-            fi
-
-            if [ -f "dbwatcher-${VERSION}/lib/dbwatcher/version.rb" ]; then
-              echo "✅ Version file exists"
-            else
-              echo "❌ Version file missing"
-              exit 1
-            fi
-
-            # Test that the version in the gem matches expected version
-            cd "dbwatcher-${VERSION}"
-            EXTRACTED_VERSION=$(ruby -e "require './lib/dbwatcher/version'; puts Dbwatcher::VERSION")
-            if [ "$EXTRACTED_VERSION" = "$VERSION" ]; then
-              echo "✅ Version consistency check passed: $EXTRACTED_VERSION"
-            else
-              echo "❌ Version mismatch in extracted gem: expected $VERSION, got $EXTRACTED_VERSION"
-              exit 1
-            fi
-
-            cd ..
-            rm -rf "dbwatcher-${VERSION}"
-          else
-            echo "❌ Failed to extract gem"
-            exit 1
-          fi
-
-          echo "✅ Gem structure validation completed successfully"
-
-      - name: Dry run check
-        if: needs.validate-release.outputs.is_dry_run == 'true'
-        run: |
-          echo "🏃‍♂️ DRY RUN MODE - Skipping actual publishing"
-          echo "Would publish: ${{ steps.build.outputs.gem_file }}"
-          exit 0
-
-      - name: Setup RubyGems credentials
-        if: needs.validate-release.outputs.is_dry_run != 'true'
-        run: |
-          mkdir -p ~/.gem
-          cat > ~/.gem/credentials << EOF
-          ---
-          :rubygems_api_key: ${{ secrets.RUBYGEMS_API_KEY }}
-          EOF
-          chmod 0600 ~/.gem/credentials
-
-      - name: Publish to RubyGems
-        if: needs.validate-release.outputs.is_dry_run != 'true'
-        id: publish
-        run: |
-          VERSION="${{ needs.validate-release.outputs.version }}"
-          GEM_FILE="${{ steps.build.outputs.gem_file }}"
-
-          echo "🚀 Publishing $GEM_FILE to RubyGems"
-          gem push "$GEM_FILE"
-
-          echo "✅ Successfully published dbwatcher $VERSION to RubyGems"
-          echo "published=true" >> $GITHUB_OUTPUT
+      - name: Build and Publish Gem
+        id: gem_publish
+        uses: ./.github/actions/gem-publish
+        with:
+          version: ${{ needs.validate-release.outputs.version }}
+          gem-name: "dbwatcher"
+          dry-run: ${{ needs.validate-release.outputs.is_dry_run }}
+          rubygems-api-key: ${{ secrets.RUBYGEMS_API_KEY }}
 
       - name: Create GitHub Release
         if: needs.validate-release.outputs.is_dry_run != 'true'
@@ -275,21 +197,24 @@ jobs:
             - 🐛 [Issues](https://github.com/${{ github.repository }}/issues)
           draft: false
           prerelease: false
-          files: ${{ steps.build.outputs.gem_file }}
+          files: ${{ steps.gem_publish.outputs.gem-file }}
 
       - name: Upload gem artifact
         uses: actions/upload-artifact@v4
         with:
           name: dbwatcher-gem-${{ needs.validate-release.outputs.version }}
-          path: ${{ steps.build.outputs.gem_file }}
+          path: ${{ steps.gem_publish.outputs.gem-file }}
           retention-days: 90
 
   post-release:
-    needs: [validate-release, build-and-publish]
+    needs: [setup, validate-release, build-and-publish]
     runs-on: ubuntu-latest
     name: Post-Release Tasks
     if: needs.validate-release.outputs.should_release == 'true' && needs.validate-release.outputs.is_dry_run != 'true'
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Verify publication
         run: |
           VERSION="${{ needs.validate-release.outputs.version }}"
@@ -312,57 +237,24 @@ jobs:
           echo "🏷️ GitHub release created"
           echo "🔗 https://rubygems.org/gems/dbwatcher/versions/${{ needs.validate-release.outputs.version }}"
 
-      - name: Notify Slack - Release Complete
+      - name: Send Release Notifications
         if: success()
-        uses: slackapi/slack-github-action@v2.1.1
+        uses: ./.github/actions/notify-status
         with:
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
-          method: chat.postMessage
-          payload: |
-            {
-              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
-              "text": "🚀 Released v${{ needs.validate-release.outputs.version }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "🚀 *Released v${{ needs.validate-release.outputs.version }}* 🎉"
-                  },
-                  "accessory": {
-                    "type": "button",
-                    "text": {
-                      "type": "plain_text",
-                      "text": "View Release"
-                    },
-                    "url": "https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate-release.outputs.version }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "<https://rubygems.org/gems/dbwatcher/versions/${{ needs.validate-release.outputs.version }}|:gem: RubyGems> \u2022 <https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate-release.outputs.version }}|:memo: Release Notes>"
-                  }
-                },
-                {
-                  "type": "context",
-                  "elements": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "Released by ${{ github.actor }} \u2022 <https://github.com/${{ github.repository }}|${{ github.repository }}>"
-                    }
-                  ]
-                }
-              ]
-            }
+          context: "release"
+          status: "success"
+          slack-channel: ${{ secrets[needs.setup.outputs.slack-channel-releases] }}
+          slack-token: ${{ secrets[needs.setup.outputs.slack-token-secret] }}
 
   notify-failure:
-    needs: [validate-release, build-and-publish, post-release]
+    needs: [setup, validate-release, build-and-publish, post-release]
     runs-on: ubuntu-latest
     name: Notify on Failure
     if: always() && (failure() || cancelled()) && needs.validate-release.outputs.should_release == 'true'
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Determine failed job
         id: failed_job
         run: |
@@ -380,46 +272,10 @@ jobs:
             echo "failed_reason=Workflow was cancelled or failed unexpectedly" >> $GITHUB_OUTPUT
           fi
 
-      - name: Notify Slack - Release Failure
-        uses: slackapi/slack-github-action@v2.1.1
+      - name: Send Failure Notifications
+        uses: ./.github/actions/notify-status
         with:
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
-          method: chat.postMessage
-          payload: |
-            {
-              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
-              "text": "❌ Release failed v${{ needs.validate-release.outputs.version || 'Unknown' }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "❌ *Release failed* v${{ needs.validate-release.outputs.version || 'Unknown' }}"
-                  },
-                  "accessory": {
-                    "type": "button",
-                    "text": {
-                      "type": "plain_text",
-                      "text": "View Logs"
-                    },
-                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Failed at:* ${{ steps.failed_job.outputs.failed_step }}\n*Reason:* ${{ steps.failed_job.outputs.failed_reason }}"
-                  }
-                },
-                {
-                  "type": "context",
-                  "elements": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "Triggered by ${{ github.actor }} \u2022 <https://github.com/${{ github.repository }}|${{ github.repository }}>"
-                    }
-                  ]
-                }
-              ]
-            }
+          context: "release"
+          status: "failure"
+          slack-channel: ${{ secrets[needs.setup.outputs.slack-channel-releases] }}
+          slack-token: ${{ secrets[needs.setup.outputs.slack-token-secret] }}

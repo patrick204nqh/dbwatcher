@@ -1,42 +1,42 @@
-name: 'Run Tests'
-description: 'Execute test suites with configurable parameters and coverage collection'
+name: "Run Tests"
+description: "Execute test suites with configurable parameters and coverage collection"
 inputs:
   test-suite:
-    description: 'Test suite to run (unit, acceptance, all)'
+    description: "Test suite to run (unit, acceptance, all)"
     required: false
-    default: 'all'
+    default: "all"
   coverage:
-    description: 'Enable coverage collection'
+    description: "Enable coverage collection"
     required: false
-    default: 'true'
+    default: "true"
   ruby-version:
-    description: 'Ruby version (for reporting)'
+    description: "Ruby version (for reporting)"
     required: false
-    default: ''
+    default: ""
   timeout:
-    description: 'Test timeout in seconds'
+    description: "Test timeout in seconds"
     required: false
-    default: '1800'
+    default: "1800"
   working-directory:
-    description: 'Working directory'
+    description: "Working directory"
     required: false
-    default: '.'
+    default: "."
 outputs:
   test-result:
-    description: 'Test result (success, failure, error)'
+    description: "Test result (success, failure, error)"
     value: ${{ steps.run-tests.outputs.result }}
   coverage-percentage:
-    description: 'Coverage percentage (if available)'
+    description: "Coverage percentage (if available)"
     value: ${{ steps.coverage.outputs.percentage }}
   unit-result:
-    description: 'Unit test result'
+    description: "Unit test result"
     value: ${{ steps.unit.outputs.result }}
   acceptance-result:
-    description: 'Acceptance test result'
+    description: "Acceptance test result"
     value: ${{ steps.acceptance.outputs.result }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Set up test database
       shell: bash

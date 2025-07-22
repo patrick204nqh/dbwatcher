@@ -1,34 +1,34 @@
-name: 'Setup Ruby Environment'
-description: 'Install Ruby with consistent caching and bundler setup'
+name: "Setup Ruby Environment"
+description: "Install Ruby with consistent caching and bundler setup"
 inputs:
   ruby-version:
-    description: 'Ruby version to install'
+    description: "Ruby version to install"
     required: true
   cache-key-suffix:
-    description: 'Additional suffix for cache key'
+    description: "Additional suffix for cache key"
     required: false
-    default: ''
+    default: ""
   working-directory:
-    description: 'Working directory for bundle operations'
+    description: "Working directory for bundle operations"
     required: false
-    default: '.'
+    default: "."
   bundler-cache:
-    description: 'Enable bundler caching'
+    description: "Enable bundler caching"
     required: false
-    default: 'true'
+    default: "true"
 outputs:
   ruby-version:
-    description: 'Installed Ruby version'
+    description: "Installed Ruby version"
     value: ${{ steps.setup.outputs.ruby-version }}
   cache-hit:
-    description: 'Whether cache was hit'
+    description: "Whether cache was hit"
     value: ${{ steps.setup.outputs.cache-hit }}
   bundler-version:
-    description: 'Bundler version'
+    description: "Bundler version"
     value: ${{ steps.info.outputs.bundler-version }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Setup Ruby ${{ inputs.ruby-version }}
       id: setup

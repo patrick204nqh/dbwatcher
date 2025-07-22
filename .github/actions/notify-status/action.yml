@@ -1,44 +1,43 @@
-name: 'Notify Status'
-description: 'Send notifications to Slack and GitHub with consistent formatting'
+name: "Notify Status"
+description: "Send notifications to Slack and GitHub with consistent formatting"
 inputs:
   context:
-    description: 'Notification context (ci, release, auto-merge)'
+    description: "Notification context (ci, release, auto-merge)"
     required: true
   status:
-    description: 'Overall status (success, failure, partial)'
+    description: "Overall status (success, failure, partial)"
     required: true
   slack-channel:
-    description: 'Slack channel for notification'
+    description: "Slack channel for notification"
     required: false
-  slack-token-secret:
-    description: 'Secret name for Slack token'
+  slack-token:
+    description: "Slack bot token (actual token, not secret name)"
     required: false
-    default: 'SLACK_BOT_TOKEN'
   pr-number:
-    description: 'Pull request number for GitHub notifications'
+    description: "Pull request number for GitHub notifications"
     required: false
   github-token:
-    description: 'GitHub token for PR comments'
+    description: "GitHub token for PR comments"
     required: false
   test-result:
-    description: 'Test job result'
+    description: "Test job result"
     required: false
   security-result:
-    description: 'Security job result'
+    description: "Security job result"
     required: false
   quality-result:
-    description: 'Quality job result'
+    description: "Quality job result"
     required: false
   compatibility-result:
-    description: 'Compatibility job result'
+    description: "Compatibility job result"
     required: false
   details-url:
-    description: 'URL to workflow run details'
+    description: "URL to workflow run details"
     required: false
-    default: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+    default: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Determine notification details
       id: details
@@ -157,10 +156,10 @@ runs:
         fi
 
     - name: Notify Slack
-      if: inputs.slack-channel != '' && inputs.slack-token-secret != ''
+      if: inputs.slack-channel != '' && inputs.slack-token != ''
       uses: slackapi/slack-github-action@v2.1.1
       with:
-        token: ${{ secrets[inputs.slack-token-secret] }}
+        token: ${{ inputs.slack-token }}
         method: chat.postMessage
         payload: |
           {

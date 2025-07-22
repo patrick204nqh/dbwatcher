@@ -1,28 +1,28 @@
-name: 'Security Scan'
-description: 'Run security checks and upload reports'
+name: "Security Scan"
+description: "Run security checks and upload reports"
 inputs:
   timeout:
-    description: 'Scan timeout in seconds'
+    description: "Scan timeout in seconds"
     required: false
-    default: '600'
+    default: "600"
   working-directory:
-    description: 'Working directory'
+    description: "Working directory"
     required: false
-    default: '.'
+    default: "."
   upload-artifacts:
-    description: 'Upload security reports as artifacts'
+    description: "Upload security reports as artifacts"
     required: false
-    default: 'true'
+    default: "true"
 outputs:
   result:
-    description: 'Security scan result (success, failure, error)'
+    description: "Security scan result (success, failure, error)"
     value: ${{ steps.scan.outputs.result }}
   report-path:
-    description: 'Path to security report'
+    description: "Path to security report"
     value: ${{ steps.scan.outputs.report-path }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Run security checks
       id: scan

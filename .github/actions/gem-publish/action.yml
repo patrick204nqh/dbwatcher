@@ -1,0 +1,139 @@
+name: "Gem Publish"
+description: "Build, test, and publish a Ruby gem"
+inputs:
+  version:
+    description: "Gem version to build"
+    required: true
+  gem-name:
+    description: "Name of the gem"
+    required: false
+    default: "dbwatcher"
+  dry-run:
+    description: "Skip actual publishing"
+    required: false
+    default: "false"
+  rubygems-api-key:
+    description: "RubyGems API key for publishing"
+    required: false
+  working-directory:
+    description: "Working directory"
+    required: false
+    default: "."
+outputs:
+  gem-file:
+    description: "Built gem file name"
+    value: ${{ steps.build.outputs.gem-file }}
+  published:
+    description: "Whether gem was published"
+    value: ${{ steps.publish.outputs.published }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build gem
+      id: build
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        VERSION="${{ inputs.version }}"
+        GEM_NAME="${{ inputs.gem-name }}"
+
+        echo "🔨 Building gem $GEM_NAME version $VERSION"
+        gem build ${GEM_NAME}.gemspec
+
+        # Verify gem was built
+        GEM_FILE="${GEM_NAME}-${VERSION}.gem"
+        if [ ! -f "$GEM_FILE" ]; then
+          echo "❌ Gem file not found: $GEM_FILE"
+          exit 1
+        fi
+
+        echo "✅ Gem built successfully: $GEM_FILE"
+        echo "gem-file=$GEM_FILE" >> $GITHUB_OUTPUT
+
+    - name: Test gem installation
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        VERSION="${{ inputs.version }}"
+        GEM_NAME="${{ inputs.gem-name }}"
+        GEM_FILE="${GEM_NAME}-${VERSION}.gem"
+
+        echo "🧪 Testing gem structure and contents"
+
+        # Extract and examine gem contents
+        gem unpack "$GEM_FILE"
+
+        # Verify gem structure
+        echo "🔍 Verifying gem structure"
+        if [ -d "${GEM_NAME}-${VERSION}" ]; then
+          echo "✅ Gem extracted successfully"
+          ls -la "${GEM_NAME}-${VERSION}/"
+          
+          # Test that the main files exist
+          if [ -f "${GEM_NAME}-${VERSION}/lib/${GEM_NAME}.rb" ]; then
+            echo "✅ Main library file exists"
+          else
+            echo "❌ Main library file missing"
+            exit 1
+          fi
+          
+          if [ -f "${GEM_NAME}-${VERSION}/lib/${GEM_NAME}/version.rb" ]; then
+            echo "✅ Version file exists"
+          else
+            echo "❌ Version file missing"
+            exit 1
+          fi
+          
+          # Test version consistency
+          cd "${GEM_NAME}-${VERSION}"
+          if [ "${GEM_NAME}" = "dbwatcher" ]; then
+            EXTRACTED_VERSION=$(ruby -e "require './lib/dbwatcher/version'; puts Dbwatcher::VERSION")
+            if [ "$EXTRACTED_VERSION" = "$VERSION" ]; then
+              echo "✅ Version consistency check passed: $EXTRACTED_VERSION"
+            else
+              echo "❌ Version mismatch in extracted gem: expected $VERSION, got $EXTRACTED_VERSION"
+              exit 1
+            fi
+          fi
+          
+          cd ..
+          rm -rf "${GEM_NAME}-${VERSION}"
+        else
+          echo "❌ Failed to extract gem"
+          exit 1
+        fi
+
+        echo "✅ Gem structure validation completed successfully"
+
+    - name: Publish to RubyGems
+      id: publish
+      if: inputs.dry-run != 'true' && inputs.rubygems-api-key != ''
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        VERSION="${{ inputs.version }}"
+        GEM_NAME="${{ inputs.gem-name }}"
+        GEM_FILE="${GEM_NAME}-${VERSION}.gem"
+
+        # Setup RubyGems credentials
+        mkdir -p ~/.gem
+        cat > ~/.gem/credentials << EOF
+        ---
+        :rubygems_api_key: ${{ inputs.rubygems-api-key }}
+        EOF
+        chmod 0600 ~/.gem/credentials
+
+        echo "🚀 Publishing $GEM_FILE to RubyGems"
+        gem push "$GEM_FILE"
+
+        echo "✅ Successfully published $GEM_NAME $VERSION to RubyGems"
+        echo "published=true" >> $GITHUB_OUTPUT
+
+    - name: Dry run notice
+      if: inputs.dry-run == 'true'
+      shell: bash
+      run: |
+        echo "🏃‍♂️ DRY RUN MODE - Skipping actual publishing"
+        echo "Would publish: ${{ steps.build.outputs.gem-file }}"
+        echo "published=false" >> $GITHUB_OUTPUT
