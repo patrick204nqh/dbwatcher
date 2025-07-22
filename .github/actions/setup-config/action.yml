@@ -113,8 +113,8 @@ runs:
           echo "timeout-quality=300" >> $GITHUB_OUTPUT
           echo "timeout-compatibility=900" >> $GITHUB_OUTPUT
           echo "coverage-threshold=80" >> $GITHUB_OUTPUT
-          echo "slack-channel-ci=\${{ secrets.SLACK_CHANNEL_ID }}" >> $GITHUB_OUTPUT
-          echo "slack-channel-releases=\${{ secrets.SLACK_CHANNEL_ID }}" >> $GITHUB_OUTPUT
+          echo "slack-channel-ci=SLACK_CHANNEL_ID" >> $GITHUB_OUTPUT
+          echo "slack-channel-releases=SLACK_CHANNEL_ID" >> $GITHUB_OUTPUT
           echo "slack-bot-token-secret=SLACK_BOT_TOKEN" >> $GITHUB_OUTPUT
           echo "github-app-id-secret=DBWATCHER_CI_APP_ID" >> $GITHUB_OUTPUT
           echo "github-private-key-secret=DBWATCHER_CI_PRIVATE_KEY" >> $GITHUB_OUTPUT

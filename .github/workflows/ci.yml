@@ -181,7 +181,7 @@ jobs:
         with:
           context: 'ci'
           status: ${{ steps.ci_status.outputs.status }}
-          slack-channel: ${{ needs.setup.outputs.slack-channel-ci }}
+          slack-channel: ${{ secrets[needs.setup.outputs.slack-channel-ci] }}
           slack-token-secret: ${{ needs.setup.outputs.slack-token-secret }}
           pr-number: ${{ github.event.pull_request.number }}
           github-token: ${{ steps.app_token.outputs.token }}

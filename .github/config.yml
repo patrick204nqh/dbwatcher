@@ -20,8 +20,8 @@ thresholds:
 notifications:
   slack:
     channels:
-      ci: "${{ secrets.SLACK_CHANNEL_ID }}"
-      releases: "${{ secrets.SLACK_CHANNEL_ID }}"
+      ci: "SLACK_CHANNEL_ID"  # Will be resolved to secrets.SLACK_CHANNEL_ID
+      releases: "SLACK_CHANNEL_ID"  # Will be resolved to secrets.SLACK_CHANNEL_ID
     bot_token_secret: "SLACK_BOT_TOKEN"
   github:
     pr_comments: true
