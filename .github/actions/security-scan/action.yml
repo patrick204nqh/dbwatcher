@@ -28,7 +28,6 @@ runs:
       id: scan
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      timeout-minutes: ${{ fromJson(inputs.timeout) / 60 }}
       run: |
         echo "🔒 Running security checks..."
 

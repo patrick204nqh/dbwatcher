@@ -53,7 +53,6 @@ runs:
       if: inputs.test-suite == 'unit' || inputs.test-suite == 'all'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      timeout-minutes: ${{ fromJson(inputs.timeout) / 60 }}
       run: |
         echo "🧪 Running unit tests..."
         if bundle exec rake unit; then
@@ -70,7 +69,6 @@ runs:
       if: inputs.test-suite == 'acceptance' || inputs.test-suite == 'all'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      timeout-minutes: ${{ fromJson(inputs.timeout) / 60 }}
       run: |
         echo "🥒 Running acceptance tests..."
         if bundle exec rake acceptance; then

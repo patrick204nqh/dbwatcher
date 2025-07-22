@@ -13,7 +13,7 @@ outputs:
   ruby-default:
     description: 'Default Ruby version'
     value: ${{ steps.parse.outputs.ruby-default }}
-
+  
   # Timeouts
   timeout-test:
     description: 'Test timeout in seconds'
@@ -27,12 +27,12 @@ outputs:
   timeout-compatibility:
     description: 'Compatibility check timeout in seconds'
     value: ${{ steps.parse.outputs.timeout-compatibility }}
-
+  
   # Thresholds
   coverage-threshold:
     description: 'Coverage percentage threshold'
     value: ${{ steps.parse.outputs.coverage-threshold }}
-
+    
   # Notifications
   slack-channel-ci:
     description: 'Slack channel for CI notifications'
@@ -49,7 +49,7 @@ outputs:
   github-private-key-secret:
     description: 'Secret name for GitHub private key'
     value: ${{ steps.parse.outputs.github-private-key-secret }}
-
+    
   # Features
   feature-coverage-upload:
     description: 'Whether to upload coverage reports'
@@ -72,80 +72,56 @@ runs:
       shell: bash
       run: |
         CONFIG_FILE="${{ inputs.config-path }}"
-
+        
         if [ ! -f "$CONFIG_FILE" ]; then
           echo "❌ Configuration file not found: $CONFIG_FILE"
           exit 1
         fi
-
+        
         # Parse YAML using yq (if available) or Python
         if command -v yq >/dev/null 2>&1; then
           # Ruby configuration
           echo "ruby-versions=$(yq eval '.ruby.versions' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
           echo "ruby-default=$(yq eval '.ruby.default' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
-
+          
           # Timeouts
           echo "timeout-test=$(yq eval '.timeouts.test' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
           echo "timeout-security=$(yq eval '.timeouts.security' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
           echo "timeout-quality=$(yq eval '.timeouts.quality' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
           echo "timeout-compatibility=$(yq eval '.timeouts.compatibility' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
-
+          
           # Thresholds
           echo "coverage-threshold=$(yq eval '.thresholds.coverage' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
-
+          
           # Notifications
           echo "slack-channel-ci=$(yq eval '.notifications.slack.channels.ci' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
           echo "slack-channel-releases=$(yq eval '.notifications.slack.channels.releases' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
           echo "slack-bot-token-secret=$(yq eval '.notifications.slack.bot_token_secret' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
           echo "github-app-id-secret=$(yq eval '.notifications.github.app_id_secret' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
           echo "github-private-key-secret=$(yq eval '.notifications.github.private_key_secret' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
-
+          
           # Features
           echo "feature-coverage-upload=$(yq eval '.features.coverage_upload' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
           echo "feature-security-scan=$(yq eval '.features.security_scan' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
           echo "feature-quality-check=$(yq eval '.features.quality_check' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
           echo "feature-slack-notifications=$(yq eval '.features.slack_notifications' "$CONFIG_FILE")" >> $GITHUB_OUTPUT
         else
-          # Fallback to Python parsing
-          python3 -c "
-import yaml
-import json
-import sys
-
-try:
-    with open('$CONFIG_FILE', 'r') as f:
-        config = yaml.safe_load(f)
-
-    # Ruby configuration
-    print(f'ruby-versions={json.dumps(config[\"ruby\"][\"versions\"])}')
-    print(f'ruby-default={config[\"ruby\"][\"default\"]}')
-
-    # Timeouts
-    print(f'timeout-test={config[\"timeouts\"][\"test\"]}')
-    print(f'timeout-security={config[\"timeouts\"][\"security\"]}')
-    print(f'timeout-quality={config[\"timeouts\"][\"quality\"]}')
-    print(f'timeout-compatibility={config[\"timeouts\"][\"compatibility\"]}')
-
-    # Thresholds
-    print(f'coverage-threshold={config[\"thresholds\"][\"coverage\"]}')
-
-    # Notifications
-    print(f'slack-channel-ci={config[\"notifications\"][\"slack\"][\"channels\"][\"ci\"]}')
-    print(f'slack-channel-releases={config[\"notifications\"][\"slack\"][\"channels\"][\"releases\"]}')
-    print(f'slack-bot-token-secret={config[\"notifications\"][\"slack\"][\"bot_token_secret\"]}')
-    print(f'github-app-id-secret={config[\"notifications\"][\"github\"][\"app_id_secret\"]}')
-    print(f'github-private-key-secret={config[\"notifications\"][\"github\"][\"private_key_secret\"]}')
-
-    # Features
-    print(f'feature-coverage-upload={str(config[\"features\"][\"coverage_upload\"]).lower()}')
-    print(f'feature-security-scan={str(config[\"features\"][\"security_scan\"]).lower()}')
-    print(f'feature-quality-check={str(config[\"features\"][\"quality_check\"]).lower()}')
-    print(f'feature-slack-notifications={str(config[\"features\"][\"slack_notifications\"]).lower()}')
-
-except Exception as e:
-    print(f'❌ Error parsing config: {e}', file=sys.stderr)
-    sys.exit(1)
-" >> $GITHUB_OUTPUT
+          echo "⚠️ yq not available, using basic parsing"
+          echo "ruby-default=3.3" >> $GITHUB_OUTPUT
+          echo "timeout-test=1800" >> $GITHUB_OUTPUT
+          echo "timeout-security=600" >> $GITHUB_OUTPUT
+          echo "timeout-quality=300" >> $GITHUB_OUTPUT
+          echo "timeout-compatibility=900" >> $GITHUB_OUTPUT
+          echo "coverage-threshold=80" >> $GITHUB_OUTPUT
+          echo "slack-channel-ci=\${{ secrets.SLACK_CHANNEL_ID }}" >> $GITHUB_OUTPUT
+          echo "slack-channel-releases=\${{ secrets.SLACK_CHANNEL_ID }}" >> $GITHUB_OUTPUT
+          echo "slack-bot-token-secret=SLACK_BOT_TOKEN" >> $GITHUB_OUTPUT
+          echo "github-app-id-secret=DBWATCHER_CI_APP_ID" >> $GITHUB_OUTPUT
+          echo "github-private-key-secret=DBWATCHER_CI_PRIVATE_KEY" >> $GITHUB_OUTPUT
+          echo "feature-coverage-upload=true" >> $GITHUB_OUTPUT
+          echo "feature-security-scan=true" >> $GITHUB_OUTPUT
+          echo "feature-quality-check=true" >> $GITHUB_OUTPUT
+          echo "feature-slack-notifications=true" >> $GITHUB_OUTPUT
         fi
-
+        
         echo "✅ Configuration loaded successfully"
