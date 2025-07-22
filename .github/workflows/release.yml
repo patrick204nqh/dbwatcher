@@ -314,7 +314,7 @@ jobs:
 
       - name: Notify Slack - Release Complete
         if: success()
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v2.1.1
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           method: chat.postMessage
@@ -381,7 +381,7 @@ jobs:
           fi
 
       - name: Notify Slack - Release Failure
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v2.1.1
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           method: chat.postMessage
