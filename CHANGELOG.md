@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.6] - 2025-07-24
+
+### Added
+
+- Improve auto-merge logic for Dependabot PRs with enhanced safety checks
+- Add repository checkout step for CI notification on pull requests
+- Update PR status reporting to include all checks results
+- Update bot setup guide and improve CI notification formatting
+- Enhance CI notification with app token generation and detailed PR quality report
+- Add setup guide for dbwatcher-ci GitHub App and integrate app token generation in auto-merge workflow
+- Enhance Slack notifications with detailed context and improved formatting for CI and release workflows
+- Add SVG icon for DBWatcher with detailed vector paths
+
+
+### Changed
+
+- Bump the production-dependencies group with 8 updates (#45)
+- Update README.md
+
+
+### Fixed
+
+- Clean up CI notification formatting and remove unnecessary comments
+
+
+### CI/CD
+
+- Bump slackapi/slack-github-action from 2.0.0 to 2.1.1 (#43)
+- Bump lewagon/wait-on-check-action from 1.3.4 to 1.4.0 (#44)
+
+
 ## [1.1.5] - 2025-07-20
 
 ### Added
