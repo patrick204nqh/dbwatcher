@@ -14,3 +14,12 @@
 // Stylesheets
 //= link dbwatcher/application.css
 //= link dbwatcher/vendor/tabulator.min.css
+
+// Images - Required assets
+//= link dbwatcher/dbwatcher-tranparent_512x512.png
+//= link dbwatcher/favicon.ico
+//= link dbwatcher/favicon-96x96.png
+//= link dbwatcher/apple-touch-icon.png
+//= link dbwatcher/web-app-manifest-192x192.png
+//= link dbwatcher/web-app-manifest-512x512.png
+//= link dbwatcher/site.webmanifest
