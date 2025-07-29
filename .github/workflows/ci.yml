@@ -139,7 +139,7 @@ jobs:
       - name: Generate dbwatcher-ci App Token
         if: github.event_name == 'pull_request'
         id: app_token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.DBWATCHER_CI_APP_ID }}
           private-key: ${{ secrets.DBWATCHER_CI_PRIVATE_KEY }}
