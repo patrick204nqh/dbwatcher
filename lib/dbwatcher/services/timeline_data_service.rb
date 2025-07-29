@@ -20,6 +20,7 @@ module Dbwatcher
       include MetadataBuilder
       include EntryBuilder
       include EnhancementUtilities
+
       # Initialize the timeline data service
       #
       # @param session [Session] session object containing changes data
