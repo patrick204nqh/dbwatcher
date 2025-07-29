@@ -20,6 +20,7 @@ module Dbwatcher
     # rubocop:disable Metrics/ClassLength
     class SystemInfoStorage < BaseStorage
       include Dbwatcher::Logging
+
       # Initialize system info storage
       def initialize
         super

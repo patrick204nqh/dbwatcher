@@ -5,6 +5,7 @@ module Dbwatcher
     class SessionOperations
       # Include data normalization capabilities
       include Concerns::DataNormalizer
+
       def initialize(sessions_path, index_file)
         @sessions_path = sessions_path
         @index_file = index_file
