@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
@@ -65,7 +65,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
@@ -82,7 +82,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
@@ -99,7 +99,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
@@ -134,7 +134,7 @@ jobs:
     steps:
       - name: Checkout repository
         if: github.event_name == 'pull_request'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Generate dbwatcher-ci App Token
         if: github.event_name == 'pull_request'
