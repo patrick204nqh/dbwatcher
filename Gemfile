@@ -8,8 +8,8 @@ gemspec
 gem "capybara", "~> 3.0"
 gem "irb"
 gem "rails", ">= 6.0"
-gem "rake", "~> 13.0"
-gem "rspec", "~> 3.0"
+gem "rake", "~> 13.3"
+gem "rspec", "~> 3.13"
 gem "rspec-rails", "~> 6.0"
 gem "selenium-webdriver", "~> 4.0"
 gem "sprockets-rails", "~> 3.4"
@@ -17,7 +17,7 @@ gem "sqlite3", "~> 1.4"
 
 gem "brakeman", "~> 6.0"
 gem "bundler-audit", "~> 0.9"
-gem "rubocop", "~> 1.80"
+gem "rubocop", "~> 1.82"
 
 # Test coverage
 gem "simplecov", "~> 0.22.0", require: false
