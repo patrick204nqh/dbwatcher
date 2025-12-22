@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Generate dbwatcher-ci App Token
         id: app_token
@@ -73,7 +73,7 @@ jobs:
 
       - name: Wait for CI checks
         if: steps.check.outputs.safe_update == 'true'
-        uses: lewagon/wait-on-check-action@v1.4.0
+        uses: lewagon/wait-on-check-action@v1.4.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Test Suite"
@@ -83,7 +83,7 @@ jobs:
 
       - name: Wait for quality checks
         if: steps.check.outputs.safe_update == 'true'
-        uses: lewagon/wait-on-check-action@v1.4.0
+        uses: lewagon/wait-on-check-action@v1.4.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Code Quality"
@@ -93,7 +93,7 @@ jobs:
 
       - name: Wait for security checks
         if: steps.check.outputs.safe_update == 'true'
-        uses: lewagon/wait-on-check-action@v1.4.0
+        uses: lewagon/wait-on-check-action@v1.4.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Security Scan"
@@ -103,7 +103,7 @@ jobs:
 
       - name: Wait for compatibility checks
         if: steps.check.outputs.safe_update == 'true'
-        uses: lewagon/wait-on-check-action@v1.4.0
+        uses: lewagon/wait-on-check-action@v1.4.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Compatibility Check"
