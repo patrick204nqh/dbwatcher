@@ -78,30 +78,39 @@ module Dbwatcher
         # Collect operating system version
         #
         # @return [String] operating system version
-        # rubocop:disable Metrics/MethodLength
         def collect_os_version
           case RbConfig::CONFIG["host_os"]
-          when /darwin/
-            `sw_vers -productVersion`.strip
-          when /linux/
-            if File.exist?("/etc/os-release")
-              # Extract version from os-release file safely
-              os_release = File.read("/etc/os-release")
-              match = os_release.match(/VERSION="?([^"]+)"?/)
-              match ? match[1] : "unknown"
-            else
-              "unknown"
-            end
-          when /mswin|mingw/
-            `ver`.strip
-          else
-            "unknown"
+          when /darwin/  then darwin_os_version
+          when /linux/   then linux_os_version
+          when /mswin|mingw/ then `ver`.strip
+          else "unknown"
           end
         rescue StandardError => e
           log_error "Failed to get OS version: #{e.message}"
           "unknown"
         end
-        # rubocop:enable Metrics/MethodLength
+
+        # Read macOS product version
+        #
+        # @return [String] macOS version
+        def darwin_os_version
+          `sw_vers -productVersion`.strip
+        rescue StandardError
+          "unknown"
+        end
+
+        # Read Linux OS version from /etc/os-release
+        #
+        # @return [String] Linux version string
+        def linux_os_version
+          return "unknown" unless File.exist?("/etc/os-release")
+
+          os_release = File.read("/etc/os-release")
+          match = os_release.match(/VERSION="?([^"]+)"?/)
+          match ? match[1] : "unknown"
+        rescue StandardError
+          "unknown"
+        end
 
         # Collect kernel version
         #
@@ -116,151 +125,185 @@ module Dbwatcher
         # Collect CPU information
         #
         # @return [Hash] CPU information
-        # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
         def collect_cpu_info
-          cpu_info = {
+          cpu_info = default_cpu_info
+          enrich_cpu_info_from_proc(cpu_info)
+          cpu_info[:load_average] = read_load_average_from_proc
+          cpu_info
+        rescue StandardError => e
+          log_error "Failed to get CPU info: #{e.message}"
+          default_cpu_info.merge(architecture: "unknown")
+        end
+
+        # Default CPU info hash
+        #
+        # @return [Hash] default CPU info
+        def default_cpu_info
+          {
             model: "unknown",
             architecture: RbConfig::CONFIG["host_cpu"],
             cores: 1,
             speed: "unknown",
             load_average: [0.0, 0.0, 0.0]
           }
-
-          # Try to get CPU model from /proc/cpuinfo on Linux
-          if File.exist?("/proc/cpuinfo")
-            cpuinfo = File.read("/proc/cpuinfo")
-
-            # Count cores
-            cpu_info[:cores] = cpuinfo.scan(/^processor\s*:/).length
-
-            # Get model name
-            model_line = cpuinfo.lines.grep(/^model name\s*:/).first
-            cpu_info[:model] = model_line.split(":", 2).last.strip if model_line
-          end
-
-          # Get load average
-          if File.exist?("/proc/loadavg")
-            loadavg = File.read("/proc/loadavg").strip.split
-            cpu_info[:load_average] = [
-              loadavg[0].to_f,
-              loadavg[1].to_f,
-              loadavg[2].to_f
-            ]
-          end
-
-          cpu_info
-        rescue StandardError => e
-          log_error "Failed to get CPU info: #{e.message}"
-          {
-            model: "unknown",
-            architecture: "unknown",
-            cores: 1,
-            speed: "unknown",
-            load_average: [0.0, 0.0, 0.0]
-          }
         end
-        # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+
+        # Enrich cpu_info hash from /proc/cpuinfo if available
+        #
+        # @param cpu_info [Hash] hash to mutate
+        # @return [void]
+        def enrich_cpu_info_from_proc(cpu_info)
+          return unless File.exist?("/proc/cpuinfo")
+
+          cpuinfo = File.read("/proc/cpuinfo")
+          cpu_info[:cores] = cpuinfo.scan(/^processor\s*:/).length
+
+          model_line = cpuinfo.lines.grep(/^model name\s*:/).first
+          cpu_info[:model] = model_line.split(":", 2).last.strip if model_line
+        rescue StandardError
+          # Leave cpu_info unchanged
+        end
+
+        # Read load average from /proc/loadavg
+        #
+        # @return [Array<Float>] 1/5/15 min load averages
+        def read_load_average_from_proc
+          return [0.0, 0.0, 0.0] unless File.exist?("/proc/loadavg")
+
+          parts = File.read("/proc/loadavg").strip.split
+          [parts[0].to_f, parts[1].to_f, parts[2].to_f]
+        rescue StandardError
+          [0.0, 0.0, 0.0]
+        end
 
         # Collect memory information
         #
         # @return [Hash] memory information
-        # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
         def collect_memory_info
-          mem_info = {
-            total: 0,
-            free: 0,
-            available: 0,
-            used: 0
-          }
-
           if File.exist?("/proc/meminfo")
-            mem_data = File.read("/proc/meminfo")
-
-            # Fix safe navigation chain length issues by breaking them up
-            match = mem_data.match(/MemTotal:\s+(\d+)/i)
-            total = match ? match.captures.first.to_i : 0
-
-            match = mem_data.match(/MemFree:\s+(\d+)/i)
-            free = match ? match.captures.first.to_i : 0
-
-            match = mem_data.match(/MemAvailable:\s+(\d+)/i)
-            available = match ? match.captures.first.to_i : 0
-
-            mem_info[:total] = total * 1024 # Convert KB to bytes
-            mem_info[:free] = free * 1024
-            mem_info[:available] = available * 1024
-            mem_info[:used] = mem_info[:total] - mem_info[:free]
+            linux_memory_info
           else
-            # For non-Linux systems, try to get memory info from platform-specific commands
-            case RbConfig::CONFIG["host_os"]
-            when /darwin/
-              # macOS
-              begin
-                mem_data = `sysctl hw.memsize hw.physmem`.strip.split("\n")
-                total = mem_data.grep(/hw.memsize/).first&.split(":")&.last.to_i
-                mem_info[:total] = total if total&.positive?
-              rescue StandardError => e
-                log_error "Failed to get macOS memory info: #{e.message}"
-              end
-            end
+            fallback_memory_info
           end
-
-          mem_info
         rescue StandardError => e
           log_error "Failed to get memory info: #{e.message}"
           { total: 0, free: 0, available: 0, used: 0 }
         end
-        # rubocop:enable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+
+        # Parse Linux /proc/meminfo
+        #
+        # @return [Hash] memory info
+        def linux_memory_info
+          mem_data = File.read("/proc/meminfo")
+          total     = parse_meminfo_value(mem_data, "MemTotal")
+          free_mem  = parse_meminfo_value(mem_data, "MemFree")
+          available = parse_meminfo_value(mem_data, "MemAvailable")
+
+          total_bytes = total * 1024
+          free_bytes  = free_mem * 1024
+          {
+            total: total_bytes,
+            free: free_bytes,
+            available: available * 1024,
+            used: total_bytes - free_bytes
+          }
+        end
+
+        # Extract a KB value from /proc/meminfo text
+        #
+        # @param mem_data [String] content of /proc/meminfo
+        # @param key [String] field name (e.g. "MemTotal")
+        # @return [Integer] value in KB
+        def parse_meminfo_value(mem_data, key)
+          match = mem_data.match(/#{key}:\s+(\d+)/i)
+          match ? match.captures.first.to_i : 0
+        end
+
+        # Fallback memory info for non-Linux systems
+        #
+        # @return [Hash] memory info
+        def fallback_memory_info
+          mem_info = { total: 0, free: 0, available: 0, used: 0 }
+          return darwin_memory_info(mem_info) if RbConfig::CONFIG["host_os"] =~ /darwin/
+
+          mem_info
+        end
+
+        # Attempt to read macOS memory size via sysctl
+        #
+        # @param mem_info [Hash] hash to populate
+        # @return [Hash] memory info
+        def darwin_memory_info(mem_info)
+          mem_data = `sysctl hw.memsize hw.physmem`.strip.split("\n")
+          total = mem_data.grep(/hw.memsize/).first&.split(":")&.last.to_i
+          mem_info[:total] = total if total&.positive?
+          mem_info
+        rescue StandardError => e
+          log_error "Failed to get macOS memory info: #{e.message}"
+          mem_info
+        end
 
         # Collect disk information
         #
         # @return [Hash] disk information
-        # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
         def collect_disk_info
-          disk_info = {
-            total: 0,
-            free: 0,
-            used: 0,
-            filesystems: []
-          }
-
-          # Use df command to get disk usage
-          begin
-            df_output = `df -k`.strip.split("\n")
-            df_output.shift # Remove header line
-
-            df_output.each do |line|
-              parts = line.split(/\s+/)
-              next if parts.size < 6 # Skip invalid lines
-
-              filesystem = {
-                device: parts[0],
-                mount_point: parts[5],
-                total: parts[1].to_i * 1024, # Convert KB to bytes
-                used: parts[2].to_i * 1024,
-                free: parts[3].to_i * 1024,
-                usage_percent: parts[4].to_i
-              }
-
-              disk_info[:filesystems] << filesystem
-
-              # Only count real filesystems (not special ones)
-              next if filesystem[:device].start_with?("tmpfs", "devtmpfs", "none")
-
-              disk_info[:total] += filesystem[:total]
-              disk_info[:used] += filesystem[:used]
-              disk_info[:free] += filesystem[:free]
-            end
-          rescue StandardError => e
-            log_error "Failed to get disk info: #{e.message}"
-          end
-
+          disk_info = { total: 0, free: 0, used: 0, filesystems: [] }
+          parse_df_output(disk_info)
           disk_info
         rescue StandardError => e
           log_error "Failed to get disk info: #{e.message}"
           { total: 0, free: 0, used: 0, filesystems: [] }
         end
-        # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+
+        # Parse `df -k` output into disk_info hash
+        #
+        # @param disk_info [Hash] hash to populate
+        # @return [void]
+        def parse_df_output(disk_info)
+          df_lines = `df -k`.strip.split("\n")
+          df_lines.shift # Remove header
+
+          df_lines.each do |line|
+            filesystem = parse_df_line(line)
+            next unless filesystem
+
+            disk_info[:filesystems] << filesystem
+            accumulate_disk_totals(disk_info, filesystem)
+          end
+        rescue StandardError => e
+          log_error "Failed to get disk info: #{e.message}"
+        end
+
+        # Parse a single `df` output line into a filesystem hash
+        #
+        # @param line [String] single df output line
+        # @return [Hash, nil] filesystem hash or nil if invalid
+        def parse_df_line(line)
+          parts = line.split(/\s+/)
+          return nil if parts.size < 6
+
+          {
+            device: parts[0],
+            mount_point: parts[5],
+            total: parts[1].to_i * 1024,
+            used: parts[2].to_i * 1024,
+            free: parts[3].to_i * 1024,
+            usage_percent: parts[4].to_i
+          }
+        end
+
+        # Add real filesystem totals to the aggregate disk_info hash
+        #
+        # @param disk_info [Hash] aggregate hash to update
+        # @param fs [Hash] single filesystem entry
+        # @return [void]
+        def accumulate_disk_totals(disk_info, filesystem)
+          return if filesystem[:device].start_with?("tmpfs", "devtmpfs", "none")
+
+          disk_info[:total] += filesystem[:total]
+          disk_info[:used]  += filesystem[:used]
+          disk_info[:free]  += filesystem[:free]
+        end
 
         # Collect process information
         #
@@ -281,90 +324,86 @@ module Dbwatcher
         # Collect load average information
         #
         # @return [Hash] load average information
-        # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
         def collect_load_info
-          load_avg = [0.0, 0.0, 0.0]
-          load_info = {
-            "1min" => 0.0,
-            "5min" => 0.0,
-            "15min" => 0.0
-          }
-
-          # Try to get load average from /proc/loadavg
-          if File.exist?("/proc/loadavg")
-            begin
-              loadavg = File.read("/proc/loadavg").strip.split
-              load_avg = [loadavg[0].to_f, loadavg[1].to_f, loadavg[2].to_f]
-            rescue StandardError => e
-              log_error "Failed to read /proc/loadavg: #{e.message}"
-            end
-          else
-            # Try to get load average using uptime command
-            begin
-              uptime = `uptime`.strip
-              if uptime =~ /load average:?\s+([\d.]+),?\s+([\d.]+),?\s+([\d.]+)/
-                load_avg = [::Regexp.last_match(1).to_f, ::Regexp.last_match(2).to_f,
-                            ::Regexp.last_match(3).to_f]
-              end
-            rescue StandardError => e
-              log_error "Failed to get load average from uptime: #{e.message}"
-            end
-          end
-
-          load_info["1min"] = load_avg[0]
-          load_info["5min"] = load_avg[1]
-          load_info["15min"] = load_avg[2]
-          load_info
+          avg = load_average_triple
+          { "1min" => avg[0], "5min" => avg[1], "15min" => avg[2] }
         rescue StandardError => e
           log_error "Failed to get load info: #{e.message}"
           { "1min" => 0.0, "5min" => 0.0, "15min" => 0.0 }
         end
-        # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+
+        # Return [1min, 5min, 15min] load averages from /proc or uptime
+        #
+        # @return [Array<Float>]
+        def load_average_triple
+          return read_load_average_from_proc if File.exist?("/proc/loadavg")
+
+          load_average_from_uptime
+        end
+
+        # Parse load averages from the `uptime` command output
+        #
+        # @return [Array<Float>]
+        def load_average_from_uptime
+          uptime = `uptime`.strip
+          if uptime =~ /load average:?\s+([\d.]+),?\s+([\d.]+),?\s+([\d.]+)/
+            [::Regexp.last_match(1).to_f, ::Regexp.last_match(2).to_f, ::Regexp.last_match(3).to_f]
+          else
+            [0.0, 0.0, 0.0]
+          end
+        rescue StandardError => e
+          log_error "Failed to get load average from uptime: #{e.message}"
+          [0.0, 0.0, 0.0]
+        end
 
         # Collect system uptime
         #
         # @return [Hash] uptime information
-        # rubocop:disable Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/AbcSize
         def collect_uptime
-          uptime_seconds = 0
-          uptime_info = {
-            seconds: 0,
-            formatted: "0 days, 0 hours, 0 minutes"
-          }
-
-          if File.exist?("/proc/uptime")
-            begin
-              uptime_seconds = File.read("/proc/uptime").strip.split.first.to_f
-            rescue StandardError => e
-              log_error "Failed to read /proc/uptime: #{e.message}"
-            end
-          else
-            # Try to get uptime using uptime command
-            begin
-              uptime_output = `uptime`.strip
-              if uptime_output =~ /up\s+(\d+)\s+days?,\s+(\d+):(\d+)/
-                days = ::Regexp.last_match(1).to_i
-                hours = ::Regexp.last_match(2).to_i
-                minutes = ::Regexp.last_match(3).to_i
-                uptime_seconds = (days * 86_400) + (hours * 3600) + (minutes * 60)
-              elsif uptime_output =~ /up\s+(\d+):(\d+)/
-                hours = ::Regexp.last_match(1).to_i
-                minutes = ::Regexp.last_match(2).to_i
-                uptime_seconds = (hours * 3600) + (minutes * 60)
-              end
-            rescue StandardError => e
-              log_error "Failed to get uptime from uptime command: #{e.message}"
-            end
-          end
-
-          uptime_info[:seconds] = uptime_seconds.to_i
-          uptime_info[:formatted] = format_uptime(uptime_seconds)
-          uptime_info
+          seconds = read_uptime_seconds
+          { seconds: seconds.to_i, formatted: format_uptime(seconds) }
         rescue StandardError => e
           log_error "Failed to get uptime: #{e.message}"
           { seconds: 0, formatted: "0 days, 0 hours, 0 minutes" }
         end
-        # rubocop:enable Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/AbcSize
+
+        # Read uptime in seconds from /proc or uptime command
+        #
+        # @return [Float] uptime in seconds
+        def read_uptime_seconds
+          return File.read("/proc/uptime").strip.split.first.to_f if File.exist?("/proc/uptime")
+
+          uptime_seconds_from_command
+        end
+
+        # Parse uptime seconds from the `uptime` shell command
+        #
+        # @return [Float] uptime in seconds
+        def uptime_seconds_from_command
+          parse_uptime_output(`uptime`.strip)
+        rescue StandardError => e
+          log_error "Failed to get uptime from uptime command: #{e.message}"
+          0
+        end
+
+        # Parse uptime output string into seconds
+        #
+        # @param output [String] uptime command output
+        # @return [Integer] uptime in seconds
+        def parse_uptime_output(output)
+          if output =~ /up\s+(\d+)\s+days?,\s+(\d+):(\d+)/
+            days    = ::Regexp.last_match(1).to_i
+            hours   = ::Regexp.last_match(2).to_i
+            minutes = ::Regexp.last_match(3).to_i
+            (days * 86_400) + (hours * 3600) + (minutes * 60)
+          elsif output =~ /up\s+(\d+):(\d+)/
+            hours   = ::Regexp.last_match(1).to_i
+            minutes = ::Regexp.last_match(2).to_i
+            (hours * 3600) + (minutes * 60)
+          else
+            0
+          end
+        end
 
         # Format uptime seconds into a human-readable string
         #
