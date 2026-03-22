@@ -264,11 +264,11 @@ module Dbwatcher
           df_lines.shift # Remove header
 
           df_lines.each do |line|
-            fs = parse_df_line(line)
-            next unless fs
+            filesystem = parse_df_line(line)
+            next unless filesystem
 
-            disk_info[:filesystems] << fs
-            accumulate_disk_totals(disk_info, fs)
+            disk_info[:filesystems] << filesystem
+            accumulate_disk_totals(disk_info, filesystem)
           end
         rescue StandardError => e
           log_error "Failed to get disk info: #{e.message}"
@@ -297,12 +297,12 @@ module Dbwatcher
         # @param disk_info [Hash] aggregate hash to update
         # @param fs [Hash] single filesystem entry
         # @return [void]
-        def accumulate_disk_totals(disk_info, fs)
-          return if fs[:device].start_with?("tmpfs", "devtmpfs", "none")
+        def accumulate_disk_totals(disk_info, filesystem)
+          return if filesystem[:device].start_with?("tmpfs", "devtmpfs", "none")
 
-          disk_info[:total] += fs[:total]
-          disk_info[:used]  += fs[:used]
-          disk_info[:free]  += fs[:free]
+          disk_info[:total] += filesystem[:total]
+          disk_info[:used]  += filesystem[:used]
+          disk_info[:free]  += filesystem[:free]
         end
 
         # Collect process information
@@ -380,20 +380,29 @@ module Dbwatcher
         #
         # @return [Float] uptime in seconds
         def uptime_seconds_from_command
-          output = `uptime`.strip
+          parse_uptime_output(`uptime`.strip)
+        rescue StandardError => e
+          log_error "Failed to get uptime from uptime command: #{e.message}"
+          0
+        end
+
+        # Parse uptime output string into seconds
+        #
+        # @param output [String] uptime command output
+        # @return [Integer] uptime in seconds
+        def parse_uptime_output(output)
           if output =~ /up\s+(\d+)\s+days?,\s+(\d+):(\d+)/
-            days, hours, minutes = ::Regexp.last_match(1).to_i, ::Regexp.last_match(2).to_i,
-                                   ::Regexp.last_match(3).to_i
+            days    = ::Regexp.last_match(1).to_i
+            hours   = ::Regexp.last_match(2).to_i
+            minutes = ::Regexp.last_match(3).to_i
             (days * 86_400) + (hours * 3600) + (minutes * 60)
           elsif output =~ /up\s+(\d+):(\d+)/
-            hours, minutes = ::Regexp.last_match(1).to_i, ::Regexp.last_match(2).to_i
+            hours   = ::Regexp.last_match(1).to_i
+            minutes = ::Regexp.last_match(2).to_i
             (hours * 3600) + (minutes * 60)
           else
             0
           end
-        rescue StandardError => e
-          log_error "Failed to get uptime from uptime command: #{e.message}"
-          0
         end
 
         # Format uptime seconds into a human-readable string
