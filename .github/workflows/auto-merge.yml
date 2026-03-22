@@ -24,6 +24,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Generate dbwatcher-ci App Token
+        if: github.event.pull_request.head.repo.full_name == github.repository
         id: app_token
         uses: actions/create-github-app-token@v3
         with:
