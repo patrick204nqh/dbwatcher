@@ -137,7 +137,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Generate dbwatcher-ci App Token
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         id: app_token
         uses: actions/create-github-app-token@v3
         with:
@@ -169,7 +169,7 @@ jobs:
           fi
 
       - name: PR Quality Report
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
@@ -197,6 +197,7 @@ jobs:
           gh pr comment ${{ github.event.pull_request.number }} --body-file pr_report.md
 
       - name: Notify Slack
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
         uses: slackapi/slack-github-action@v3.0.1
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}

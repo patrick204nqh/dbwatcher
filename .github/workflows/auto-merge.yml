@@ -24,6 +24,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Generate dbwatcher-ci App Token
+        if: github.event.pull_request.head.repo.full_name == github.repository
         id: app_token
         uses: actions/create-github-app-token@v3
         with:
@@ -155,7 +156,7 @@ jobs:
     if: always() && github.actor == 'dependabot[bot]'
     steps:
       - name: Notify Slack about auto-merge
-        if: needs.auto-merge.result == 'success'
+        if: needs.auto-merge.result == 'success' && github.event.pull_request.head.repo.full_name == github.repository
         uses: slackapi/slack-github-action@v3.0.1
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
