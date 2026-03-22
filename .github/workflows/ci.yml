@@ -197,6 +197,7 @@ jobs:
           gh pr comment ${{ github.event.pull_request.number }} --body-file pr_report.md
 
       - name: Notify Slack
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
         uses: slackapi/slack-github-action@v3.0.1
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
