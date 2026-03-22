@@ -53,69 +53,9 @@ module Dbwatcher
         # @return [DiagramData::Dataset] standardized dataset
         def transform_to_dataset(raw_data)
           dataset = create_empty_dataset
-          dataset.metadata.merge!({
-                                    total_relationships: raw_data.length,
-                                    tables_analyzed: tables_to_analyze.length,
-                                    inference_types: raw_data.map { |r| r[:inference_type] }.uniq
-                                  })
-
-          # Create entities for each unique table
-          table_entities = {}
-
-          # First, collect all unique tables from the relationships
-          tables = []
-          raw_data.each do |relationship|
-            tables << relationship[:from_table] if relationship[:from_table]
-            tables << relationship[:to_table] if relationship[:to_table]
-          end
-          tables.uniq!
-
-          # Create entities for all tables
-          tables.each do |table_name|
-            entity = create_entity(
-              id: table_name,
-              name: table_name,
-              type: "table",
-              metadata: {
-                table_name: table_name,
-                source: "inferred_analysis"
-              }
-            )
-            dataset.add_entity(entity)
-            table_entities[table_name] = entity
-          end
-
-          # Create relationships in a separate loop
-          raw_data.each do |relationship|
-            next unless relationship[:from_table] && relationship[:to_table]
-
-            # Include self-referential relationships (source and target are the same)
-            # but log them for debugging
-            if relationship[:from_table] == relationship[:to_table]
-              Rails.logger.info "InferredRelationshipAnalyzer: Including self-referential relationship for " \
-                                "#{relationship[:from_table]} " \
-                                "(#{relationship[:from_column]} -> #{relationship[:to_column]})"
-            end
-
-            relationship_obj = create_relationship({
-                                                     source_id: relationship[:from_table],
-                                                     target_id: relationship[:to_table],
-                                                     type: relationship[:type],
-                                                     label: relationship[:label],
-                                                     metadata: {
-                                                       inference_type: relationship[:inference_type],
-                                                       confidence: relationship[:confidence],
-                                                       from_column: relationship[:from_column],
-                                                       to_column: relationship[:to_column],
-                                                       original_type: relationship[:type],
-                                                       self_referential: relationship[:from_table] ==
-                                  relationship[:to_table]
-                                                     }
-                                                   })
-
-            dataset.add_relationship(relationship_obj)
-          end
-
+          populate_dataset_metadata(dataset, raw_data)
+          add_entities_to_dataset(dataset, raw_data)
+          add_relationships_to_dataset(dataset, raw_data)
           dataset
         end
 
@@ -145,6 +85,91 @@ module Dbwatcher
         attr_reader :connection
 
         private
+
+        # Set dataset metadata from raw relationship data
+        #
+        # @param dataset [DiagramData::Dataset]
+        # @param raw_data [Array<Hash>]
+        # @return [void]
+        def populate_dataset_metadata(dataset, raw_data)
+          dataset.metadata.merge!(
+            total_relationships: raw_data.length,
+            tables_analyzed: tables_to_analyze.length,
+            inference_types: raw_data.map { |r| r[:inference_type] }.uniq
+          )
+        end
+
+        # Add one entity per unique table referenced in raw_data
+        #
+        # @param dataset [DiagramData::Dataset]
+        # @param raw_data [Array<Hash>]
+        # @return [void]
+        def add_entities_to_dataset(dataset, raw_data)
+          unique_tables_from(raw_data).each do |table_name|
+            entity = create_entity(
+              id: table_name,
+              name: table_name,
+              type: "table",
+              metadata: { table_name: table_name, source: "inferred_analysis" }
+            )
+            dataset.add_entity(entity)
+          end
+        end
+
+        # Collect unique table names from raw relationship data
+        #
+        # @param raw_data [Array<Hash>]
+        # @return [Array<String>]
+        def unique_tables_from(raw_data)
+          raw_data.flat_map { |r| [r[:from_table], r[:to_table]] }.compact.uniq
+        end
+
+        # Add relationship objects to dataset
+        #
+        # @param dataset [DiagramData::Dataset]
+        # @param raw_data [Array<Hash>]
+        # @return [void]
+        def add_relationships_to_dataset(dataset, raw_data)
+          raw_data.each do |relationship|
+            next unless relationship[:from_table] && relationship[:to_table]
+
+            log_self_referential(relationship)
+            dataset.add_relationship(build_inferred_relationship(relationship))
+          end
+        end
+
+        # Log self-referential relationships for debugging
+        #
+        # @param relationship [Hash]
+        # @return [void]
+        def log_self_referential(relationship)
+          return unless relationship[:from_table] == relationship[:to_table]
+
+          Rails.logger.info "InferredRelationshipAnalyzer: Including self-referential relationship for " \
+                            "#{relationship[:from_table]} " \
+                            "(#{relationship[:from_column]} -> #{relationship[:to_column]})"
+        end
+
+        # Build a relationship object from raw data hash
+        #
+        # @param rel [Hash] raw relationship
+        # @return [Object] relationship object
+        def build_inferred_relationship(rel)
+          create_relationship(
+            source_id: rel[:from_table],
+            target_id: rel[:to_table],
+            type: rel[:type],
+            label: rel[:label],
+            metadata: {
+              inference_type: rel[:inference_type],
+              confidence: rel[:confidence],
+              from_column: rel[:from_column],
+              to_column: rel[:to_column],
+              original_type: rel[:type],
+              self_referential: rel[:from_table] == rel[:to_table]
+            }
+          )
+        end
 
         attr_reader :session, :session_tables
 

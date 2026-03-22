@@ -52,65 +52,12 @@ module Dbwatcher
         # @return [DiagramData::Dataset] standardized dataset
         def transform_to_dataset(raw_data)
           dataset = create_empty_dataset
-          dataset.metadata.merge!({
-                                    total_relationships: raw_data.length,
-                                    tables_analyzed: tables_to_analyze.length
-                                  })
-
-          # Create entities for each unique table
-          table_entities = {}
-
-          # First, collect all unique tables from the relationships
-          tables = []
-          raw_data.each do |relationship|
-            tables << relationship[:from_table] if relationship[:from_table]
-            tables << relationship[:to_table] if relationship[:to_table]
-          end
-          tables.uniq!
-
-          # Create entities for all tables
-          tables.each do |table_name|
-            entity = create_entity_with_columns(table_name)
-            dataset.add_entity(entity)
-            table_entities[table_name] = entity
-          end
-
-          # Create relationships in a separate loop
-          raw_data.each do |relationship|
-            next unless relationship[:from_table] && relationship[:to_table]
-
-            # Include self-referential relationships (source and target are the same)
-            # but log them for debugging
-            if relationship[:from_table] == relationship[:to_table]
-              Rails.logger.info "ForeignKeyAnalyzer: Including self-referential relationship for " \
-                                "#{relationship[:from_table]} " \
-                                "(#{relationship[:from_column]} -> #{relationship[:to_column]})"
-            end
-
-            cardinality = determine_cardinality(relationship)
-
-            relationship_obj = create_relationship({
-                                                     source_id: relationship[:from_table],
-                                                     target_id: relationship[:to_table],
-                                                     type: relationship[:type],
-                                                     label: relationship[:constraint_name] ||
-                    relationship[:from_column],
-                                                     cardinality: cardinality,
-                                                     metadata: {
-                                                       constraint_name: relationship[:constraint_name],
-                                                       from_column: relationship[:from_column],
-                                                       to_column: relationship[:to_column],
-                                                       on_delete: relationship[:on_delete],
-                                                       on_update: relationship[:on_update],
-                                                       original_type: relationship[:type],
-                                                       self_referential: relationship[:from_table] ==
-                                  relationship[:to_table]
-                                                     }
-                                                   })
-
-            dataset.add_relationship(relationship_obj)
-          end
-
+          dataset.metadata.merge!(
+            total_relationships: raw_data.length,
+            tables_analyzed: tables_to_analyze.length
+          )
+          add_fk_entities_to_dataset(dataset, raw_data)
+          add_fk_relationships_to_dataset(dataset, raw_data)
           dataset
         end
 
@@ -142,6 +89,75 @@ module Dbwatcher
         private
 
         attr_reader :session, :session_tables
+
+        # Add table entities to dataset from raw relationship data
+        #
+        # @param dataset [DiagramData::Dataset]
+        # @param raw_data [Array<Hash>]
+        # @return [void]
+        def add_fk_entities_to_dataset(dataset, raw_data)
+          unique_fk_tables_from(raw_data).each do |table_name|
+            entity = create_entity_with_columns(table_name)
+            dataset.add_entity(entity)
+          end
+        end
+
+        # Collect unique table names from raw FK relationship data
+        #
+        # @param raw_data [Array<Hash>]
+        # @return [Array<String>]
+        def unique_fk_tables_from(raw_data)
+          raw_data.flat_map { |r| [r[:from_table], r[:to_table]] }.compact.uniq
+        end
+
+        # Add relationship objects to dataset
+        #
+        # @param dataset [DiagramData::Dataset]
+        # @param raw_data [Array<Hash>]
+        # @return [void]
+        def add_fk_relationships_to_dataset(dataset, raw_data)
+          raw_data.each do |relationship|
+            next unless relationship[:from_table] && relationship[:to_table]
+
+            log_fk_self_referential(relationship)
+            dataset.add_relationship(build_fk_relationship(relationship))
+          end
+        end
+
+        # Log self-referential FK relationships
+        #
+        # @param relationship [Hash]
+        # @return [void]
+        def log_fk_self_referential(relationship)
+          return unless relationship[:from_table] == relationship[:to_table]
+
+          Rails.logger.info "ForeignKeyAnalyzer: Including self-referential relationship for " \
+                            "#{relationship[:from_table]} " \
+                            "(#{relationship[:from_column]} -> #{relationship[:to_column]})"
+        end
+
+        # Build a relationship object from a raw FK hash
+        #
+        # @param rel [Hash]
+        # @return [Object]
+        def build_fk_relationship(rel)
+          create_relationship(
+            source_id: rel[:from_table],
+            target_id: rel[:to_table],
+            type: rel[:type],
+            label: rel[:constraint_name] || rel[:from_column],
+            cardinality: determine_cardinality(rel),
+            metadata: {
+              constraint_name: rel[:constraint_name],
+              from_column: rel[:from_column],
+              to_column: rel[:to_column],
+              on_delete: rel[:on_delete],
+              on_update: rel[:on_update],
+              original_type: rel[:type],
+              self_referential: rel[:from_table] == rel[:to_table]
+            }
+          )
+        end
 
         # Create entity with table columns
         #

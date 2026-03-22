@@ -225,78 +225,92 @@ module Dbwatcher
         # Collect Rails configuration if available
         #
         # @return [Hash] Rails configuration
-        # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
         def collect_rails_config
-          rails_config = {}
+          return {} unless defined?(Rails)
 
-          return rails_config unless defined?(Rails)
-
-          # Basic Rails configuration
-          rails_config[:environment] = Rails.env
-          rails_config[:version] = Rails.version
-          rails_config[:root] = Rails.root.to_s
-
-          # Rails application configuration
-          if Rails.application
-            app_config = Rails.application.config
-            rails_config[:app_name] = Rails.application.class.name.split("::").first
-            rails_config[:autoload_paths] =
-              app_config.respond_to?(:autoload_paths) ? app_config.autoload_paths.size : nil
-            rails_config[:eager_load_paths] =
-              app_config.respond_to?(:eager_load_paths) ? app_config.eager_load_paths.size : nil
-            rails_config[:eager_load] = app_config.respond_to?(:eager_load) ? app_config.eager_load : nil
-            rails_config[:cache_classes] = app_config.respond_to?(:cache_classes) ? app_config.cache_classes : nil
-            rails_config[:consider_all_requests_local] =
-              app_config.respond_to?(:consider_all_requests_local) ? app_config.consider_all_requests_local : nil
-
-            # Fix long line by breaking it up and removing redundant else
-            perform_caching = if app_config.action_controller.respond_to?(:perform_caching)
-                                app_config.action_controller.perform_caching
-                              end
-            rails_config[:action_controller] = { perform_caching: perform_caching }
-          end
-
+          rails_config = basic_rails_config
+          rails_config.merge!(rails_app_config) if Rails.application
           rails_config
         rescue StandardError => e
           log_error "Failed to get Rails config: #{e.message}"
           {}
         end
-        # rubocop:enable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+
+        # Basic Rails environment/version info
+        #
+        # @return [Hash]
+        def basic_rails_config
+          {
+            environment: Rails.env,
+            version: Rails.version,
+            root: Rails.root.to_s
+          }
+        end
+
+        # Rails application-level config settings
+        #
+        # @return [Hash]
+        def rails_app_config
+          app_config = Rails.application.config
+          {
+            app_name: Rails.application.class.name.split("::").first,
+            autoload_paths: safe_config_value(app_config, :autoload_paths, &:size),
+            eager_load_paths: safe_config_value(app_config, :eager_load_paths, &:size),
+            eager_load: safe_config_value(app_config, :eager_load),
+            cache_classes: safe_config_value(app_config, :cache_classes),
+            consider_all_requests_local: safe_config_value(app_config, :consider_all_requests_local),
+            action_controller: { perform_caching: rails_perform_caching(app_config) }
+          }
+        end
+
+        # Safely read a config attribute, returning nil if not supported
+        #
+        # @param config [Object] config object
+        # @param attr [Symbol] attribute name
+        # @yield [value] optional transform block
+        # @return [Object, nil]
+        def safe_config_value(config, attr)
+          return nil unless config.respond_to?(attr)
+
+          value = config.public_send(attr)
+          block_given? ? yield(value) : value
+        end
+
+        # Read perform_caching from action_controller config
+        #
+        # @param app_config [Object]
+        # @return [Boolean, nil]
+        def rails_perform_caching(app_config)
+          return nil unless app_config.action_controller.respond_to?(:perform_caching)
+
+          app_config.action_controller.perform_caching
+        end
 
         # Collect DBWatcher configuration
         #
         # @return [Hash] DBWatcher configuration
-        # rubocop:disable Metrics/MethodLength
         def collect_dbwatcher_config
           config = Dbwatcher.configuration
-
-          # Only include non-sensitive configuration options
-          # Split long lines to avoid line length issues
           {
-            system_info_refresh_interval:
-              if config.respond_to?(:system_info_refresh_interval)
-                config.system_info_refresh_interval
-              else
-                300
-              end,
-            collect_sensitive_env_vars:
-              if config.respond_to?(:collect_sensitive_env_vars?)
-                config.collect_sensitive_env_vars?
-              else
-                false
-              end,
+            system_info_refresh_interval: dbwatcher_config_value(config, :system_info_refresh_interval, 300),
+            collect_sensitive_env_vars: dbwatcher_config_value(config, :collect_sensitive_env_vars?, false),
             system_info_include_performance_metrics:
-              if config.respond_to?(:system_info_include_performance_metrics?)
-                config.system_info_include_performance_metrics?
-              else
-                true
-              end
+              dbwatcher_config_value(config, :system_info_include_performance_metrics?, true)
           }
         rescue StandardError => e
           log_error "Failed to get DBWatcher config: #{e.message}"
           {}
         end
-        # rubocop:enable Metrics/MethodLength
+
+        # Safely read a Dbwatcher configuration value with a fallback default
+        #
+        # @param config [Object] configuration object
+        # @param method_name [Symbol] method to call
+        # @param default [Object] fallback if not supported
+        # @return [Object]
+        def dbwatcher_config_value(config, method_name, default)
+          config.respond_to?(method_name) ? config.public_send(method_name) : default
+        end
 
         # Sanitize database configuration to remove sensitive information
         #
