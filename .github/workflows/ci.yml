@@ -198,7 +198,7 @@ jobs:
 
       - name: Notify Slack
         if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
-        uses: slackapi/slack-github-action@v3.0.1
+        uses: slackapi/slack-github-action@v3.0.2
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           method: chat.postMessage
