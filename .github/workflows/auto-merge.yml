@@ -157,7 +157,7 @@ jobs:
     steps:
       - name: Notify Slack about auto-merge
         if: needs.auto-merge.result == 'success' && github.event.pull_request.head.repo.full_name == github.repository
-        uses: slackapi/slack-github-action@v3.0.2
+        uses: slackapi/slack-github-action@v3.0.3
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           method: chat.postMessage
