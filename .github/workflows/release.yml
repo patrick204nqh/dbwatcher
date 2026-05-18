@@ -297,8 +297,18 @@ jobs:
     needs: [validate-release, build-and-publish]
     runs-on: ubuntu-latest
     name: Post-Release Tasks
+    environment: production
     if: needs.validate-release.outputs.should_release == 'true' && needs.validate-release.outputs.is_dry_run != 'true'
     steps:
+      - name: Fetch Slack credentials from SSM (OIDC)
+        uses: patrick204nqh/infrastructure/.github/actions/aws-ssm-fetch@main
+        with:
+          role-arn: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          params: |
+            /providers/messaging/slack/main/bot-token   SLACK_BOT_TOKEN
+            /providers/messaging/slack/main/channel-id  SLACK_CHANNEL_ID
+
       - name: Verify publication
         run: |
           VERSION="${{ needs.validate-release.outputs.version }}"
@@ -325,11 +335,11 @@ jobs:
         if: success()
         uses: slackapi/slack-github-action@v3.0.3
         with:
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          token: ${{ env.SLACK_BOT_TOKEN }}
           method: chat.postMessage
           payload: |
             {
-              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "channel": "${{ env.SLACK_CHANNEL_ID }}",
               "text": "🚀 Released v${{ needs.validate-release.outputs.version }}",
               "blocks": [
                 {
@@ -370,8 +380,18 @@ jobs:
     needs: [validate-release, build-and-publish, post-release]
     runs-on: ubuntu-latest
     name: Notify on Failure
+    environment: production
     if: always() && (failure() || cancelled()) && needs.validate-release.outputs.should_release == 'true'
     steps:
+      - name: Fetch Slack credentials from SSM (OIDC)
+        uses: patrick204nqh/infrastructure/.github/actions/aws-ssm-fetch@main
+        with:
+          role-arn: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          params: |
+            /providers/messaging/slack/main/bot-token   SLACK_BOT_TOKEN
+            /providers/messaging/slack/main/channel-id  SLACK_CHANNEL_ID
+
       - name: Determine failed job
         id: failed_job
         run: |
@@ -392,11 +412,11 @@ jobs:
       - name: Notify Slack - Release Failure
         uses: slackapi/slack-github-action@v3.0.3
         with:
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          token: ${{ env.SLACK_BOT_TOKEN }}
           method: chat.postMessage
           payload: |
             {
-              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "channel": "${{ env.SLACK_CHANNEL_ID }}",
               "text": "❌ Release failed v${{ needs.validate-release.outputs.version || 'Unknown' }}",
               "blocks": [
                 {

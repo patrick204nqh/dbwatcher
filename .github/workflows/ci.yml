@@ -44,11 +44,20 @@ jobs:
       - name: Run Cucumber acceptance tests
         run: bundle exec rake acceptance
 
+      - name: Fetch Qlty token from SSM (OIDC)
+        if: success() && github.ref == 'refs/heads/master'
+        uses: patrick204nqh/infrastructure/.github/actions/aws-ssm-fetch@main
+        with:
+          role-arn: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          params: |
+            /providers/coverage/qlty/main/token   QLTY_COVERAGE_TOKEN
+
       - name: Upload coverage to Qlty
         if: success() && github.ref == 'refs/heads/master'
         uses: qltysh/qlty-action/coverage@v2
         with:
-          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+          token: ${{ env.QLTY_COVERAGE_TOKEN }}
           files: coverage/.resultset.json
 
       - name: Upload coverage artifacts
@@ -196,15 +205,25 @@ jobs:
           # Post comment
           gh pr comment ${{ github.event.pull_request.number }} --body-file pr_report.md
 
+      - name: Fetch Slack credentials from SSM (OIDC)
+        if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
+        uses: patrick204nqh/infrastructure/.github/actions/aws-ssm-fetch@main
+        with:
+          role-arn: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          params: |
+            /providers/messaging/slack/main/bot-token   SLACK_BOT_TOKEN
+            /providers/messaging/slack/main/channel-id  SLACK_CHANNEL_ID
+
       - name: Notify Slack
         if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
         uses: slackapi/slack-github-action@v3.0.3
         with:
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          token: ${{ env.SLACK_BOT_TOKEN }}
           method: chat.postMessage
           payload: |
             {
-              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "channel": "${{ env.SLACK_CHANNEL_ID }}",
               "text": "${{ steps.ci_status.outputs.emoji }} CI ${{ steps.ci_status.outputs.status }} - ${{ github.ref_name }}",
               "blocks": [
                 {

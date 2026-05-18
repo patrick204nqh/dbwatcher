@@ -8,6 +8,7 @@ permissions:
   contents: write
   pull-requests: write
   checks: read
+  id-token: write
 
 jobs:
   auto-merge:
@@ -155,15 +156,25 @@ jobs:
     needs: auto-merge
     if: always() && github.actor == 'dependabot[bot]'
     steps:
+      - name: Fetch Slack credentials from SSM (OIDC)
+        if: needs.auto-merge.result == 'success' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: patrick204nqh/infrastructure/.github/actions/aws-ssm-fetch@main
+        with:
+          role-arn: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          params: |
+            /providers/messaging/slack/main/bot-token   SLACK_BOT_TOKEN
+            /providers/messaging/slack/main/channel-id  SLACK_CHANNEL_ID
+
       - name: Notify Slack about auto-merge
         if: needs.auto-merge.result == 'success' && github.event.pull_request.head.repo.full_name == github.repository
         uses: slackapi/slack-github-action@v3.0.3
         with:
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          token: ${{ env.SLACK_BOT_TOKEN }}
           method: chat.postMessage
           payload: |
             {
-              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "channel": "${{ env.SLACK_CHANNEL_ID }}",
               "text": "🤖 Auto-merged: ${{ github.event.pull_request.title }}",
               "username": "dbwatcher",
               "icon_emoji": ":mag:",
