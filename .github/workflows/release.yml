@@ -222,7 +222,7 @@ jobs:
 
       - name: Fetch RubyGems credentials from SSM (OIDC)
         if: needs.validate-release.outputs.is_dry_run != 'true'
-        uses: patrick204nqh/infrastructure/.github/actions/aws-ssm-fetch@main
+        uses: patrick204nqh/aws-ssm-fetch-action@v1
         with:
           role-arn: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -301,7 +301,7 @@ jobs:
     if: needs.validate-release.outputs.should_release == 'true' && needs.validate-release.outputs.is_dry_run != 'true'
     steps:
       - name: Fetch Slack credentials from SSM (OIDC)
-        uses: patrick204nqh/infrastructure/.github/actions/aws-ssm-fetch@main
+        uses: patrick204nqh/aws-ssm-fetch-action@v1
         with:
           role-arn: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -384,7 +384,7 @@ jobs:
     if: always() && (failure() || cancelled()) && needs.validate-release.outputs.should_release == 'true'
     steps:
       - name: Fetch Slack credentials from SSM (OIDC)
-        uses: patrick204nqh/infrastructure/.github/actions/aws-ssm-fetch@main
+        uses: patrick204nqh/aws-ssm-fetch-action@v1
         with:
           role-arn: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}

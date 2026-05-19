@@ -46,7 +46,7 @@ jobs:
 
       - name: Fetch Qlty token from SSM (OIDC)
         if: success() && github.ref == 'refs/heads/master'
-        uses: patrick204nqh/infrastructure/.github/actions/aws-ssm-fetch@main
+        uses: patrick204nqh/aws-ssm-fetch-action@v1
         with:
           role-arn: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -207,7 +207,7 @@ jobs:
 
       - name: Fetch Slack credentials from SSM (OIDC)
         if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
-        uses: patrick204nqh/infrastructure/.github/actions/aws-ssm-fetch@main
+        uses: patrick204nqh/aws-ssm-fetch-action@v1
         with:
           role-arn: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
