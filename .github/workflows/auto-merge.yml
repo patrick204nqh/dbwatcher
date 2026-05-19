@@ -8,6 +8,7 @@ permissions:
   contents: write
   pull-requests: write
   checks: read
+  id-token: write
 
 jobs:
   auto-merge:
@@ -23,13 +24,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Generate dbwatcher-ci App Token
+      - name: Fetch p204-helm App credentials from SSM (OIDC)
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        uses: patrick204nqh/aws-ssm-fetch-action@v1
+        with:
+          role-arn: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          params: |
+            /providers/app/p204-helm/main/app-id        APP_ID
+            /providers/app/p204-helm/main/private-key   PRIVATE_KEY
+
+      - name: Generate App Token
         if: github.event.pull_request.head.repo.full_name == github.repository
         id: app_token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.DBWATCHER_CI_APP_ID }}
-          private-key: ${{ secrets.DBWATCHER_CI_PRIVATE_KEY }}
+          app-id: ${{ env.APP_ID }}
+          private-key: ${{ env.PRIVATE_KEY }}
 
       - name: Check if PR is ready for auto-merge
         id: check
@@ -155,15 +166,25 @@ jobs:
     needs: auto-merge
     if: always() && github.actor == 'dependabot[bot]'
     steps:
+      - name: Fetch Slack credentials from SSM (OIDC)
+        if: needs.auto-merge.result == 'success' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: patrick204nqh/aws-ssm-fetch-action@v1
+        with:
+          role-arn: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          params: |
+            /providers/messaging/slack/main/bot-token   SLACK_BOT_TOKEN
+            /providers/messaging/slack/main/channel-id  SLACK_CHANNEL_ID
+
       - name: Notify Slack about auto-merge
         if: needs.auto-merge.result == 'success' && github.event.pull_request.head.repo.full_name == github.repository
         uses: slackapi/slack-github-action@v3.0.3
         with:
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          token: ${{ env.SLACK_BOT_TOKEN }}
           method: chat.postMessage
           payload: |
             {
-              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "channel": "${{ env.SLACK_CHANNEL_ID }}",
               "text": "🤖 Auto-merged: ${{ github.event.pull_request.title }}",
               "username": "dbwatcher",
               "icon_emoji": ":mag:",
