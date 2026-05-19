@@ -51,7 +51,7 @@ jobs:
           role-arn: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
           params: |
-            /providers/coverage/qlty/main/token   QLTY_COVERAGE_TOKEN
+            /providers/coverage/qlty/dbwatcher/token   QLTY_COVERAGE_TOKEN
 
       - name: Upload coverage to Qlty
         if: success() && github.ref == 'refs/heads/master'
