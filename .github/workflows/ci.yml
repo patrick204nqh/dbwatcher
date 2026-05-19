@@ -145,13 +145,23 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: actions/checkout@v6
 
-      - name: Generate dbwatcher-ci App Token
+      - name: Fetch p204-helm App credentials from SSM (OIDC)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: patrick204nqh/aws-ssm-fetch-action@v1
+        with:
+          role-arn: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          params: |
+            /providers/app/p204-helm/main/app-id        APP_ID
+            /providers/app/p204-helm/main/private-key   PRIVATE_KEY
+
+      - name: Generate App Token
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         id: app_token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.DBWATCHER_CI_APP_ID }}
-          private-key: ${{ secrets.DBWATCHER_CI_PRIVATE_KEY }}
+          app-id: ${{ env.APP_ID }}
+          private-key: ${{ env.PRIVATE_KEY }}
 
       - name: Determine CI status
         id: ci_status
