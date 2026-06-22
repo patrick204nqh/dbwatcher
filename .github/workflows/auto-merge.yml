@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Fetch p204-helm App credentials from SSM (OIDC)
         if: github.event.pull_request.head.repo.full_name == github.repository
