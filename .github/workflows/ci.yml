@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
@@ -74,7 +74,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
@@ -91,7 +91,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
@@ -108,7 +108,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
@@ -143,7 +143,7 @@ jobs:
     steps:
       - name: Checkout repository
         if: github.event_name == 'pull_request'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Fetch p204-helm App credentials from SSM (OIDC)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
@@ -227,7 +227,7 @@ jobs:
 
       - name: Notify Slack
         if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
-        uses: slackapi/slack-github-action@v3.0.3
+        uses: slackapi/slack-github-action@v4.0.0
         with:
           token: ${{ env.SLACK_BOT_TOKEN }}
           method: chat.postMessage
