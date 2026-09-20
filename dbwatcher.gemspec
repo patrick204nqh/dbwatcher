@@ -37,7 +37,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "sassc", "~> 2.4"
   spec.add_development_dependency "selenium-webdriver", "~> 4.0"
   spec.add_development_dependency "sprockets-rails", "~> 3.4"
-  spec.add_development_dependency "sqlite3", "~> 1.4"
+  spec.add_development_dependency "sqlite3", "~> 2.9"
   spec.add_development_dependency "webrick", "~> 1.8"
 
   spec.metadata["rubygems_mfa_required"] = "true"
